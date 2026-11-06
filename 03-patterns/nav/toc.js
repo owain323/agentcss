@@ -1,5 +1,5 @@
 /* ============================================================================
-   frontend-lib / 03-patterns / nav / toc.js
+   agentcss / 03-patterns / nav / toc.js
    长文目录：滚动时高亮当前节
 
    🔴 这是**从 04-recipes/longform 内联脚本提取并加固**的模块 ——

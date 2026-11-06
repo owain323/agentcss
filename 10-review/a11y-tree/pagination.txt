@@ -1,7 +1,7 @@
 # pagination — 分页：每个页码按钮要有能区分的名字（"第 3 页"而不是"3"）
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "分页 ·· frontend-lib"
+RootWebArea "分页 ·· agentcss"
   main
     heading "分页" [level=1]
     paragraph "。依据 W3C APG + USWDS + MDN + Component Gallery + Mironsoft（5 "

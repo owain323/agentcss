@@ -4,7 +4,7 @@
 
 **请不要在 GitHub 上开公开 issue 报告漏洞。**
 
-发到私有渠道：[security advisory](https://github.com/owain323/frontend-lib/security/advisories/new)
+发到私有渠道：[security advisory](https://github.com/owain323/agentcss/security/advisories/new)
 
 ## 我们会怎么回应
 

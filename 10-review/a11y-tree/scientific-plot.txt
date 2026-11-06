@@ -1,7 +1,7 @@
 # scientific-plot — 科学绘图：坐标轴刻度文本进入朗读序列，且不与图形名字重复
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "scientific-plot · 二维科学绘图 · frontend-lib"
+RootWebArea "scientific-plot · 二维科学绘图 · agentcss"
   main
     heading "scientific-plot · 二维科学绘图" [level=1]
     paragraph "坐标轴、单位、刻度、误差棒、置信区间带 —— 用原生 SVG 画， 零第三方运行时依赖。 本模块不计算任何统计量 ， 它"

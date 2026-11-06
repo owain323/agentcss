@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://frontend-lib.dev/ai/contract.schema.json",
-  "title": "frontend-lib 编辑契约 · 文档信封",
+  "$id": "https://agentcss.dev/ai/contract.schema.json",
+  "title": "agentcss 编辑契约 · 文档信封",
   "$comment": [
     "这是【版本化契约】层：约定接口长什么样。会随版本变，但向后兼容。",
     "它不规定 AI 该怎么做（那是 docs/GUIDANCE.md），",

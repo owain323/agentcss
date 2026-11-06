@@ -1,7 +1,7 @@
 # echarts-adapter — 图表适配：role=img + 数值表双通道，两条通道都得有名字
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "图表规范 · frontend-lib"
+RootWebArea "图表规范 · agentcss"
   heading "图表规范" [level=1]
   paragraph "下次画图照这里做就行 ，不用再反复微调。 全部规则来自本库的分析类可视化约定， 并且 大部分已经变成 echarts-a"
   heading "0 · 边界：什么该用本库，什么该用 ECharts" [level=2]

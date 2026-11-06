@@ -1,7 +1,7 @@
 # date-range — 日期区间：输入框名字 + 日历弹层 + role=alert 的越界提示
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "date-range · 日期区间 · frontend-lib"
+RootWebArea "date-range · 日期区间 · agentcss"
   main
     heading "date-range · 日期区间" [level=1]
     paragraph "财务/成本刚需。三件最容易漏： ① 必须有「清除」 （填错了要能一键清空，而不是逐个退格） ② 约束校验 ：开始晚于结束"

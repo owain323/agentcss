@@ -1,11 +1,11 @@
-# frontend-lib
+# agentcss
 
 [English](README.md) · 中文
 
 移动 Web 组件库。CSS 样式 + 可选行为脚本，**零第三方运行时依赖**。
 
-> **npm 包名是 `agentcss`**（`npm install agentcss`）。
-> 仓库名沿用 `frontend-lib`。两者不是一回事：包名是安装标识，仓库名是主页地址。
+> **包名与仓库名统一为 `agentcss`**（`npm install agentcss`）。
+> 2026-11 从 `frontend-lib` 迁到 `agentcss`；旧仓库保留为只读快照，不再更新。
 
 **它同时是给 AI 读的**：`ai/components.json` 里每个组件都有机器可解析的契约
 ——可用的类名、状态怎么表达、哪些行为不能漏、成熟度到哪一步。
@@ -13,8 +13,8 @@
 
 ## 在线演示与文档
 
-- **全部示例页，一个索引** —— https://owain323.github.io/frontend-lib/
-- **带搜索的组件文档** —— https://owain323.github.io/frontend-lib/guide/
+- **全部示例页，一个索引** —— https://owain323.github.io/agentcss/
+- **带搜索的组件文档** —— https://owain323.github.io/agentcss/guide/
 - **这个项目是怎么组成的** —— [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
   （四层组件、自动检查系统，用平话讲）
 - **给 AI 直接调** —— `ai/` 是一套 CLI，把同一份规则暴露成命令
@@ -87,10 +87,10 @@ npm install agentcss
 
 ```bash
 # ① 钉住某一版、且拿到与我们验证过的那一份**逐字节一致**的 tarball
-npm install https://github.com/owain323/frontend-lib/releases/download/v<版本>/agentcss-<版本>.tgz
+npm install https://github.com/owain323/agentcss/releases/download/v<版本>/agentcss-<版本>.tgz
 
 # ② 想跟着 master 走（未发布的最新提交）
-npm install github:owain323/frontend-lib
+npm install github:owain323/agentcss
 ```
 
 > 历史说明：0.9.0 曾发布成功、两分钟后被误删；此后一段时间
@@ -305,7 +305,7 @@ dist/01-tokens/tokens.css          ← 拷这个
 那些注释是写给你看的取舍理由（为什么这么定、踩过什么坑），不是写给你浏览器看的。
 **注释让你看代码时处处撞墙；从源码目录引入的话，构建工具还会把那部分字节原样打进产物。**
 
-**一个冻结的上限。** 整套库受一份账本约束（[`05-audit/budget.json`](https://github.com/owain323/frontend-lib/blob/master/05-audit/budget.json)）：
+**一个冻结的上限。** 整套库受一份账本约束（[`05-audit/budget.json`](https://github.com/owain323/agentcss/blob/master/05-audit/budget.json)）：
 硬天花板 + 一份「常规新增组件不用改任何数字」的储备 + 一个只在体积下降时收紧的棘轮。
 规则、以及「什么情况才允许抬天花板」，在 [`docs/BUDGET.md`](docs/BUDGET.md)。
 
@@ -479,7 +479,7 @@ bash 05-audit/check-all.sh       # 全量门禁；条数以本轮输出为准，
 `🔍` 是「在真实设备上人工试过一次，之后没人再看」——
 浏览器升级只会被前者发现。逐项结果、完整 UA 与复核方法见
 [`docs/LAYER-BASELINE.md`](docs/LAYER-BASELINE.md) 与
-[`10-review/webview/RESULTS.md`](https://github.com/owain323/frontend-lib/blob/master/10-review/webview/RESULTS.md)。
+[`10-review/webview/RESULTS.md`](https://github.com/owain323/agentcss/blob/master/10-review/webview/RESULTS.md)。
 
 ⚠️ 定位里写「移动 Web」指的是**设计取向**（触控优先、命中区不小于 44px），
 不代表已被自动化覆盖，更不代表页面在真机上就能用：

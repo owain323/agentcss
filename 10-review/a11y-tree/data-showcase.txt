@@ -1,7 +1,7 @@
 # data-showcase — 数据展示：多张表格并存时靠 caption/label 区分，不许都叫"表格"
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "data-showcase · 数据展示能力对照 · frontend-lib"
+RootWebArea "data-showcase · 数据展示能力对照 · agentcss"
   main
     heading "数据展示能力对照" [level=1]
     paragraph "同一套设计令牌，四种不同的表达方式。它们回答的问题不一样， 所以 不能用同一个组件凑合 。"

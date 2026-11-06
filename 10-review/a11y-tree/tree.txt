@@ -1,7 +1,7 @@
 # tree — 树：tree/treeitem/group + expanded + 层级（缩进要能被念出来）
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "tree · 树形视图 · frontend-lib"
+RootWebArea "tree · 树形视图 · agentcss"
   main
     heading "tree · 树形视图" [level=1]
     paragraph "依据 APG Tree View 。两条最关键的设计： ① Roving tabindex ：整棵树只占一个 Tab 位"

@@ -1,7 +1,7 @@
 # report — 报告页：表格与段落混排时的朗读顺序，标题不跳级
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "report · 报告版式系统 v1 · frontend-lib"
+RootWebArea "report · 报告版式系统 v1 · agentcss"
   main
     heading "report · 报告版式系统 v1" [level=1]
     paragraph "三套版式共用一份 基础 （字体角色、正文行长、页面网格、间距层级、 图表说明、来源脚注），各自再决定"行长多宽、字号多大"

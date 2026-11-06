@@ -1,4 +1,4 @@
-# AI 使用入口（frontend-lib）
+# AI 使用入口（agentcss）
 
 > **English readers:** this index is Chinese, on purpose — the documents it points to
 > (component READMEs, demos, UI copy) are Chinese too, so an English translation of
@@ -139,7 +139,7 @@ node ai/cli.js scaffold report/finance --out report.html
 | 建议 | `CONTRIBUTING.md` | 工作方式建议，可整份推翻 |
 
 > 本文件（就是那份贴进 system prompt 的极简版）的适用范围是
-> **维护 frontend-lib 自身或严格按本库范式写页面**，不是所有 HTML 任务的通用规则。
+> **维护 agentcss 自身或严格按本库范式写页面**，不是所有 HTML 任务的通用规则。
 
 ## 7 · 为什么没有 MCP server
 

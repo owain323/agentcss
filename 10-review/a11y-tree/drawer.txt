@@ -1,7 +1,7 @@
 # drawer — 抽屉：dialog + modal + 关闭按钮的名字（ICON 按钮最容易只剩图标）
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "drawer · 抽屉 · frontend-lib"
+RootWebArea "drawer · 抽屉 · agentcss"
   main
     heading "drawer · 抽屉" [level=1]
     paragraph "依据 APG Dialog 。与对话框的差别只是「从哪进来」， 三条硬要求完全一样： 焦点陷阱 （Tab 不跑出抽屉）·"

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://frontend-lib.dev/ai/patch.schema.json",
-  "title": "frontend-lib 补丁操作契约",
+  "$id": "https://agentcss.dev/ai/patch.schema.json",
+  "title": "agentcss 补丁操作契约",
   "$comment": [
     "🔴 补丁的作用对象是【语义 id】，不是 HTML、也不是 CSS 选择器。",
     "",

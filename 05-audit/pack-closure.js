@@ -715,7 +715,7 @@ function checkClosure(pkg, vfs) {
 
   /* ---------- D. 文档里给使用者的 node_modules/<包名>/… 路径 ---------- */
   /*  起因（2026-10-06 真实用户级事故）：README 教人写
-   *    <script src="node_modules/frontend-lib/patterns/overlay/overlay.js">
+   *    <script src="node_modules/agentcss/patterns/overlay/overlay.js">
    *  而 tarball 里根本没有 patterns/ 这个目录 ⇒ 陌生人照抄必然 404。
    *  exports 的 "./patterns/*" 只对包解析生效，**不会**在 node_modules 里
    *  造出同名目录。 */

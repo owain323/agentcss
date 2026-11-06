@@ -1,7 +1,7 @@
 # analysis-report — 组合报告：region 地标 + 可横向滚动表格的名字（滚动容器最容易丢语义）
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "analysis-report · 组合型研究报告 · frontend-lib"
+RootWebArea "analysis-report · 组合型研究报告 · agentcss"
   main
     paragraph "材料科学 · 实验报告"
     heading "高镍正极材料在高电压下的循环衰减与表面包覆效果" [level=1]

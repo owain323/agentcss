@@ -1,7 +1,7 @@
 # content — 长文排版：标题层级与表格，正文段落不得被容器吞成一个名字
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "content · 正文渲染 · frontend-lib"
+RootWebArea "content · 正文渲染 · agentcss"
   main
     paragraph "content 接管 Markdown 渲染出来的元素： 结构用标准 （CommonMark/GFF 决定）， 样式用令"
     heading "季度经营分析" [level=1]

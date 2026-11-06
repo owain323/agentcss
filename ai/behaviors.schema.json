@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://frontend-lib.dev/ai/behaviors.schema.json",
-  "title": "frontend-lib 行为覆盖矩阵",
+  "$id": "https://agentcss.dev/ai/behaviors.schema.json",
+  "title": "agentcss 行为覆盖矩阵",
   "$comment": [
     "描述 ai/behaviors.json 的形状：**哪些组件必须有哪种微行为**。",
     "",

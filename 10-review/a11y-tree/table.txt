@@ -1,7 +1,7 @@
 # table — 表格：table/row/columnheader 关系
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "table · 专业数据表格 · frontend-lib"
+RootWebArea "table · 专业数据表格 · agentcss"
   main
     heading "table · 专业数据表格" [level=1]
     paragraph "同一套表格基础，三种用途预设。数字怎么显示由 列定义 决定， 不由"这个数看起来有多大"决定。"

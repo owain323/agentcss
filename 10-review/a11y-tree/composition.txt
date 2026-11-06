@@ -1,7 +1,7 @@
 # composition — 组合页：多个模式同处一页时不得出现无法区分的同名控件
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "组合测试 · frontend-lib"
+RootWebArea "组合测试 · agentcss"
   main
     heading "组合测试（组合契约的宿主）" [level=1]
     paragraph "这个页面存在的唯一理由： 让组件互相嵌套 。 单组件的 demo 里每个都对，放在一起才会暴露 z-index 打架 ·"

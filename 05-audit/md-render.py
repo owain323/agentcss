@@ -59,9 +59,9 @@ SHELL = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <style>
-/* ---- 由 md-render.py 内联自 frontend-lib/01-tokens/tokens.css ---- */
+/* ---- 由 md-render.py 内联自 agentcss/01-tokens/tokens.css ---- */
 {tokens}
-/* ---- 由 md-render.py 内联自 frontend-lib/03-patterns/content/content.css ---- */
+/* ---- 由 md-render.py 内联自 agentcss/03-patterns/content/content.css ---- */
 {content}
 body {{
   margin: 0;

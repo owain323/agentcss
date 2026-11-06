@@ -257,7 +257,7 @@
     // 🔴 超过 5 个系列 ⇒ 明确警告（系列 ≤ 5）
     if (o.series.length > 5) {
       if (typeof console !== 'undefined' && console.warn) {
-        console.warn('[frontend-lib] 系列数 ' + o.series.length +
+        console.warn('[agentcss] 系列数 ' + o.series.length +
           ' 超过 5 —— 请改图表类型或分屏。配色循环会让颜色撞车。');
       }
     }
@@ -290,7 +290,7 @@
   function create(dom, opt) {
     if (typeof window.echarts === 'undefined') {
       if (typeof console !== 'undefined' && console.warn) {
-        console.warn('[frontend-lib] 未检测到 ECharts —— ' +
+        console.warn('[agentcss] 未检测到 ECharts —— ' +
           '请在主项目里自行引入（前端库本身零依赖）。');
       }
       return null;

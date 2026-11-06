@@ -8,7 +8,7 @@ Mobile-web components in plain CSS, with optional behaviour scripts. **Zero thir
 npm install agentcss
 ```
 
-The npm package is `agentcss`; the repository is `frontend-lib`. They are different things: the package name is what you install, the repository name is where the source lives.
+The package name and the repository name are both `agentcss`: install with `npm install agentcss`, browse the source in [the repository](https://github.com/owain323/agentcss). The old `frontend-lib` repository is kept as a read-only snapshot.
 
 ### Module format: ESM-only
 
@@ -29,8 +29,8 @@ The JS entry points (`esm/*.mjs`) are **ESM only** — `exports` has no `require
 
 ## Docs and live demos
 
-- **Every demo page, one index** — https://owain323.github.io/frontend-lib/
-- **Component documentation with search** — https://owain323.github.io/frontend-lib/guide/
+- **Every demo page, one index** — https://owain323.github.io/agentcss/
+- **Component documentation with search** — https://owain323.github.io/agentcss/guide/
 - **How this project is organized** — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
   (what each layer is, how the automated checks work — in plain language)
 - **From an AI agent** — the `ai/` CLI exposes the same rules as commands
@@ -88,10 +88,10 @@ Two more paths that resolve to the same content:
 ```bash
 # Pin an exact version and get a tarball byte-identical to the published one
 # （把 <版本> 换成 `npm view agentcss version` 的输出 —— 不写死，免得又过期）
-npm install https://github.com/owain323/frontend-lib/releases/download/v<版本>/agentcss-<版本>.tgz
+npm install https://github.com/owain323/agentcss/releases/download/v<版本>/agentcss-<版本>.tgz
 
 # Track master (unreleased commits)
-npm install github:owain323/frontend-lib
+npm install github:owain323/agentcss
 ```
 
 ---
@@ -294,7 +294,7 @@ Two builds ship:
 The source tree keeps every comment — that is documentation, not payload.
 
 **One frozen ceiling.** The whole library is held to a single budget recorded in
-[`05-audit/budget.json`](https://github.com/owain323/frontend-lib/blob/master/05-audit/budget.json): a hard ceiling, a reserve that absorbs
+[`05-audit/budget.json`](https://github.com/owain323/agentcss/blob/master/05-audit/budget.json): a hard ceiling, a reserve that absorbs
 normal additions *without anyone editing a number*, and a ratchet that tightens the
 budget when the library shrinks. The rules — and what would have to be true to raise
 the ceiling — are in [`docs/BUDGET.md`](docs/BUDGET.md).
@@ -315,7 +315,7 @@ not — is in [`docs/STABILITY.md`](docs/STABILITY.md).
 - **Tested once** (`🔍`) means exactly that: one manual run on a real device, with a full UA and a per-capability result, but **no automated check watching it**. A browser update will not turn anything red. It never counts as verified, and the two never add up.
 - **Not claimed** means exactly that. A row that has not been tested is not written as supported.
 
-Mobile WebView support is where that distinction bites. Seven entry points have been probed by hand — per-capability results in [`10-review/webview/RESULTS.md`](https://github.com/owain323/frontend-lib/blob/master/10-review/webview/RESULTS.md) — while Android System WebView still has **no data at all**. None of the seven was checked for soft-keyboard, safe-area, scroll-bounce or 200 % text behaviour: "15/15 capabilities" is not "the page works on a phone".
+Mobile WebView support is where that distinction bites. Seven entry points have been probed by hand — per-capability results in [`10-review/webview/RESULTS.md`](https://github.com/owain323/agentcss/blob/master/10-review/webview/RESULTS.md) — while Android System WebView still has **no data at all**. None of the seven was checked for soft-keyboard, safe-area, scroll-bounce or 200 % text behaviour: "15/15 capabilities" is not "the page works on a phone".
 
 ## Theming
 

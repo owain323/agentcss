@@ -137,8 +137,8 @@ def check_404_paths(html, base):
     """404 页的每个引用都必须是绝对路径。
 
     这不是风格要求。GitHub Pages 拿这个文件响应**任意**不存在的地址，
-    而浏览器地址栏仍停在那个错路径上：访问 `/frontend-lib/typo/x` 时，
-    页内 `01-tokens/tokens.css` 会被解析成 `/frontend-lib/typo/01-tokens/tokens.css`
+    而浏览器地址栏仍停在那个错路径上：访问 `/agentcss/typo/x` 时，
+    页内 `01-tokens/tokens.css` 会被解析成 `/agentcss/typo/01-tokens/tokens.css`
     —— 又一次 404。于是整页裸奔：没样式、没暗色、字挤成一团。
 
     正常页面永远不会遇到这个失败模式，所以要单独一条判据盯着。
@@ -535,14 +535,14 @@ def selftest():
 
     # 404 页：相对路径必须报（错路径下会二次 404，整页裸奔）
     got = [c for c, _ in check_404_paths(
-        '<link rel="stylesheet" href="01-tokens/tokens.css">', '/frontend-lib/')]
+        '<link rel="stylesheet" href="01-tokens/tokens.css">', '/agentcss/')]
     if '404-1' not in got:
         bad += 1
         print('  [FAIL] 404 页用相对路径没被判红：%s' % got)
 
     # 反向控制：全绝对路径不许报
-    if check_404_paths('<link href="/frontend-lib/a.css"><a href="#x">y</a>',
-                       '/frontend-lib/'):
+    if check_404_paths('<link href="/agentcss/a.css"><a href="#x">y</a>',
+                       '/agentcss/'):
         bad += 1
         print('  [FAIL] 全绝对路径的 404 页被判红')
 

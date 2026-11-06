@@ -1220,8 +1220,8 @@ def site_base():
 
 # 404 页**只能**用绝对路径引资源。
 #   GitHub Pages 用它响应任意不存在的地址，而浏览器地址栏仍停在那个
-#   错路径上（`/frontend-lib/typo/xxx`）—— 此时 `01-tokens/tokens.css`
-#   会被解析成 `/frontend-lib/typo/01-tokens/tokens.css`，也 404。
+#   错路径上（`/agentcss/typo/xxx`）—— 此时 `01-tokens/tokens.css`
+#   会被解析成 `/agentcss/typo/01-tokens/tokens.css`，也 404。
 #   于是整页裸奔：没样式、没暗色、字挤在一起。
 #   这个失败模式不会出现在正常页面上，所以必须由判据盯着。
 ROOT_404 = '''<!DOCTYPE html>

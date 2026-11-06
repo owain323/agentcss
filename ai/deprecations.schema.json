@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://frontend-lib.dev/ai/deprecations.schema.json",
-  "title": "frontend-lib 废弃登记册",
+  "$id": "https://agentcss.dev/ai/deprecations.schema.json",
+  "title": "agentcss 废弃登记册",
   "$comment": [
     "描述 ai/deprecations.json 的形状：**库里曾经有 / 现在有但将来要删的公开名字**。",
     "",

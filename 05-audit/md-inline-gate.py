@@ -22,7 +22,7 @@ md-inline-gate.py — md-render 生成的单文件页，内联样式必须等于
 
 判据
 -------------------------------------------------------------------------------
-① 产物里每个 `由 md-render.py 内联自 frontend-lib/<path> ---- */` 标记，
+① 产物里每个 `由 md-render.py 内联自 agentcss/<path> ---- */` 标记，
    后面到下一个标记（或 `body {`）之间的内容，必须与 `<path>` 当前内容
    **逐字相等**（只归一末尾空白）。
 ② 零视野守卫：一个产物都没找到、或找到了但一个内联块都没解析出来 ⇒ 红。
@@ -51,13 +51,13 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-MARKER = '由 md-render.py 内联自 frontend-lib/'
-MARKER_RE = re.compile(re.escape('由 md-render.py 内联自 ') + r'(frontend-lib/\S+?) ---- \*/')
-# ⚠️ 标记里的 `frontend-lib/` 是**仓库名标签**，不是仓库内的路径前缀
-#    （md-render.py 的 SHELL 里写死成 "内联自 frontend-lib/<相对路径>"）。
-#    直接拿它拼路径会得到 `<root>/frontend-lib/01-tokens/tokens.css` —— 不存在。
+MARKER = '由 md-render.py 内联自 agentcss/'
+MARKER_RE = re.compile(re.escape('由 md-render.py 内联自 ') + r'(agentcss/\S+?) ---- \*/')
+# ⚠️ 标记里的 `agentcss/` 是**仓库名标签**，不是仓库内的路径前缀
+#    （md-render.py 的 SHELL 里写死成 "内联自 agentcss/<相对路径>"）。
+#    直接拿它拼路径会得到 `<root>/agentcss/01-tokens/tokens.css` —— 不存在。
 #    所以先剥掉这一段标签，剩下的才是仓库内相对路径。
-LABEL = 'frontend-lib/'
+LABEL = 'agentcss/'
 # 最后一个内联块结束于内联 shell 的 `body {`（见 md-render.py 的 SHELL）
 TAIL = 'body {'
 

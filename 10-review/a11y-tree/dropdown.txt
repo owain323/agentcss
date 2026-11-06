@@ -1,7 +1,7 @@
 # dropdown — 下拉菜单：menu/menuitem + expanded（菜单不等于 tablist）
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "dropdown · 下拉菜单 · frontend-lib"
+RootWebArea "dropdown · 下拉菜单 · agentcss"
   main
     heading "dropdown · 下拉菜单" [level=1]
     paragraph "依据 APG Menu Button ： ↑↓ 移动 · Esc 关闭并 把焦点还给按钮 · Tab 关闭 · Ente"

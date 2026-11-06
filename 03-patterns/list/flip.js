@@ -1,5 +1,5 @@
 /* ============================================================================
-   frontend-lib / 03-patterns / list / flip.js
+   agentcss / 03-patterns / list / flip.js
    列表增删的 FLIP 动画
 
    依赖：无

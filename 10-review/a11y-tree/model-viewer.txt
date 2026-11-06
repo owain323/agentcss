@@ -1,7 +1,7 @@
 # model-viewer — 3D 模型：画布语义 + 操作提示，纯指针操作要给出替代路径
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "3D 模型查看器 · frontend-lib"
+RootWebArea "3D 模型查看器 · agentcss"
   main
     heading "3D 模型查看器" [level=1]
     paragraph "惰性加载： 首屏 0 字节 3D 引擎 ，点了才下载。 这是 确定的三条硬要求之一（「体积和加载一定要快」）。"

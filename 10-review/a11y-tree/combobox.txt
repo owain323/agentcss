@@ -1,7 +1,7 @@
 # combobox — 组合框：combobox + listbox + option + expanded（与 select 的单选语义不同源）
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "combobox · 组合框 · frontend-lib"
+RootWebArea "combobox · 组合框 · agentcss"
   main
     heading "combobox · 组合框 / 标签输入" [level=1]
     paragraph "依据 APG Combobox with List Autocomplete 。三条最容易漏： ① 焦点始终在 inpu"

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://frontend-lib.dev/ai/components.schema.json",
-  "title": "frontend-lib 组件契约",
+  "$id": "https://agentcss.dev/ai/components.schema.json",
+  "title": "agentcss 组件契约",
   "$comment": [
     "描述 ai/components.json 的形状。那份文件由 05-audit/gen-ai-contract.py 生成。",
     "",

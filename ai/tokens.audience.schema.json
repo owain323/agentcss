@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://frontend-lib.dev/ai/tokens.audience.schema.json",
-  "title": "frontend-lib 令牌受众登记",
+  "$id": "https://agentcss.dev/ai/tokens.audience.schema.json",
+  "title": "agentcss 令牌受众登记",
   "$comment": [
     "描述 ai/tokens.audience.json 的形状：**每个令牌是给谁用的**。",
     "",

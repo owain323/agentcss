@@ -998,7 +998,7 @@ def _selftest():
     }
     OK_FILES = ['dist/', 'ai/', 'README.md']
     OK_README = ('```bash\nnpm install agentcss\n```\n'
-                 '也可以 `npm install github:owain323/frontend-lib`。')
+                 '也可以 `npm install github:owain323/agentcss`。')
     bad = 0
 
     def chk(label, got, want_red):
@@ -1048,7 +1048,7 @@ def _selftest():
     chk('反：README 包名不符',
         mod(lambda p: None, readme='npm install frontend-lib'), True)
     for label, rd in [
-        ('不误报：git 安装', 'npm install github:owain323/frontend-lib'),
+        ('不误报：git 安装', 'npm install github:owain323/agentcss'),
         ('不误报：本地 tgz', 'npm install ./agentcss-0.8.9.tgz'),
         ('不误报：带版本号', 'npm install agentcss@0.9.0'),
         ('不误报：没写安装段', '# 安装\n\n见 docs/RELEASING.md'),

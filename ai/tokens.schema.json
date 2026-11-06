@@ -1,7 +1,7 @@
 {
  "$schema": "http://json-schema.org/draft-07/schema#",
- "$id": "https://frontend-lib.dev/ai/tokens.schema.json",
- "title": "frontend-lib 令牌契约",
+ "$id": "https://agentcss.dev/ai/tokens.schema.json",
+ "title": "agentcss 令牌契约",
  "$comment": [
   "描述 ai/tokens.json 的形状，由 05-audit/gen-ai-contract.py 生成。",
   "",

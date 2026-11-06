@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://frontend-lib.dev/ai/tokens.tree.schema.json",
-  "title": "frontend-lib 第二种令牌导出（分层 · 工具链友好）",
+  "$id": "https://agentcss.dev/ai/tokens.tree.schema.json",
+  "title": "agentcss 第二种令牌导出（分层 · 工具链友好）",
   "$comment": [
     "描述 ai/tokens.tree.json 的形状：**分层、键名不带 --、字段用 value/type（不带 $）**。",
     "",

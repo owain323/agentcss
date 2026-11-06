@@ -106,23 +106,23 @@ SKIP_DIRS = ('node_modules', 'dist', '.git', '05-audit', '06-vendor',
 
 
 # ===========================================================================
-# 站点根绝对路径（`/frontend-lib/01-tokens/tokens.css`）
+# 站点根绝对路径（`/agentcss/01-tokens/tokens.css`）
 # ---------------------------------------------------------------------------
 # 🔴 为什么必须单独处理（2026-10-29 · 门禁第一次在 CI 跑就红 3 处）
 #
 #   `404.html` 用的是 Pages **站点根**路径 —— 404 页会在任意层级被服务，
 #   只能写绝对路径，写相对路径一定指错地方。而判据原来把它当
 #   **文件系统绝对路径**：
-#       os.path.join(dirname, '/frontend-lib/01-tokens/tokens.css')
-#   `join` 遇到前导 `/` 会丢掉前面所有参数 ⇒ 结果是 '/frontend-lib/...'；
+#       os.path.join(dirname, '/agentcss/01-tokens/tokens.css')
+#   `join` 遇到前导 `/` 会丢掉前面所有参数 ⇒ 结果是 '/agentcss/...'；
 #   而这台机器的仓库**正好**放在盘符根下的同名目录 ⇒ Windows 把它解析成
 #   `<盘符>:\<仓库目录>\01-tokens\tokens.css` ⇒ **碰巧命中真实文件** ⇒ 本机永远绿。
-#   换到 Linux（CI）上，`/frontend-lib/` 是根目录下的另一个东西 ⇒ 红 3 处。
+#   换到 Linux（CI）上，`/agentcss/` 是根目录下的另一个东西 ⇒ 红 3 处。
 #
 #   ⚠️ 这是"环境顺手掩盖了判据缺陷"的典型：**能过 ≠ 判对了**。
 #      同源纪律：判据不许依赖"仓库刚好放在哪个路径"。
 # ===========================================================================
-SITE_BASES = ('/frontend-lib/',)
+SITE_BASES = ('/agentcss/',)
 
 
 def resolve_ref(page, src):
@@ -312,14 +312,14 @@ def _selftest():
         open(os.path.join(tmp, '01-tokens', 'ok.css'), 'w').write('/* */')
         want = os.path.normpath(os.path.join(tmp, '01-tokens', 'ok.css'))
         chk('⑤ 站点根路径 → ROOT 下（旧版解到文件系统根，只在 Windows 假绿）',
-            resolve_ref(page, '/frontend-lib/01-tokens/ok.css') == want, True)
+            resolve_ref(page, '/agentcss/01-tokens/ok.css') == want, True)
         chk('⑤b 相对路径仍相对所在页面解析',
             resolve_ref(page, 'x.css') ==
             os.path.normpath(os.path.join(os.path.dirname(page), 'x.css')), True)
 
         open(page, 'w', encoding='utf-8', newline='').write(
             '<html><head><link rel="stylesheet" '
-            'href="/frontend-lib/01-tokens/nope.css"></head></html>\n')
+            'href="/agentcss/01-tokens/nope.css"></head></html>\n')
         chk('⑤c 站点根路径指向不存在的文件 ⇒ 照样报', main(), 1)
 
         # ⑥ ESM import 必须算「引用了那个行为脚本」（0.11.15）

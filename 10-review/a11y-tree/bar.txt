@@ -1,7 +1,7 @@
 # bar — 柱状图：图形替身必须有非空名字（canvas 的文本读屏拿不到）
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "bar · 柱状图 · frontend-lib"
+RootWebArea "bar · 柱状图 · agentcss"
   main
     heading "bar · 柱状图" [level=1]
     paragraph "按 图表规范 四条铁律实现。 ① 超量程被容器裁剪（ .bar + .bar__svg 两道 overflow:hidd"

@@ -1,5 +1,5 @@
 /* ============================================================================
-   frontend-lib / 03-patterns / overlay / overlay.js
+   agentcss / 03-patterns / overlay / overlay.js
    Toast 与模态框的行为层
 
    依赖：overlay.css

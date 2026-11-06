@@ -16,7 +16,7 @@ pack.py — 打一个可以直接用的发布包
 剩下 70 多个文件是我们自己的开发过程。
 
 本脚本产出：
-    frontend-lib-<版本>.zip
+    agentcss-<版本>.zip
       ├── dist/          ← 只放复用真正需要的（CSS/JS/README/演示）
       ├── docs/          ← 规范与决策记录（charter / notes / 计划）
       └── checks/        ← 门禁（想自己验的人可带）
@@ -143,7 +143,7 @@ def main():
     # --slim：只带复用真正要的东西（CSS/JS/README/规范），
     # 不带门禁脚本 —— 复用者不会跑我们的测试。
     slim = '--slim' in args
-    name = 'frontend-lib-%s%s.zip' % (ver, '-slim' if slim else '')
+    name = 'agentcss-%s%s.zip' % (ver, '-slim' if slim else '')
     path = os.path.join(outdir, name)
     total = 0
     picked = files

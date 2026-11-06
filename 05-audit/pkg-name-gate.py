@@ -29,10 +29,21 @@ pkg-name-gate —— 包名一致性门禁
 ⇒ 收紧为：只查 README / START-HERE，且只查 **fenced 代码块内**的行。
 这是本库 E36「判据第一版过宽」的同类修正。
 
-为什么用"仓库名"当禁用词而不是硬编码 frontend-lib
+禁用词的来源：推导 + 硬编码，两条都要
 ------------------------------------------------
-仓库名是客观存在（GitHub 地址、bundle、CI 缓存都用它），它会长期存在。
-把"仓库名 ≠ 包名"这条规则写成推导式，改名时判据自动跟着变，不用改门禁。
+2026-10 的写法是**只**从 repository.url 推导仓库名，理由是"改名时判据自动
+跟着变，不用改门禁"。这个理由在 2026-11 失效了：
+
+  仓库迁到 `agentcss` 之后，仓库名 == 包名，于是判据 C 里
+  `if repo_name and repo_name != name:` 这个 guard 让**整段检查静默跳过**。
+  门禁还在跑、还是绿的，但什么都没查 —— 这比报错更危险。
+
+现在合并两条来源：
+  · `LEGACY_NAMES` —— 历史旧名硬编码（`frontend-lib`），**永久禁入**。
+    它是历史事实，不随改名消失；而且 npm 上那个名字仍是第三方 2017 年的包，
+    任何教用户 `npm install frontend-lib` 的文档都会装错东西。
+  · 仓库名推导    —— 仅当仓库名 ≠ 包名时追加。将来若再分叉（比如仓库改名
+    但包名不动），这条自动生效，不用改门禁。
 
 零文件守卫 + 正向控制
 =====================================================================
@@ -60,8 +71,24 @@ CODE_FILES = ('package.json',)
 # 不查 CHANGELOG / ERRORS / RELEASING —— 那几份**必须**保留旧名，否则等于删掉事故记录。
 DOC_FILES = ('README.md', 'START-HERE.md')
 
+# 历史旧名。npm 上 `frontend-lib` 是第三方 2017 年的包，任何情况下都不许当
+# 包名/命令用。硬编码的理由见文件头「禁用词的来源」。
+LEGACY_NAMES = ('frontend-lib',)
+
 IMPORT_RE = re.compile(
     r"""(?:from\s+|require\(\s*|import\s+)['"]([^'"]+)['"]""")
+
+
+def forbidden_names(name, repo_name):
+    """返回所有不许当包名/命令使用的名字。
+
+    · 旧名永久禁入（除非它哪天真的成了本包包名）；
+    · 仓库名只在"与包名不同"时禁入 —— 相同的话它本来就是合法包名。
+    """
+    out = {n for n in LEGACY_NAMES if n != name}
+    if repo_name and repo_name != name:
+        out.add(repo_name)
+    return out
 
 
 def read(p):
@@ -132,22 +159,23 @@ def check(files, name, repo_name):
                 bad.append(('B', rel,
                             'import 说明符是 %r，应为本包包名 %r' % (spec, name)))
 
-    # ---- C. 代码里不许把仓库名当包名 ----
-    if repo_name and repo_name != name:
-        for rel, txt in files.items():
-            if rel.startswith('type-tests/tsconfig'):
-                continue
-            for spec in IMPORT_RE.findall(txt):
-                if spec == repo_name:
+    # ---- C. 代码里不许把旧名/仓库名当包名 ----
+    forbidden = forbidden_names(name, repo_name)
+    for rel, txt in files.items():
+        if rel.startswith('type-tests/tsconfig'):
+            continue
+        for spec in IMPORT_RE.findall(txt):
+            if spec in forbidden:
+                bad.append(('C', rel,
+                            '把 %r 当包名用了（npm 上那是第三方的包；本包是 %r）'
+                            % (spec, name)))
+        # package.json 自己允许出现仓库名（repository / homepage / bugs）
+        if rel != 'package.json':
+            for nm in sorted(forbidden):
+                for m in re.finditer(r'\b%s\s+ai\b' % re.escape(nm), txt):
                     bad.append(('C', rel,
-                                '把仓库名 %r 当包名用了（它是主页地址，不是安装标识）'
-                                % repo_name))
-            # package.json 自己允许出现仓库名（repository / homepage / bugs）
-            if rel != 'package.json':
-                for m in re.finditer(r'\b%s\s+ai\b' % re.escape(repo_name), txt):
-                    bad.append(('C', rel,
-                                '用法串里写的是仓库名 %r（%s）'
-                                % (repo_name, m.group(0).strip())))
+                                '用法串里写的是 %r（%s）'
+                                % (nm, m.group(0).strip())))
 
     # ---- D. 文档里代码块中的安装/导入命令 ----
     for rel, txt in files.items():
@@ -192,7 +220,8 @@ def report(bad, files, name, repo_name):
         print('  [FAIL] (%s) %s  %s' % (tag, where, msg))
     if bad:
         print('  共 %d 处不一致。改法：把包名统一成 package.json 的 name；'
-              '仓库名只用于 URL，不能当安装标识。' % len(bad))
+              '旧名 frontend-lib 在 npm 上属于第三方，只能出现在历史记录里。'
+              % len(bad))
         return 1
     print('  OK  A/B/C/D 四条判据全部通过（%d 个文件）' % len(files))
     return 0
@@ -200,13 +229,13 @@ def report(bad, files, name, repo_name):
 
 # ---------------------------------------------------------------- 反向控制
 def selftest():
-    name, repo = 'agentcss', 'frontend-lib'
+    name, repo = 'agentcss', 'agentcss'   # 2026-11 起两者同名
     base = {
         'package.json': json.dumps({'name': name}),
         'type-tests/tsconfig.json':
             '{"compilerOptions":{"paths":{"agentcss":["../types/index.d.ts"]}}}',
         'type-tests/positive.ts': "import { Select } from 'agentcss';",
-        'README.md': '## 安装\n\n```bash\nnpm install github:owain323/frontend-lib\n```\n',
+        'README.md': '## 安装\n\n```bash\nnpm install github:owain323/agentcss\n```\n',
         'types/index.d.ts': '// import { Select } from "agentcss";',
     }
     mutants = []
@@ -221,9 +250,9 @@ def selftest():
          '{"compilerOptions":{"paths":{"frontend-lib":["../types/index.d.ts"]}}}'})
     mut('B: 类型测试 import 旧名',
         {'type-tests/positive.ts': "import { Select } from 'frontend-lib';"})
-    mut('C: 代码里把仓库名当包名',
+    mut('C: 代码里把旧名当包名',
         {'ai/cli.js': "require('frontend-lib');"})
-    mut('C: CLI 用法串写仓库名',
+    mut('C: CLI 用法串写旧名',
         {'ai/cli.js': ' *   frontend-lib ai check <doc.json>'})
     mut('D: README 代码块里装到别人的包',
         {'README.md': '```bash\nnpm install frontend-lib\n```\n'})
@@ -233,7 +262,7 @@ def selftest():
     # 反向控制的反面：良性改动必须仍然绿（否则门禁会误杀历史记录）
     benign = dict(base)
     benign['README.md'] = (
-        '## 安装\n\n```bash\nnpm install github:owain323/frontend-lib\n```\n\n'
+        '## 安装\n\n```bash\nnpm install github:owain323/agentcss\n```\n\n'
         '> 本库真踩过：README 当时写 `npm install frontend-lib`，\n'
         '> 而那个名字是别人 2017 年的包。（历史记录，不是指令）\n')
 

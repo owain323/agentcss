@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://frontend-lib.dev/adapters/presentation/deck.schema.json",
+  "$id": "https://agentcss.dev/adapters/presentation/deck.schema.json",
   "title": "Presentation 形态：deck / slide 语义",
   "$comment": [
     "🔴 这份 schema **不属于核心契约**。",

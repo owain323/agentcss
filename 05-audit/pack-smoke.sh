@@ -205,7 +205,7 @@ fi
 
 # ---------- 7. 文档里给使用者的路径 ----------
 # 🔴 这条来自一个真实的用户级问题（2026-10-06）：
-#   README 写 `<script src="node_modules/frontend-lib/patterns/overlay/overlay.js">`
+#   README 写 `<script src="node_modules/agentcss/patterns/overlay/overlay.js">`
 #   而 tarball 里根本没有 patterns/ 这个目录 ⇒ 陌生人照抄必然 404。
 #   根因：exports 的 "./patterns/*" 只对**包解析**（import）生效，
 #   它不会在 node_modules 里造一个 patterns/ 目录。

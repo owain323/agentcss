@@ -1,7 +1,7 @@
 # tooltip — 提示：aria-describedby 关联，提示文本不作为独立节点再念一遍
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
-RootWebArea "tooltip · 文字提示 · frontend-lib"
+RootWebArea "tooltip · 文字提示 · agentcss"
   main
     heading "tooltip · 文字提示" [level=1]
     paragraph "⛔ tooltip 不承载必要信息 —— 触屏没有 hover， 只放在 tooltip 里的内容等于不存在。 ✅ 键盘"
