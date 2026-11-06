@@ -18,6 +18,31 @@
 
 ## [Unreleased]
 
+## [0.27.6] - 2026-11-07
+
+### Changed
+
+- **发布链路回到 OIDC，`latest` 重新带上 provenance 签名。**
+  0.27.5 是在仓库改名之后发的：npm 上的 trusted publisher 当时还绑在旧仓库名上，
+  OIDC 不匹配 ⇒ 只能用个人 token 手工 `npm publish`。那样发出去的包**没有
+  provenance**：`dist.attestations` 为空，谁发布的、从哪个提交构建的都无法验证。
+  现在 trusted publisher 已指向新仓库与 `release.yml`，本版由 GitHub Actions
+  用 OIDC 现换短期凭证发布，签名里带 `gitCommit`。
+
+- **本版除版本号与本文外无代码变更。** 组件、令牌、类名、导出全部与 0.27.5 相同。
+
+### 影响谁
+
+- **装包的人**：代码无变化，多一份可验证的构建来源。`npm audit signatures`
+  可以核对「这个包确实是从该仓库的那个提交构建的」。
+- **发版的人**：不再需要本地 `npm publish`，也不需要长期 token —— 打 tag 即可。
+  代价是 npm 上那条 trusted publisher 必须与新仓库名、工作流文件名严格一致，
+  改任一项都要同步（改仓库名时踩过，见 0.27.5）。
+
+---
+
+---
+
 ## [0.27.5] - 2026-11-06
 
 ### Changed
