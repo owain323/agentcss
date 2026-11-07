@@ -22,8 +22,18 @@ bump-version.py — 一处改版本，六处同步（0.8.8 新增 · 0.24.2 扩�
 ===========================================================================
 用法
 ---------------------------------------------------------------------------
-   python3 05-audit/bump-version.py <新版本号>      # 改四处 + 建 CHANGELOG 骨架
-   python3 05-audit/bump-version.py --check         # 只查四处是否一致（CI 用）
+   python3 05-audit/bump-version.py <新版本号>      # 改六处 + 归入 CHANGELOG + 刷新衍生文件
+   python3 05-audit/bump-version.py --check         # 只查六处是否一致（CI 用）
+
+   ⚠️ 2026-11-07（E382）补：版本字符串还会出现在**文档站生成物**
+   （guide/ 46 页 + 根 index.html）、`llms-full.txt`、`05-audit/facts.json`
+   里。bump 改 `docs/ACCESSIBILITY.md` 的「声明适用版本」后，这些生成物
+   与现算结果逐字节不符，CI 的 pages / gate 会立刻红。所以 bump 现在
+   **自己**跑三个生成器并现算复验，不再指望人记得。
+   ⚠️ 2026-11-07（E386）补：自检里调用的 release-gate 失败时，本脚本
+   必须自己非 0 退出；但升版本时 tag 还没打是预期中间态，所以带
+   `--allow-missing-tag` 调用（只豁免那一种状态），打完 tag 必须再跑一次
+   不带开关的 release-gate 才算闭环。
 
 ===========================================================================
 ⭐ 它的自检（不是"跑完不报错"就算成功）
@@ -248,14 +258,48 @@ def bump(new):
         return 1
     print('   自检：六处都是 %s' % new)
 
-    # 再让release-gate 自己核一遍（它管得比本脚本宽）
+    # ---- ② 刷新三个衍生文件，并各自现算复验（E382）----
+    #  顺序不能反：gen-docs 读 ai/components.json 里刚改过的 libraryVersion，
+    #  facts-gate --write 读 VERSION。任何一步失败都立刻停，不许半套产物。
+    audit = os.path.join(ROOT, '05-audit')
+    gen_steps = [
+        ('gen-docs.py', []),
+        ('gen-llms.py', []),
+        ('facts-gate.py', ['--write']),
+    ]
+    for name, extra in gen_steps:
+        r = subprocess.run([sys.executable, os.path.join(audit, name)] + extra,
+                           cwd=ROOT, capture_output=True, text=True,
+                           encoding='utf-8')
+        if r.returncode != 0:
+            print('❌ %s 失败（exit %d）：%s'
+                  % (name, r.returncode, ((r.stdout or '') + (r.stderr or ''))[-500:]))
+            return 1
+        print('   %s：OK' % name)
+
+    for name in ('docs-site-gate.py', 'facts-gate.py'):
+        r = subprocess.run([sys.executable, os.path.join(audit, name)],
+                           cwd=ROOT, capture_output=True, text=True,
+                           encoding='utf-8')
+        if r.returncode != 0:
+            print('❌ %s 现算复验失败（exit %d）：%s'
+                  % (name, r.returncode, ((r.stdout or '') + (r.stderr or ''))[-700:]))
+            return 1
+        print('   %s：PASS' % name)
+
+    # ---- ③ 发布契约自检：失败必须让本脚本非 0（E386）----
+    #  此刻 tag 必然还没打 ⇒ 用只豁免这一种状态的开关；其余 13 项照常判。
     r = subprocess.run([sys.executable,
-                        os.path.join(ROOT, '05-audit', 'release-gate.py')],
+                        os.path.join(audit, 'release-gate.py'),
+                        '--allow-missing-tag'],
                        cwd=ROOT, capture_output=True, text=True,
                        encoding='utf-8')
-    print('   release-gate：%s' % ('PASS' if r.returncode == 0 else 'FAIL'))
+    print('   release-gate（允许 tag 未打）：%s'
+          % ('PASS' if r.returncode == 0 else 'FAIL'))
     if r.returncode != 0:
-        print((r.stdout or '')[-400:])
+        print((r.stdout or '')[-1200:])
+        return 1
+    print('   ⚠️ 打完 tag 后必须再跑一次不带开关的 release-gate 才算闭环')
     return 0
 
 

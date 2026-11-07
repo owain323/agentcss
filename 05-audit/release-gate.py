@@ -40,6 +40,28 @@ import _changelog                                     # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# 只给 bump-version.py 用：升版本发生在打 tag **之前**，此时 [10] 必然报
+# "没有这个 tag"。那是预期中间态，不是发布契约坏了。
+# 🔴 但它绝不能变成"跳过 [10]"的万能开关 —— 见 _only_missing_tag 与自检。
+ALLOW_MISSING_TAG = '--allow-missing-tag' in sys.argv
+
+
+def _only_missing_tag(probs, tag):
+    """问题列表里是否「仅仅」是 tag 还没打。
+
+    浅克隆、轻量 ref、source-commit 不符、未被远端分支包含……任何一条
+    真问题都不许被这个开关放过。空列表也不算"可豁免状态"。
+    """
+    if not probs:
+        return False
+    for p in probs:
+        if ('没有 `%s` 这个 tag' % tag) in p:
+            continue
+        if p.startswith('打一个：git tag -a %s' % tag):
+            continue
+        return False
+    return True
+
 
 def read_json(name):
     p = os.path.join(ROOT, name)
@@ -498,9 +520,12 @@ def main():
         bad += 1
     else:
         probs = git_anchor_problems(ROOT, tag, ver_now)
-        for p in probs:
-            print('      X %s' % p)
-        if probs:
+        if probs and ALLOW_MISSING_TAG and _only_missing_tag(probs, tag):
+            print('      ⚠️  %s 尚未打（bump 阶段的预期中间态，仅豁免本条）' % tag)
+            print('         打完 tag 后必须**不带本开关**再跑一次，否则不算闭环')
+        elif probs:
+            for p in probs:
+                print('      X %s' % p)
             bad += 1
         else:
             _tip = subprocess.run(
@@ -1101,6 +1126,29 @@ def _selftest():
                           '      - run: |' + NL +
                           '          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then' + NL +
                           '            exit 1' + NL + '          fi'), False)
+
+    # ---- --allow-missing-tag 的边界：只豁免"没打 tag"，不放过任何真问题 ----
+    _t = 'v0.99.0'
+    _missing = ['没有 `%s` 这个 tag ⇒ 版本与提交点之间没有锚点' % _t,
+                '打一个：git tag -a %s <版本对应的提交>' % _t]
+    for _label, _probs, _want in [
+        ('正：只有「没打 tag」可豁免', _missing, True),
+        ('反：空问题列表不算可豁免状态', [], False),
+        ('反：浅克隆不可豁免',
+         ['这是**浅克隆**，`%s` 没有被取下来' % _t], False),
+        ('反：轻量 ref 不可豁免',
+         ['`%s` 在**本地**是轻量 ref' % _t], False),
+        ('反：source-commit 不符不可豁免',
+         ['`%s` 没有 `source-commit:` 声明' % _t], False),
+        ('反：未被远端分支包含不可豁免',
+         ['`%s` 指向的提交不被任何远端分支包含' % _t], False),
+        ('反：混一条真问题就整体不可豁免',
+         _missing + ['`%s` 没有 `source-commit:` 声明' % _t], False),
+    ]:
+        _got = _only_missing_tag(_probs, _t)
+        print('  %s %-46s' % ('OK ' if _got == _want else '🔴 ', _label))
+        if _got != _want:
+            bad += 1
 
     bad += _tag_anchor_selftest()
     bad += _publish_entry_selftest()
