@@ -23,6 +23,7 @@
  *   E20     强杀留下的临时 HTML：下次导出清旧的，不碰新的
  *   E21     超预算失败：旧 PDF 逐字节不变 + 完整产物另存诊断路径
  *   E22     页树两套读法不一致：旧 PDF 逐字节不变 + 完整产物另存诊断路径
+ *   E21′    元反向：把替换搬回判定之前的变异体必须覆盖旧 PDF
  *
  * ⚠️ E5 / E16 / E17 / E21 / E22 是一组：E16/E17 验"渲染就没成功"，
  *    E5/E21/E22 验"渲染成功了但判定失败"。只测前两条时，后置判定发生在
@@ -372,6 +373,65 @@ function main() {
       !!mism22 && !mism22.ok && mism22.code === 'unreadable' && kept22 && diag22,
       'code=' + (mism22 && mism22.code)
       + ' 旧文件不变=' + kept22 + ' 诊断=' + (diag22 ? '有' : '无'));
+
+    /* ------------------------------------------------------------------
+     * E21′ 元反向：把 COMMIT-POINT 那一行搬回判定之前（= 修复前的行为），
+     *   同一超预算场景**必须**把旧 PDF 覆盖。若变异体也保住旧文件，说明
+     *   E21 是一条恒绿判据，或者标记已经漂移 —— 两种情况都判红。
+     *
+     * 用 Module._compile 在内存里编译变异体：不落盘、不弄脏工作区、
+     * 不需要 git 历史（CI 的浅克隆没有 tag 也照样能跑）。
+     * ⚠️ 两个标记（COMMIT-POINT / 渲染完成）任何一处对不上都必须判红，
+     *    绝不允许"变异没做成却报通过" —— 那正是 E366 那类空转。
+     * ------------------------------------------------------------------ */
+    const pdfPath = path.join(ROOT, 'ai', 'pdf.js');
+    const src = fs.readFileSync(pdfPath, 'utf8');
+    const COMMIT_MARK = '/* COMMIT-POINT */';
+    const RENDER_DONE = '    buf = fs.readFileSync(stagedPdf);';
+    const EARLY = RENDER_DONE + '\n    fs.renameSync(stagedPdf, outAbs);';
+    /* 只插入一行"提前替换"，不删原来的提交点：超预算分支会在判定处返回，
+       根本走不到 COMMIT-POINT，所以这与修复前的行为等价，且语法不用改。 */
+    const legacySrc = src.replace(RENDER_DONE, EARLY);
+    const markersOk = src.indexOf(COMMIT_MARK) > src.indexOf(RENDER_DONE)
+      && src.indexOf(RENDER_DONE) >= 0
+      && legacySrc.indexOf(EARLY) >= 0;
+
+    let legacyExport = null;
+    let mutateErr = '';
+    if (!markersOk) {
+      mutateErr = 'COMMIT-POINT / 渲染完成标记漂移，变异体没造出来';
+    } else {
+      try {
+        const Module = require('module');
+        const m = new Module(pdfPath, module);
+        m.filename = pdfPath;
+        m.paths = Module._nodeModulePaths(path.dirname(pdfPath));
+        m._compile(legacySrc, pdfPath);
+        legacyExport = m.exports.exportPdf;
+        if (typeof legacyExport !== 'function') mutateErr = '变异体没有导出 exportPdf';
+      } catch (e) {
+        mutateErr = '变异体编译失败：' + String((e && e.message) || e);
+      }
+    }
+
+    const revOut = out('guard-rev.pdf');
+    fs.writeFileSync(revOut, 'OLD-PDF-SENTINEL-E21-REV');
+    const beforeRev = sha256(revOut);
+    let legacyRes = null;
+    if (!mutateErr) {
+      try {
+        legacyRes = legacyExport({ src: guardSrc, out: revOut, budget: 1, waitMs: 0 });
+      } catch (e) {
+        mutateErr = '变异体执行失败：' + String((e && e.message) || e);
+      }
+    }
+    const overwritten = fs.existsSync(revOut) && sha256(revOut) !== beforeRev
+      && isPdfFile(revOut);
+    check('E21′ 元反向：替换搬回判定之前 ⇒ 旧 PDF 被覆盖（证明 E21 有牙）',
+      !mutateErr && !!legacyRes && !legacyRes.ok
+      && legacyRes.code === 'over-budget' && overwritten,
+      mutateErr ? ('变异失败：' + mutateErr)
+        : 'code=' + (legacyRes && legacyRes.code) + ' 旧文件被覆盖=' + overwritten);
 
     /* E19：浏览器起不来时，命令管道会以 EPIPE 结束。没有 error 监听的话
        Node **直接抛出** —— 调用方看到的是堆栈，而不是一份结构化结论。
