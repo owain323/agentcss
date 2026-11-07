@@ -24,6 +24,9 @@
  *   E21     超预算失败：旧 PDF 逐字节不变 + 完整产物另存诊断路径
  *   E22     页树两套读法不一致：旧 PDF 逐字节不变 + 完整产物另存诊断路径
  *   E21′    元反向：把替换搬回判定之前的变异体必须覆盖旧 PDF
+ *   E23     off 与 strict 的本地导出逐字节一致（新策略零回归）
+ *   E24     CLI 白名单接受 strict；远程环回被 network-policy 拒绝、旧 PDF 不变
+ *   E25     非法 policy 值在库与 CLI 都是 usage
  *
  * ⚠️ E5 / E16 / E17 / E21 / E22 是一组：E16/E17 验"渲染就没成功"，
  *    E5/E21/E22 验"渲染成功了但判定失败"。只测前两条时，后置判定发生在
@@ -373,6 +376,62 @@ function main() {
       !!mism22 && !mism22.ok && mism22.code === 'unreadable' && kept22 && diag22,
       'code=' + (mism22 && mism22.code)
       + ' 旧文件不变=' + kept22 + ' 诊断=' + (diag22 ? '有' : '无'));
+
+    /* ------------------------------------------------------------------
+     * E23–E25：strict 网络策略的真实端到端。
+     *   最关键的是 E23 —— 新参数默认 off 时，本地导出的产物必须和从前
+     *   逐字节一致。只测"strict 能挡住环回"而漏了这条，等于用一个新功能
+     *   悄悄换掉了所有既有用户的行为。
+     * ------------------------------------------------------------------ */
+    const npSrc = path.join(FIX, '02-long.html');
+    const npOff = pdfMod.exportPdf({ src: npSrc, out: out('np-off.pdf'),
+      waitMs: 0, networkPolicy: 'off' });
+    const npStrict = pdfMod.exportPdf({ src: npSrc, out: out('np-strict.pdf'),
+      waitMs: 0, networkPolicy: 'strict' });
+    /* PDF 自带创建时间与文档 ID，两次导出的文件哈希本来就不等 ——
+       所以和 E2 一样只比页数与字节数，再加一层文字 run 数比对。
+       pdfRuns() 正常返回正整数、解析失败返回 -1；必须显式验它是正整数，
+       否则两个 undefined 相等会让这条判据静默变成恒绿。 */
+    const npRunsOff = pdfRuns(out('np-off.pdf'));
+    const npRunsStrict = pdfRuns(out('np-strict.pdf'));
+    const npRunsSame = Number.isInteger(npRunsOff) && npRunsOff > 0
+      && npRunsOff === npRunsStrict;
+    check('E23 默认 off 与 strict 本地导出一致（页数/字节/文字）',
+      npOff.ok && npStrict.ok
+        && npOff.pages === npStrict.pages && npOff.bytes === npStrict.bytes
+        && isPdfFile(out('np-off.pdf')) && isPdfFile(out('np-strict.pdf'))
+        && npRunsSame,
+      'off=' + npOff.bytes + ' strict=' + npStrict.bytes
+        + ' runs=' + npRunsOff + '/' + npRunsStrict);
+
+
+    const npCli = cli(['pdf', npSrc, '--out', out('np-cli.pdf'),
+      '--network-policy=strict', '--json']);
+    const npCliJson = jsonOf(npCli);
+    check('E24 CLI 白名单接受 --network-policy=strict',
+      npCli.status === 0 && !!npCliJson && npCliJson.ok === true
+        && npCliJson.networkPolicy === 'strict',
+      'rc=' + npCli.status);
+
+    const npSentinel = out('np-sentinel.pdf');
+    fs.writeFileSync(npSentinel, 'OLD-PDF-SENTINEL-E24');
+    const npBefore = sha256(npSentinel);
+    const npReject = cli(['pdf', 'http://localhost:1/', '--out', npSentinel,
+      '--network-policy=strict', '--json']);
+    const npRejectJson = jsonOf(npReject);
+    check('E24 远程环回被 network-policy 拒绝且旧 PDF 不变',
+      npReject.status === 4 && !!npRejectJson && !npRejectJson.ok
+        && !!npRejectJson.error && npRejectJson.error.kind === 'network-policy'
+        && sha256(npSentinel) === npBefore,
+      'rc=' + npReject.status + ' 旧文件不变=' + (sha256(npSentinel) === npBefore));
+
+    const npBad = pdfMod.exportPdf({ src: npSrc, out: out('np-bad.pdf'),
+      networkPolicy: 'bogus' });
+    const npBadCli = cli(['pdf', npSrc, '--out', out('np-bad-cli.pdf'),
+      '--network-policy=bogus', '--json']);
+    check('E25 非法 policy 值：库与 CLI 都判 usage（退出码 2）',
+      !npBad.ok && npBad.code === 'usage' && npBadCli.status === 2,
+      'lib=' + npBad.code + ' cli=' + npBadCli.status);
 
     /* ------------------------------------------------------------------
      * E21′ 元反向：把 COMMIT-POINT 那一行搬回判定之前（= 修复前的行为），

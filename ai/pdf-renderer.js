@@ -8,6 +8,7 @@
 
 var fs = require('fs');
 var cdp = require('./cdp.js');
+var netPolicy = require('./network-policy.js');
 
 var DEFAULT_WAIT = 800;
 var READY_INTERVAL = 50;
@@ -36,7 +37,30 @@ async function render(o) {
     if (Date.now() >= deadline) throw timeoutError(what + '超出时间预算 ' + budget + 'ms');
   }
 
-  var browser = cdp.connect(o.chrome, o.profile);
+  /* strict 网络策略。默认 off 时 policy 为 null，下面的 Network.* 与
+     额外的 Chrome 参数全都不生效，原有渲染路径一字不变。
+     远程主文档 ⇒ 额外做 DNS 预解析 + IP pin（A 层）；
+     本地主文档 ⇒ 仍启用 B/C 层，防页面里的远程子资源打到内网。 */
+  var policy = null;
+  if (o.networkPolicy === 'strict') {
+    var remoteTarget = /^https?:\/\//i.test(o.target || '');
+    try {
+      policy = remoteTarget
+        ? await netPolicy.prepare(o.target)
+        : {
+          hostname: null, ips: [], pinned: null, chromeArgs: [],
+          blockedPatterns: netPolicy.blockedUrlPatterns()
+        };
+    } catch (e) {
+      return {
+        ok: false, code: 'network-policy',
+        message: String(e && e.message || e),
+        jsErrors: [], ms: Date.now() - started, stderr: ''
+      };
+    }
+  }
+
+  var browser = cdp.connect(o.chrome, o.profile, policy ? policy.chromeArgs : []);
   var jsErrors = [];
   var timedOut = false;
   var timer = setTimeout(function () {
@@ -52,6 +76,23 @@ async function render(o) {
     var sid = attached.sessionId;
     await browser.send('Page.enable', {}, sid, left());
     await browser.send('Runtime.enable', {}, sid, left());
+
+    /* 三层里的 B / C：浏览器侧黑名单 + 事件侧复核。
+       A（DNS pin）在 connect 的 chromeArgs 里，导航前就固定了解析结果。 */
+    var violations = [];
+    if (policy) {
+      await browser.send('Network.enable', {}, sid, left());
+      await browser.send('Network.setBlockedURLs',
+        { urls: policy.blockedPatterns }, sid, left());
+      browser.on('Network.requestWillBeSent', function (p) {
+        var v = netPolicy.requestViolation(p);
+        if (v && violations.length < 10) violations.push(v);
+      });
+      browser.on('Network.responseReceived', function (p) {
+        var v = netPolicy.responseViolation(p);
+        if (v && violations.length < 10) violations.push(v);
+      });
+    }
     browser.on('Runtime.exceptionThrown', function (p) {
       if (jsErrors.length >= 20) return;
       var d = (p && p.exceptionDetails) || {};
@@ -143,6 +184,14 @@ async function render(o) {
           对应规则在 tokens.css 的「纸面墨阶」与各组件的 @media print 里。
        ⚠️ 不要为了"保住某个背景"改回 true —— 那会把整页一起赔进去。
           单个元素确实需要实心态时，用边框或描边，不用 background。 */
+    /* 打印前收口：渲染期间一旦碰到非公网地址，就不把这份 PDF 交出去。
+       事前拦截由 A/B 负责，这里是"即便漏过也不交付"的最后一道。 */
+    if (violations.length) {
+      throw netPolicy.policyError(
+        '网络策略拒绝：' + violations[0]
+        + '（strict 不允许渲染过程访问非公网地址；本次不产出 PDF）');
+    }
+
     var printed = await browser.send('Page.printToPDF', {
       printBackground: false,
       preferCSSPageSize: true,
@@ -163,7 +212,9 @@ async function render(o) {
     };
   } catch (e) {
     return {
-      ok: false, code: timedOut ? 'timeout' : (e.code === 'usage' || e.code === 'timeout' ? e.code : 'render'),
+      ok: false, code: timedOut ? 'timeout'
+        : (e.code === 'usage' || e.code === 'timeout' || e.code === 'network-policy'
+          ? e.code : 'render'),
       message: timedOut ? 'PDF 导出超出时间预算 ' + budget + 'ms（页面加载、字体或 ready-selector 未完成）'
         : String(e && e.message || e),
       jsErrors: jsErrors, ms: Date.now() - started,

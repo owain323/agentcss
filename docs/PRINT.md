@@ -662,6 +662,36 @@ node 05-audit/pdf-export-gate.js --selftest # 旧文件保护 / 超时 / 崩溃�
 
 E14–E20 则保证“导出链说成功”与“这份产物真是本次、完整、可用”不会脱节。
 
+### 8.5.1 远程页面的网络边界（可选 `--network-policy=strict`）
+
+默认 `off`：不传这个参数时，本地文件与远程页面的行为和从前逐字相同。
+`pdf-export` 的 E23 用「`off` 与 `strict` 的本地导出页数 / 字节 / 文字一致」
+盯着这一点 —— 加一道安全策略不能顺手把既有用户的行为换掉。
+
+```bash
+npx agentcss pdf https://example.com/report --out report.pdf --network-policy=strict
+```
+
+`strict` 做三件事，都在渲染子进程里：
+
+1. **导航前**：解析目标域名，要求所有 A/AAAA 都是公网地址；把第一个公网 IPv4
+   用 Chrome 的 `--host-resolver-rules` 固定住。这样 Chromium 不会自己再解析
+   一次，DNS rebinding 失去第二次改答案的机会。解析到内网就直接拒绝，
+   浏览器根本不启动。
+2. **浏览器侧**：`Network.setBlockedURLs` 屏蔽私网 / 环回 / 链路本地的
+   字面量 URL，页面 302 到这些地址时在发起前就被挡掉。
+3. **渲染期间**：复核 `Network.requestWillBeSent`（含重定向两端）与
+   `Network.responseReceived.remoteIPAddress`；发现越界就不产出 PDF，
+   结论 `code=network-policy`（退出码 4），旧 PDF 保持不变。
+
+⚠️ 第 3 层是「发现即拒绝交付」，不是「连接从未发生」；事前拦截靠第 1、2 层。
+IPv6-only 域名没有可固定的 IPv4，此时只靠第 2、3 层，防护弱一档 ——
+`prepare()` 会如实返回 `pinned: null`，不假装做了 pin。
+这套策略不校验远程页面内容是否可信，也不注入 `@page`（见 8.6）。
+
+判据：`network-policy-gate`（私网表驱动 / 可注入 resolver 的 DNS 分支 /
+内存变异探针 / 渲染接线），`pdf-export-gate` E23–E25（真实 Chrome 端到端）。
+
 ### 8.6 不覆盖什么
 
 - **远程 URL 不注入 `@page`**：拿不到远程页面的字节，硬注入等于假装改了它。

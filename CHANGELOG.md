@@ -18,6 +18,34 @@
 
 ## [Unreleased]
 
+## [0.27.8] - 2026-11-07
+
+### Added
+
+- **可选 `--network-policy=strict`**：渲染远程页面时，导航前解析域名并要求
+  全部 A/AAAA 为公网，把公网 IPv4 用 Chrome 的 `--host-resolver-rules` 固定住；
+  浏览器侧用 `Network.setBlockedURLs` 拦私网字面量；渲染期间复核请求、
+  重定向两端与真实远端 IP，发现越界就不产出 PDF（结论 `network-policy`，
+  旧文件不变）。默认 `off`，不传时行为与从前逐字一致。
+- 新增 `network-policy` 门禁：私网 / 等价 IP 表驱动、可注入 resolver 的
+  DNS rebinding 五分支、内存变异探针、渲染路径接线检查。
+- `pdf-export` 新增 E23–E25：新策略零回归、远程环回被拒且旧 PDF 不变、
+  非法值判 `usage`。
+
+### Fixed
+
+- **`bump-version.py` 发版时漏刷新三个衍生文件**：它改了
+  `docs/ACCESSIBILITY.md` 的声明版本，却不重生成 `guide/` 46 页、
+  `llms-full.txt` 与 `facts.json`，CI 的 pages / gate 因此各红一轮。
+  现在 bump 自己跑三个生成器并现算复验。
+- **`bump-version.py` 自检失败仍 `exit 0`**：它调用 `release-gate.py` 只打印
+  FAIL。现在把退出码传出来；同时给 `release-gate.py` 加
+  `--allow-missing-tag`，只豁免「tag 尚未打」这一种预期中间态，
+  浅克隆 / 轻量 ref / source-commit 不符 / 未被远端包含等真问题照常判红，
+  并配 7 条反向控制。打完 tag 仍须再跑一次不带开关的版本。
+
+---
+
 ## [0.27.7] - 2026-11-07
 
 ### Fixed

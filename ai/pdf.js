@@ -42,7 +42,7 @@
  *   const { exportPdf } = require('./pdf');
  *   const r = exportPdf({ src: 'page.html', out: 'page.pdf', paper: 'a4',
  *                         margin: '18mm 15mm', budget: 8 });
- *   if (!r.ok) …  // r.code ∈ usage|no-chrome|render|timeout|over-budget|unreadable
+ *   if (!r.ok) …  // r.code ∈ usage|no-chrome|render|timeout|over-budget|unreadable|network-policy
  */
 'use strict';
 
@@ -282,6 +282,7 @@ function isRemote(src) {
  * @param {number} [o.waitMs]       就绪后的额外等待，0–60000（默认 800）
  * @param {string} [o.readySelector] 等待一个打印媒体下可见的 CSS 元素
  * @param {number} [o.timeoutMs]    总预算，1000–600000（默认 60000）
+ * @param {string} [o.networkPolicy] off（默认，行为不变）| strict（远程网络边界）
  * @returns {object} `{ok:true, ...}` 或 `{ok:false, code, message, ...}`
  */
 function exportPdf(o) {
@@ -321,6 +322,12 @@ function exportPdf(o) {
   const timeoutMs = o.timeoutMs === undefined ? 60000 : Number(o.timeoutMs);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 600000) {
     return { ok: false, code: 'usage', message: 'timeoutMs 必须是 1000–600000 的整数' };
+  }
+  const networkPolicy = (o.networkPolicy === undefined || o.networkPolicy === null)
+    ? 'off' : String(o.networkPolicy);
+  if (networkPolicy !== 'off' && networkPolicy !== 'strict') {
+    return { ok: false, code: 'usage',
+      message: '--network-policy 只能是 off | strict，收到 ' + JSON.stringify(networkPolicy) };
   }
 
   const chrome = resolveChrome(o.chrome);
@@ -362,6 +369,7 @@ function exportPdf(o) {
         stagedPdf: stagedPdf, waitMs: waitMs,
         readySelector: o.readySelector === undefined ? null : o.readySelector,
         timeoutMs: timeoutMs,
+        networkPolicy: networkPolicy,
       }),
       timeout: timeoutMs + 10000,
       encoding: 'utf8', windowsHide: true, maxBuffer: 1024 * 1024,

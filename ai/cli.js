@@ -114,6 +114,7 @@ var EXIT = {
   usage: 2,
   'no-chrome': 3, env: 3,
   render: 4, timeout: 4, unreadable: 4, viewport: 4,
+  'network-policy': 4,
   'over-budget': 5,
   internal: 6
 };
@@ -907,7 +908,8 @@ function cmdPdf(args) {
   if (!src) {
     bad('用法：agentcss pdf <页面.html|URL> --out <file.pdf> '
       + '[--paper=a4|letter|a5|a3|legal] [--margin="18mm 15mm"] '
-      + '[--max-pages=N] [--wait-ms=800] [--ready-selector=<CSS>] [--chrome=<path>] [--json]');
+      + '[--max-pages=N] [--wait-ms=800] [--ready-selector=<CSS>] [--chrome=<path>] '
+      + '[--network-policy=off|strict] [--json]');
   }
   var remote = /^https?:\/\//i.test(src);
   var outFile = flag('out', null);
@@ -932,6 +934,11 @@ function cmdPdf(args) {
   if (ready === true || ready === '') bad('--ready-selector 必须是非空 CSS 选择器');
   var chrome = flag('chrome', null);
   if (chrome === true) bad('--chrome 后面要跟可执行文件路径');
+  var networkPolicy = flag('network-policy', 'off');
+  if (networkPolicy !== 'off' && networkPolicy !== 'strict') {
+    bad('--network-policy 只能是 off | strict，收到 '
+      + JSON.stringify(String(networkPolicy)));
+  }
 
   var r = pdfExport.exportPdf({
     src: src,
@@ -941,7 +948,8 @@ function cmdPdf(args) {
     budget: budget === null ? null : Number(budget),
     waitMs: waitRaw === null ? undefined : Number(waitRaw),
     readySelector: ready,
-    chrome: chrome
+    chrome: chrome,
+    networkPolicy: networkPolicy
   });
 
   var box = r.mediaBox
@@ -962,6 +970,7 @@ function cmdPdf(args) {
     chrome: r.chrome || null,
     waitMs: r.waitMs === undefined ? null : r.waitMs,
     readySelector: r.readySelector || null,
+    networkPolicy: networkPolicy,
     jsErrors: r.jsErrors || [],
     ms: r.ms || null
   };
@@ -1198,7 +1207,8 @@ var FLAGS = {
   profile: [],
   capabilities: [],
   pitfalls: ['component', 'scope', 'tag'],
-  pdf: ['out', 'paper', 'margin', 'max-pages', 'wait-ms', 'ready-selector', 'chrome'],
+  pdf: ['out', 'paper', 'margin', 'max-pages', 'wait-ms', 'ready-selector',
+    'chrome', 'network-policy'],
   scaffold: ['out', 'css-prefix'],
   shot: ['out', 'width', 'height', 'full', 'scale', 'wait', 'chrome']
 };
@@ -1252,8 +1262,10 @@ function usage() {
       '  ai capabilities [--json]   列出可协商的能力\n' +
       '  ai pdf          <页面.html|URL> --out <file.pdf> [--paper=a4|letter|a5|a3|legal]\n' +
       '                  [--margin="18mm 15mm"] [--max-pages=N] [--wait-ms=800]\n' +
-      '                  [--ready-selector=<CSS>] [--chrome=<path>] [--json]\n' +
+      '                  [--ready-selector=<CSS>] [--chrome=<path>] [--network-policy=off|strict]\n' +
+      '                  [--json]\n' +
       '                  等加载、字体与就绪元素后导出；失败不改写旧 PDF。零依赖，@page 由导出方给。\n' +
+      '                  --network-policy=strict：远程目标做 DNS pin + 私网/重定向拦截，默认 off。\n' +
       '  ai scaffold     <版式> --out <page.html> [--css-prefix=<前缀>] [--json]\n' +
       '                  生成最小壳（正确的骨架 + 必有件位置），不含内容。`list` 看有哪些版式。\n' +
       '  ai shot         <页面.html|URL> --out <shot-{width}.png> [--width=390,1440] [--height=900]\n' +

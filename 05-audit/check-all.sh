@@ -935,6 +935,13 @@ run "pdf-export"     @serial node 05-audit/pdf-export-gate.js
 # E17（ready-selector 永不出现）会从 code=timeout 变成 code=render ——
 # 判据没错，是"慢"被读成了"错"。实测：并行跑必红，单跑必绿。
 run "pdf-export-rev" @serial node 05-audit/pdf-export-gate.js --selftest
+# 🔴 network-policy（2026-11-07 加 · 外部复查指出的远程边界）
+#   strict 策略的纯静态判据：私网/等价 IP 表驱动、重定向与响应 IP 事件体、
+#   可注入 resolver 的 DNS rebinding 五分支、渲染路径接线、内存变异探针。
+#   不连网、不起 Chrome、不写工作树，所以 fast 档也能跑。
+#   真实 Chrome 的 E23–E25 在上面 pdf-export 里（默认 off 零回归 / strict
+#   拒绝环回且旧 PDF 不变 / 非法值 usage）。
+run "network-policy" @static node 05-audit/network-policy-gate.js
 # 🔴 chrome-discovery（2026-11-04 加 · 起因是外部审计 F5）
 #   浏览器发现写死了 Playwright 的旧目录布局（chrome-linux/chrome、chrome-win/chrome.exe），
 #   而新版是 chrome-linux64/chrome、chrome-headless-shell-<平台>/chrome-headless-shell；

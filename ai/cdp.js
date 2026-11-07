@@ -8,8 +8,12 @@
 
 var { spawn } = require('child_process');
 
-/** 启动一个隔离的 headless Chrome，并返回有界的 CDP 请求接口。 */
-function connect(chromePath, profile) {
+/**
+ * 启动一个隔离的 headless Chrome，并返回有界的 CDP 请求接口。
+ * extraArgs 是可选的 Chrome 启动参数（strict 网络策略用它固定 DNS 解析）；
+ * 不传时启动参数与原先逐字相同，既有行为零变化。
+ */
+function connect(chromePath, profile, extraArgs) {
   var args = [
     '--headless=new',
     '--disable-gpu',
@@ -18,9 +22,12 @@ function connect(chromePath, profile) {
     '--no-default-browser-check',
     '--hide-scrollbars',
     '--remote-debugging-pipe',
-    '--user-data-dir=' + profile,
-    'about:blank'
+    '--user-data-dir=' + profile
   ];
+  /* 🔴 必须排在 about:blank 之前：Chrome 把第一个非选项参数当 URL，
+     之后的非选项参数会被当成第二个要打开的页面。 */
+  if (extraArgs && extraArgs.length) args = args.concat(extraArgs);
+  args.push('about:blank');
   /* 只有明确以 root 在容器中运行时才允许调用方关闭沙箱。 */
   if (process.env.AGENTCSS_NO_SANDBOX === '1') args.unshift('--no-sandbox');
   var child = spawn(chromePath, args, {
