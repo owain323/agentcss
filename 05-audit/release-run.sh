@@ -105,7 +105,13 @@ provenance_state() {
     "https://registry.npmjs.org/-/npm/v1/attestations/$PKG@$VER" || echo 000)"
   if [ "$code" = "404" ]; then
     rm -f "$tmp"
-    log "  provenance: registry 上没有这个版本的 attestation（不是本工作流发布的）"
+    # 🔴 404 ≠ "不是本工作流发布的"（2026-11-07 打出来的）：
+    #   0.27.9 那次回执在 packument 已 present 后立刻查 attestation 拿 404，
+    #   脚本据此断言"不是本工作流发布的 ⇒ 发布未完成"，判红。几分钟后同一个
+    #   地址返回 200 + slsa/v1 + 同一个 gitCommit。
+    #   **attestation 的索引比版本本体更慢**，两条流是分开最终一致的。
+    #   ⇒ 这里只如实报"还没可见"，由调用方在预算内继续等。
+    log "  provenance: 这个版本的 attestation 还查不到（索引可能滞后于版本本体）"
     printf 'absent\n'
     return 1
   fi
@@ -182,28 +188,41 @@ do_verify() {
   #      累计秒数永远不涨 ⇒ 死循环。这种写法在自检里才会暴露。
   while [ "$i" -lt "$tries" ]; do
     n="$(npm_state)" || true
-    [ "$n" = "present" ] && break
     [ "$n" = "unreadable" ] && break
+    p="unknown"
+    if [ "$n" = "present" ]; then
+      p="$(provenance_state)" || true
+      # mismatch 是**真身份不符**（有 attestation，但 gitCommit 指向别的提交），
+      # 等下去不会变；unreadable 是读不到，等下去也不会变。这两种立刻收手。
+      [ "$p" = "mismatch" ] && break
+      [ "$p" = "unreadable" ] && break
+    fi
+    # 只有"两个都成立"才停：版本可见 ≠ 已发布完成（E396）
+    [ "$n" = "present" ] && [ "$p" = "ok" ] && break
     i=$((i + 1))
     [ "$i" -ge "$tries" ] && break
-    log "  registry 还没索引到 $PKG@$VER（第 $i 次等待 / 上限 ${tries} 次，"\
+    if [ "$n" = "present" ]; then
+      log "  attestation 还没索引到 $PKG@$VER（第 $i 次等待 / 上限 ${tries} 次，"\
+"每 ${step}s，共 $((tries * step))s）—— 版本已可见，provenance 是另一条索引流，继续等"
+    else
+      log "  registry 还没索引到 $PKG@$VER（第 $i 次等待 / 上限 ${tries} 次，"\
 "每 ${step}s，共 $((tries * step))s）—— npm 发布是最终一致的，继续等"
+    fi
     sleep "$step"
   done
   if [ "$n" = "unreadable" ]; then
     log "  registry 不可达 ⇒ 无法出回执"
     exit 2
   fi
-  # 放弃时要写清"等了多久"——否则读日志的人无法判断是"刚查一次就说没有"
-  # 还是"等满了预算还是没有"，而这两种情况的处置完全不同。
-  [ "$n" = "absent" ] && \
+  # 放弃时要写清"等了多久"以及**卡在哪一半** —— 否则读日志的人分不清
+  # "版本没发出去"和"版本发了但 attestation 没跟上"，处置完全不同。
+  if [ "$n" = "absent" ]; then
     log "  ⇒ 等满 $((i * step))s 仍未索引到 $PKG@$VER（不是没发布，是还没可见）"
+  elif [ "$p" != "ok" ] && [ "$p" != "mismatch" ] && [ "$p" != "unreadable" ]; then
+    log "  ⇒ 等满 $((i * step))s，版本已可见但 attestation 始终没出现（provenance=$p）"
+  fi
   r="$(release_state)"; rc=$?
   [ "$rc" = "2" ] && { log "  gh 不可用 ⇒ 无法出回执"; exit 2; }
-  p="unknown"
-  if [ "$n" = "present" ]; then
-    p="$(provenance_state)" || true
-  fi
   c="$(git rev-parse --short=12 "$TAG^{commit}" 2>/dev/null || echo '?')"
   # 回执必须自带"是哪一版、哪个 tag、哪个提交、三态各是什么"——
   # 只写"成功"两个字，事后无法判断它验的是不是同一个东西。
@@ -269,12 +288,26 @@ SH
 SH
   cat > "$tmp/bin/curl" <<'SH'
 #!/usr/bin/env bash
+# STUB_CODE / STUB_BODY 是"当前"应答；给了 STUB_CURL_FLIP 就变成
+# "第一次 404、之后 200"——模拟 attestation 索引滞后于版本本体（E396 现场）。
 prev=""
 for a in "$@"; do
-  if [ "$prev" = "-o" ]; then printf '%s' "${STUB_BODY:-}" > "$a"; fi
+  if [ "$prev" = "-o" ]; then
+    if [ -n "${STUB_CURL_FLIP:-}" ] && [ -f "$STUB_CURL_FLIP" ]; then
+      printf '%s' "${STUB_BODY_LATE:-}" > "$a"
+    else
+      printf '%s' "${STUB_BODY:-}" > "$a"
+    fi
+  fi
   prev="$a"
 done
-printf '%s' "${STUB_CODE:-200}"
+if [ -n "${STUB_CURL_FLIP:-}" ]; then
+  if [ -f "$STUB_CURL_FLIP" ]; then printf '%s' "${STUB_CODE_LATE:-200}"
+  else : > "$STUB_CURL_FLIP" 2>/dev/null || true; printf '%s' "${STUB_CODE:-200}"
+  fi
+else
+  printf '%s' "${STUB_CODE:-200}"
+fi
 SH
   chmod +x "$tmp/bin/npm" "$tmp/bin/gh" "$tmp/bin/curl"
 
@@ -315,6 +348,9 @@ PY
     WAIT_STEP=0 WAIT_TRIES=5 \
       STUB_NPM="$1" STUB_GH="$2" STUB_CODE="$3" STUB_BODY="$4" \
       STUB_FLIP="$tmp/flip" \
+      STUB_CURL_FLIP="${STUB_CURL_FLIP:-}" \
+      STUB_CODE_LATE="${STUB_CODE_LATE:-}" \
+      STUB_BODY_LATE="${STUB_BODY_LATE:-}" \
       PATH="$tmp/bin:$PATH" bash "$tmp/05-audit/release-run.sh" verify 2>&1
   }
 
@@ -381,6 +417,20 @@ PY
   #    若判据退化成"版本存在就算完成"，这一条会绿 —— 它是最危险的假绿。
   out="$(verify_stub present present 200 "$body_bad")"; rc=$?
   chk '回执：provenance 指向别的提交 ⇒ 拒绝' 1 "$rc" "$out" 'provenance=mismatch'
+
+  # ⑤′ 🔴 E396 现场（0.27.9，2026-11-07）：版本本体已 present，attestation
+  #    端点还 404。旧判据在这里**立刻判红**并断言"不是本工作流发布的"，
+  #    几分钟后同一地址返回 200 + 同一个 gitCommit —— 一次假红。
+  #    夹具：attestation 第一次 404，之后 200 ⇒ 必须等到 ok 才判 0。
+  command rm -f "$tmp/cflip"
+  out="$(STUB_CURL_FLIP="$tmp/cflip" STUB_CODE_LATE=200 STUB_BODY_LATE="$body_ok" \
+    verify_stub present present 404 '')"; rc=$?
+  chk '回执：attestation 索引滞后 ⇒ 等到 ok 再判' 0 "$rc" "$out" 'provenance=ok'
+
+  # ⑤″ 一直缺席（真的没有 attestation）⇒ 等满后仍须判失败，且要写明
+  #     "版本已可见、卡在 attestation"，不能与"版本没发出去"混为一谈。
+  out="$(verify_stub present present 404 '')"; rc=$?
+  chk '回执：attestation 始终缺席 ⇒ 判失败且点明卡在哪' 1 "$rc" "$out" 'attestation 始终没出现'
 
   # ⑥ registry 不可达：判 2（环境不可用），且**一次都不重试** ——
   #    "网断了"等下去不会变，重试只会把 3 分钟浪费在同一个结论上。
