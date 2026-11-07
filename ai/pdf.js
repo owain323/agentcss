@@ -22,8 +22,10 @@
  * `cdp.js` 复用截图已有的调试管道：能等加载、字体和指定元素，再 printToPDF。
  * 一次性 `--print-to-pdf` 无法表达就绪条件，也无法可靠区分新旧产物。
  *
- * 浏览器只写同目录暂存文件；确认本次成功后才原子替换最终 PDF。任何失败都
- * 明确返回错误并保留旧文件，绝不把上一次产物当成本次成功。
+ * 浏览器只写同目录暂存文件；**所有判定（文件头 / 页树一致性 / 页数预算）全部
+ * 通过之后**才原子替换最终 PDF。任何失败都明确返回错误并保留旧文件，完整的新
+ * 产物另存到同目录隐藏诊断路径（返回值 `artifact`、报错里也给出路径），
+ * 绝不把上一次产物当成本次成功，也绝不拿最终路径去接收一份判定失败的产物。
  *
  * ============================================================================
  * ⚠️ 一条必须写下来的观测差异
@@ -222,6 +224,33 @@ function sweepStaleTemplates(dir) {
   return removed;
 }
 
+/**
+ * 失败时把完整产物另存到**独立诊断路径**，绝不拿最终路径顶替。
+ *
+ * 为什么不直接留在暂存目录：暂存目录在 finally 里会被删掉，调用方拿到一个
+ * 下一秒就不存在的路径，等于没给。为什么不用固定名字：同一目录可能并发导出，
+ * 固定名字会互相覆盖，而"诊断文件被覆盖"本身就是又一个静默丢数据。
+ *
+ * @returns {string|null} 诊断文件路径；写不出来返回 null（旧文件仍保持不动）
+ */
+function diagnosticPath(outAbs) {
+  const ext = path.extname(outAbs);
+  const stem = path.basename(outAbs, ext);
+  return path.join(path.dirname(outAbs),
+    '.' + stem + '.agentcss-diag-' + process.pid + '-' + Date.now().toString(36) + '.pdf');
+}
+
+function preserveArtifact(stagedPdf, outAbs) {
+  const dest = diagnosticPath(outAbs);
+  try {
+    fs.renameSync(stagedPdf, dest);
+    return dest;
+  } catch (e) {
+    /* 诊断文件写不出来也不能改写最终路径：产物随暂存目录一起清掉，旧文件不动。 */
+    return null;
+  }
+}
+
 /** 注入到 `<head>` 末尾（**必须在使用者样式之后**，否则同特异性被覆盖）。 */
 function injectSheet(html, css) {
   const style = '<style id="agentcss-paper" data-agentcss="paper">' + css + '</style>';
@@ -310,6 +339,7 @@ function exportPdf(o) {
   let rendered = null;
   let buf = null;
   let info = null;
+  let base = null;
   try {
     if (!isRemote(o.src)) {
       const srcAbs = path.resolve(o.src);
@@ -373,6 +403,43 @@ function exportPdf(o) {
       return { ok: false, code: 'unreadable', out: outAbs, chrome: chrome.path, ms: Date.now() - t0,
         message: '暂存 PDF 没有可读页对象；最终文件未被改写' };
     }
+
+    const injected = !isRemote(o.src);
+    base = {
+      out: outAbs, bytes: buf.length, pdf: buf, ms: Date.now() - t0,
+      paper: injected ? spec.key : null,
+      margin: injected ? margin : null, chrome: chrome.path,
+      pages: info.pages, mediaBox: info.mediaBox,
+      injected: injected, waitMs: waitMs,
+      readySelector: o.readySelector || null,
+      jsErrors: rendered.jsErrors || [],
+    };
+
+    /* 🔴 所有判定都必须在**暂存文件**上跑完，通过后才允许接触最终路径。
+       曾经把 renameSync 放在这两条判定之前：于是"返回失败"与"旧 PDF 已被替换"
+       同时发生，而调用方只看 ok 就以为旧文件还在。现在两条失败分支都先把完整
+       产物另存到诊断路径，再返回；最终路径全程不被触碰。 */
+    /* 两套读法不一致时，连"这份 PDF 有几页"都不可信 —— 无论有没有预算。
+       只在设了预算时才检查，会让"没设预算"的调用方拿到一个可能是错页数的 ok:true。 */
+    if (!info.agree) {
+      const artifact = preserveArtifact(stagedPdf, outAbs);
+      return { ...base, ok: false, code: 'unreadable', artifact: artifact,
+        message: 'PDF 里 `/Type /Page` 数出 ' + info.pages + ' 页、页树 `/Count` 说 '
+          + info.countFromTree + ' 页 —— 两套说法不一致，页数不可信'
+          + '\n  目标 PDF 未被改写：' + outAbs
+          + (artifact ? '\n  完整产物保留在：' + artifact
+            : '\n  本次产物未能另存（诊断目录不可写）；旧 PDF 仍未被改写') };
+    }
+
+    if (o.budget !== undefined && o.budget !== null && info.pages > o.budget) {
+      const artifact = preserveArtifact(stagedPdf, outAbs);
+      return { ...base, ok: false, code: 'over-budget', budget: Number(o.budget),
+        artifact: artifact,
+        message: overBudgetMessage(info.pages, Number(o.budget), spec, margin, outAbs,
+          info.mediaBox, injected, artifact) };
+    }
+
+    /* COMMIT-POINT */
     try { fs.renameSync(stagedPdf, outAbs); } catch (e) {
       return { ok: false, code: 'render', out: outAbs, chrome: chrome.path, ms: Date.now() - t0,
         message: '新 PDF 已生成，但无法替换输出文件：' + e.message + '。旧文件未被主动改写' };
@@ -382,38 +449,14 @@ function exportPdf(o) {
     try { fs.rmSync(staging, { recursive: true, force: true, maxRetries: 3 }); }
     catch (e) { /* Windows 偶发 EBUSY，交给系统清理 */ }
   }
-  const injected = !isRemote(o.src);
-  const base = {
-    out: outAbs, bytes: buf.length, pdf: buf, ms: Date.now() - t0,
-    paper: injected ? spec.key : null,
-    margin: injected ? margin : null, chrome: chrome.path,
-    pages: info.pages, mediaBox: info.mediaBox,
-    injected: injected, waitMs: waitMs,
-    readySelector: o.readySelector || null,
-    jsErrors: rendered.jsErrors || [],
-  };
-
-  /* 两套读法不一致时，连"这份 PDF 有几页"都不可信 —— 无论有没有预算。
-     只在设了预算时才检查，会让"没设预算"的调用方拿到一个可能是错页数的 ok:true。 */
-  if (!info.agree) {
-    return { ...base, ok: false, code: 'unreadable',
-      message: 'PDF 里 `/Type /Page` 数出 ' + info.pages + ' 页、页树 `/Count` 说 '
-        + info.countFromTree + ' 页 —— 两套说法不一致，页数不可信' };
-  }
-
-  if (o.budget !== undefined && o.budget !== null && info.pages > o.budget) {
-    return { ...base, ok: false, code: 'over-budget', budget: Number(o.budget),
-      message: overBudgetMessage(info.pages, Number(o.budget), spec, margin, outAbs,
-        info.mediaBox, !isRemote(o.src)) };
-  }
-  return { ...base, ok: true,
+  return { ...base, ok: true, artifact: null,
     budget: (o.budget === undefined || o.budget === null) ? null : Number(o.budget) };
 }
 
 /* 报错要**可执行**：三条出路 + 一条"我不代做"的说明。
    为什么不实现 truncate：截断 = 静默丢内容，正是这套门禁在防的事。
    一个会替你悄悄删掉后半份报告的工具，比一个报错停下的工具危险得多。 */
-function overBudgetMessage(got, budget, spec, margin, out, box, injected) {
+function overBudgetMessage(got, budget, spec, margin, out, box, injected, artifact) {
   const size = box ? (Math.round(box.width) + '×' + Math.round(box.height) + 'pt') : '?';
   /* 远程页面没注入 @page ⇒ 纸幅与边距都不是我们给的。
      这时报"A4 / 18mm 15mm"是在描述一个不存在的事实（实测：远程导出是 612×792，
@@ -422,7 +465,10 @@ function overBudgetMessage(got, budget, spec, margin, out, box, injected) {
     ? '（' + spec.css + '，' + size + '，边距 ' + margin + '）'
     : '（页面自定义纸幅，实测 ' + size + '；未注入 @page，--paper/--margin 不生效）';
   return '超出页数预算：' + got + ' 页 > ' + budget + ' 页' + layout + '\n'
-    + '  产出文件保留在：' + out + '\n'
+    + '  目标 PDF 未被改写：' + out + '\n'
+    + (artifact
+      ? '  完整产物保留在：' + artifact + '\n'
+      : '  本次产物未能另存（诊断目录不可写）；旧 PDF 仍未被改写\n')
     + '  三条出路（按代价从低到高）：\n'
     + '   ① 拆文档   把一章拆成单独文件分别导出：agentcss pdf chapter-2.html --out ch2.pdf\n'
     + '   ② 进附录   明细移到附录，正文只留汇总 —— 需要作者改内容，不是换个参数\n'

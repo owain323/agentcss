@@ -21,6 +21,12 @@
  *   E18     非法 wait / 空 selector / 非法 CSS 都是 usage
  *   E19     浏览器进程起不来 ⇒ 结构化失败，而不是未处理的 EPIPE 崩溃
  *   E20     强杀留下的临时 HTML：下次导出清旧的，不碰新的
+ *   E21     超预算失败：旧 PDF 逐字节不变 + 完整产物另存诊断路径
+ *   E22     页树两套读法不一致：旧 PDF 逐字节不变 + 完整产物另存诊断路径
+ *
+ * ⚠️ E5 / E16 / E17 / E21 / E22 是一组：E16/E17 验"渲染就没成功"，
+ *    E5/E21/E22 验"渲染成功了但判定失败"。只测前两条时，后置判定发生在
+ *    替换之后这个 bug 从门禁底下过去了（外部复查 2026-11-07 指出）。
  *
  * ⚠️ 不覆盖视觉像素比对；远程 URL 也不注入 `@page`，纸幅由页面自己决定。
  *
@@ -55,6 +61,17 @@ function cli(args, opt) {
 
 function jsonOf(r) {
   try { return JSON.parse(r.stdout); } catch (e) { return null; }
+}
+
+function sha256(file) {
+  return require('crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+function isPdfFile(file) {
+  try {
+    const b = fs.readFileSync(file);
+    return b.length > 5 && b.slice(0, 5).toString('latin1') === '%PDF-';
+  } catch (e) { return false; }
 }
 
 function main() {
@@ -105,13 +122,23 @@ function main() {
       check('E4 页数 = 预算 ⇒ 通过', r4.status === 0 && !!j4 && j4.ok === true,
         'rc=' + r4.status + ' 预算=' + pagesA + ' 页=' + (j4 && j4.pages));
 
-      /* ---------------- E5 预算超限 ---------------- */
-      const r5 = cli(['pdf', longDoc, '--out', out('over.pdf'), '--max-pages=1']);
+      /* ---------------- E5 预算超限 ----------------
+         ⚠️ 旧断言只查「out 路径上存在文件」，恰好把「返回失败却覆盖了旧 PDF」
+            判成通过 —— 它是这个 bug 的一部分，不是漏写一条测试。
+         现在预置哨兵旧 PDF 逐字节比对，完整产物必须落在独立诊断路径。 */
+      const overOut = out('over.pdf');
+      fs.writeFileSync(overOut, 'OLD-PDF-SENTINEL-E5');
+      const before5 = sha256(overOut);
+      const r5 = cli(['pdf', longDoc, '--out', overOut, '--max-pages=1', '--json']);
+      const j5 = jsonOf(r5);
       const txt5 = String(r5.stderr || '') + String(r5.stdout || '');
       const remedies = ['拆文档', '进附录', '截断'].filter((k) => txt5.indexOf(k) >= 0);
-      check('E5 超预算 ⇒ 退出码 5 + 三条出路 + 产物保留',
-        r5.status === 5 && remedies.length === 3 && fs.existsSync(out('over.pdf')),
-        'rc=' + r5.status + ' 出路=' + remedies.join('/'));
+      const diag5 = !!(j5 && j5.artifact && isPdfFile(j5.artifact));
+      const kept5 = fs.existsSync(overOut) && sha256(overOut) === before5;
+      check('E5 超预算 ⇒ 退出码 5 + 三条出路 + 旧 PDF 不变 + 产物另存',
+        r5.status === 5 && remedies.length === 3 && diag5 && kept5,
+        'rc=' + r5.status + ' 出路=' + remedies.join('/')
+        + ' 诊断=' + (diag5 ? '有' : '无') + ' 旧文件不变=' + kept5);
 
       /* ---------------- E6 打印规则到达产物 ---------------- */
       /* 两个夹具除 <link> 行外必须逐字节相同 —— 否则 on>off 可能来自别处，
@@ -305,6 +332,46 @@ function main() {
     check('E17 ready-selector 永不出现：有界 timeout 且旧文件不变',
       !timed.ok && timed.code === 'timeout' && digest() === before,
       'code=' + timed.code + ' ms=' + timed.ms + ' hash不变=' + (digest() === before));
+
+    /* ------------------------------------------------------------------
+     * E21 / E22：两个「后置判定」曾经发生在 renameSync **之后**。
+     *   E16 / E17 只覆盖浏览器失败与就绪超时（那两条本来就走不到替换），
+     *   所以门禁全绿却挡不住"超预算 / 页树不一致时旧 PDF 被覆盖"。
+     *   两条都预置哨兵旧 PDF，断言逐字节不变，且完整产物另存诊断路径。
+     * ------------------------------------------------------------------ */
+    const guardSrc = path.join(FIX, '02-long.html');
+    const guardOut = out('guard.pdf');
+    const guardSeed = () => fs.writeFileSync(guardOut, 'OLD-PDF-SENTINEL-E21');
+
+    guardSeed();
+    const before21 = sha256(guardOut);
+    const over21 = pdfMod.exportPdf({ src: guardSrc, out: guardOut,
+      budget: 1, waitMs: 0 });
+    const kept21 = fs.existsSync(guardOut) && sha256(guardOut) === before21;
+    const diag21 = !!(over21.artifact && isPdfFile(over21.artifact));
+    check('E21 超预算失败：旧 PDF 逐字节不变 + 完整产物另存',
+      !over21.ok && over21.code === 'over-budget' && kept21 && diag21,
+      'code=' + over21.code + ' 页=' + over21.pages
+      + ' 旧文件不变=' + kept21 + ' 诊断=' + (diag21 ? '有' : '无'));
+
+    /* 页树两套读法不一致不需要一份坏 PDF：把分析器换成"说不一致"的桩即可。
+       pdf.js 持有的是模块对象引用，替换属性会生效；finally 必须还原。 */
+    guardSeed();
+    const before22 = sha256(guardOut);
+    const realInspect = pagesMod.inspect;
+    let mism22;
+    pagesMod.inspect = () => ({ pages: 3, countFromTree: 4, agree: false, mediaBox: null });
+    try {
+      mism22 = pdfMod.exportPdf({ src: panelOn, out: guardOut, waitMs: 0 });
+    } finally {
+      pagesMod.inspect = realInspect;
+    }
+    const kept22 = fs.existsSync(guardOut) && sha256(guardOut) === before22;
+    const diag22 = !!(mism22 && mism22.artifact && isPdfFile(mism22.artifact));
+    check('E22 页树读数不一致：旧 PDF 逐字节不变 + 完整产物另存',
+      !!mism22 && !mism22.ok && mism22.code === 'unreadable' && kept22 && diag22,
+      'code=' + (mism22 && mism22.code)
+      + ' 旧文件不变=' + kept22 + ' 诊断=' + (diag22 ? '有' : '无'));
 
     /* E19：浏览器起不来时，命令管道会以 EPIPE 结束。没有 error 监听的话
        Node **直接抛出** —— 调用方看到的是堆栈，而不是一份结构化结论。

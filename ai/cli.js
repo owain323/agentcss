@@ -974,7 +974,10 @@ function cmdPdf(args) {
     fail(r.code || 'render', r.message, {
       out: r.out || null,
       pages: r.pages === undefined ? null : r.pages,
-      budget: r.budget === undefined ? null : r.budget
+      budget: r.budget === undefined ? null : r.budget,
+      /* 超预算 / 页树不一致时，完整产物另存在诊断路径；`out` 是没被改写的旧文件。
+         两个路径必须分清，否则调用方会拿着旧 PDF 当"本次完整产物"去拆改。 */
+      artifact: r.artifact || null
     });
   }
   if (isJson()) {
