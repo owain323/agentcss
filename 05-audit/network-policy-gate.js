@@ -82,6 +82,17 @@ check('② 响应来自私网 IP ⇒ 抓住',
   !!p.responseViolation({ response: { remoteIPAddress: '10.0.0.5' } }));
 check('② 响应来自公网 IP 不误拒',
   !p.responseViolation({ response: { remoteIPAddress: '93.184.216.34' } }));
+/* 系统开了本地代理时，Chrome 连的是 127.0.0.1，把所有公网渲染一起拒掉
+   比没有策略更糟。这三条守住"代理可用"与"内网仍拦"的分界。 */
+check('② 环回代理 + 公网域名 URL ⇒ 放行（不误伤）',
+  !p.responseViolation({ response: {
+    remoteIPAddress: '127.0.0.1', url: 'https://example.com/' } }));
+check('② 环回代理 + 环回 URL ⇒ 仍拒绝',
+  !!p.responseViolation({ response: {
+    remoteIPAddress: '127.0.0.1', url: 'http://127.0.0.1/admin' } }));
+check('② 非环回私网 IP 即使 URL 是公网也拒绝',
+  !!p.responseViolation({ response: {
+    remoteIPAddress: '10.0.0.5', url: 'https://example.com/' } }));
 
 const patterns = p.blockedUrlPatterns();
 check('② 浏览器侧黑名单非空且含关键前缀',
@@ -142,6 +153,9 @@ function wiringChecks() {
   const d = fs.readFileSync(PDF, 'utf8');
   check('④ exportPdf 把 networkPolicy 传给子进程',
     /networkPolicy:\s*networkPolicy/.test(d));
+  check('④ 代理降级会如实回传给调用方',
+    /networkPolicyDegraded/.test(r) && /networkPolicyDegraded/.test(c)
+      && /networkPolicyDegraded/.test(d));
 }
 
 /* ---------- ⑤ 元反向：判据必须能抓到"策略被改坏" ---------- */

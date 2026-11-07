@@ -421,6 +421,7 @@ function exportPdf(o) {
       injected: injected, waitMs: waitMs,
       readySelector: o.readySelector || null,
       jsErrors: rendered.jsErrors || [],
+      networkPolicyDegraded: !!rendered.networkPolicyDegraded,
     };
 
     /* 🔴 所有判定都必须在**暂存文件**上跑完，通过后才允许接触最终路径。

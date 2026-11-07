@@ -689,6 +689,14 @@ IPv6-only 域名没有可固定的 IPv4，此时只靠第 2、3 层，防护弱�
 `prepare()` 会如实返回 `pinned: null`，不假装做了 pin。
 这套策略不校验远程页面内容是否可信，也不注入 `@page`（见 8.6）。
 
+⚠️ **系统代理会让它降级**（0.27.9 修）：开了 `127.0.0.1:7897` 这类本地代理时，
+Chrome 把域名交给代理，`Network.responseReceived.remoteIPAddress` 一律是
+`127.0.0.1`，而且第 1 层的 `--host-resolver-rules` 也不再生效（DNS 由代理做）。
+此时有效的是：目标 URL 静态校验、主域名 DNS 预解析、第 2 层浏览器侧
+字面量黑名单；第 3 层对"环回 IP + 公网域名 URL"放行，避免把正常公网渲染
+一起拒掉。结果 JSON 会带 `networkPolicyDegraded: true`，不假装三层满血。
+**入参不可信时不要只靠 strict** —— 调用方应默认关闭远程能力（插件正是如此）。
+
 判据：`network-policy-gate`（私网表驱动 / 可注入 resolver 的 DNS 分支 /
 内存变异探针 / 渲染接线），`pdf-export-gate` E23–E25（真实 Chrome 端到端）。
 

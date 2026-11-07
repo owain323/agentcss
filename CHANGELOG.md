@@ -18,6 +18,23 @@
 
 ## [Unreleased]
 
+## [0.27.9] - 2026-11-07
+
+### Fixed
+
+- **`--network-policy=strict` 在开了系统代理的机器上会拒绝所有公网渲染。**
+  实测本机 `127.0.0.1:7897` 代理下，Chrome 把域名交给代理，
+  `Network.responseReceived.remoteIPAddress` 一律是 `127.0.0.1`，响应层把它
+  判成"内网访问"；同一原因下 `--host-resolver-rules` 也不生效（DNS 由代理做）。
+  现在响应层对「环回 IP + 公网域名 URL」放行，对非环回私网 IP 与环回 URL
+  仍拒绝；导出结果新增 `networkPolicyDegraded` 字段，代理环境如实为 `true`，
+  不假装三层防护满血。`docs/PRINT.md` §8.5.1 明写降级边界。
+- `network-policy` 门禁补 3 条代理分界判据（不误伤 / 仍拦 / 非环回私网）
+  与 1 条降级字段接线判据。真实公网页面端到端复测：`strict` 与 `off`
+  导出均为 57144 字节，`degraded=true`。
+
+---
+
 ## [0.27.8] - 2026-11-07
 
 ### Added

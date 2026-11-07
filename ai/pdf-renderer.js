@@ -80,6 +80,7 @@ async function render(o) {
     /* 三层里的 B / C：浏览器侧黑名单 + 事件侧复核。
        A（DNS pin）在 connect 的 chromeArgs 里，导航前就固定了解析结果。 */
     var violations = [];
+    var degraded = false;   // 通过环回代理上网 ⇒ A 层 DNS pin 不生效，如实标注
     if (policy) {
       await browser.send('Network.enable', {}, sid, left());
       await browser.send('Network.setBlockedURLs',
@@ -91,6 +92,8 @@ async function render(o) {
       browser.on('Network.responseReceived', function (p) {
         var v = netPolicy.responseViolation(p);
         if (v && violations.length < 10) violations.push(v);
+        if (p && p.response
+            && netPolicy.isLoopback(p.response.remoteIPAddress || '')) degraded = true;
       });
     }
     browser.on('Runtime.exceptionThrown', function (p) {
@@ -208,6 +211,7 @@ async function render(o) {
       ok: true, stagedPdf: o.stagedPdf, bytes: buf.length, jsErrors: jsErrors,
       waitMs: waitMs, readySelector: o.readySelector || null,
       animations: animations.result ? animations.result.value : null,
+      networkPolicyDegraded: degraded && !!policy,
       ms: Date.now() - started
     };
   } catch (e) {

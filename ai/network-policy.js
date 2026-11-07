@@ -101,13 +101,36 @@ function requestViolation(p) {
   return null;
 }
 
-/** Network.responseReceived 的事件体；看真正连上的 IP，而不是 URL 字符串。 */
+function isLoopback(host) {
+  var h = String(host).replace(/^\[|\]$/g, '').toLowerCase();
+  return h === '::1' || h === 'localhost' || h.indexOf('127.') === 0
+    || h.indexOf('::ffff:127.') === 0;
+}
+
+/**
+ * Network.responseReceived 的事件体；看真正连上的 IP。
+ *
+ * 🔴 代理环境（实测 2026-11-07）：系统开了 127.0.0.1:7897 时，Chrome 把
+ *    https://example.com/ 交给本地代理，remoteIPAddress 一律是 127.0.0.1。
+ *    若照字面判"私网 IP ⇒ 拒绝"，strict 会把**所有**公网渲染一起拒掉，
+ *    比没有这道策略更糟。⇒ 环回 IP 且 URL 的 host 是公网域名时视为代理连接，
+ *    放行并在 prepare/renderer 侧如实标注降级；URL 本身就是环回/私网字面量
+ *    的仍拒绝（那类本该被 B 层在发起前挡住，这里是兜底）。
+ *    非环回的私网 IP（10./172.16./192.168./169.254.）一律拒绝。
+ */
 function responseViolation(p) {
-  var ip = p && p.response && p.response.remoteIPAddress;
+  var resp = p && p.response;
+  var ip = resp && resp.remoteIPAddress;
   if (!ip) return null;
   var host = String(ip).replace(/^\[|\]$/g, '');
-  if (isPrivateHost(host)) return '响应来自非公网 IP ' + host;
-  return null;
+  if (!isPrivateHost(host)) return null;
+  if (isLoopback(host) && resp.url) {
+    var urlHost;
+    try { urlHost = new URL(String(resp.url)).hostname; }
+    catch (e) { return '响应 URL 无法解析：' + String(resp.url); }
+    if (urlHost && !isPrivateHost(urlHost)) return null;
+  }
+  return '响应来自非公网 IP ' + host;
 }
 
 /**
@@ -181,6 +204,7 @@ async function prepare(target, resolver) {
 
 module.exports = {
   isPrivateHost: isPrivateHost,
+  isLoopback: isLoopback,
   violationForUrl: violationForUrl,
   requestViolation: requestViolation,
   responseViolation: responseViolation,

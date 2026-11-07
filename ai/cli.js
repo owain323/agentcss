@@ -971,6 +971,8 @@ function cmdPdf(args) {
     waitMs: r.waitMs === undefined ? null : r.waitMs,
     readySelector: r.readySelector || null,
     networkPolicy: networkPolicy,
+    networkPolicyDegraded: r.networkPolicyDegraded === undefined
+      ? null : r.networkPolicyDegraded,
     jsErrors: r.jsErrors || [],
     ms: r.ms || null
   };
