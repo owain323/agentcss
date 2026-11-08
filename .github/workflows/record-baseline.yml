@@ -1,0 +1,73 @@
+# 运维用的一次性通道 —— 录视觉基线并作为 artifact 上传。
+# 为什么需要它
+# ---------------------------------------------------------------------------
+#   视觉基线按平台分集（`_baseline-win32` / `_baseline-linux`）。
+#   在 Windows 上改 CSS 之后，Linux 那套必然过期：`visual-stamp` 判"渲染指纹"
+#   （CSS+JS+HTML 的哈希），指纹一变就要求重录，哪怕像素没动。
+#   而 `publish:check`（= check-all --fast + pack-smoke）含这两道 ⇒
+#   **tag 发布会因此被挡住**（这是对的，不是误伤）。
+#
+#   问题：本机只有 Windows。要用 Linux 基线，只能在 Linux 上截。
+#   ⇒ 用这个 workflow 截，再把 artifact 拉回来提交。不要在有未提交改动时跑。
+#
+# 用法
+#   gh workflow run record-baseline.yml -f dir=all
+#   gh run download <run-id> -n baseline-linux -D /tmp/bl
+#   然后把这几个目录覆盖进 10-review/shots/，提交。
+# ---------------------------------------------------------------------------
+name: record-baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      dir:
+        description: '要重录的套别（all / light / dark / rtl）'
+        required: false
+        default: 'all'
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    name: 录 Linux 视觉基线
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 🔴 字体必须与门禁同源：基线锚在 ci-fonts.sh 装的那批字体上。
+      #    少装一个字体，截出来的图与门禁再跑时不一致 —— 等于白录。
+      - name: 装 CI 字体（与门禁同一个脚本）
+        run: bash 05-audit/ci-fonts.sh
+
+      - name: 安装依赖与 Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: 录基线
+        run: |
+          set -euo pipefail
+          DIR='${{ github.event.inputs.dir }}'
+          if [ "$DIR" = "all" ]; then
+            python3 05-audit/shot-baseline.py --update
+          else
+            python3 05-audit/shot-baseline.py --update --dir "$DIR"
+          fi
+
+      - name: 上传基线
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-linux
+          path: |
+            10-review/shots/_baseline-linux
+            10-review/shots/_baseline-linux-dark
+            10-review/shots/_baseline-linux-rtl
+          if-no-files-found: error
