@@ -26,7 +26,7 @@ on:
         default: 'all'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   record:
@@ -62,12 +62,18 @@ jobs:
             python3 05-audit/shot-baseline.py --update --dir "$DIR"
           fi
 
-      - name: 上传基线
-        uses: actions/upload-artifact@v4
-        with:
-          name: baseline-linux
-          path: |
-            10-review/shots/_baseline-linux
-            10-review/shots/_baseline-linux-dark
-            10-review/shots/_baseline-linux-rtl
-          if-no-files-found: error
+      # 🔴 不用 artifact：artifact 走 objects.githubusercontent.com，
+      #    在受限网络下**下载 0 字节卡住**（实测 10 分钟零进展）。
+      #    改成推到分支，调用方通过 Git Data API 逐个读 blob（api.github.com 通）。
+      - name: 把基线推到分支
+        run: |
+          set -euo pipefail
+          BR="baseline/linux-${{ github.run_id }}"
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$BR"
+          git add -A 10-review/shots
+          git commit -m "chore(baseline): Linux 视觉基线（run ${{ github.run_id }}）" \
+            || { echo '没有变化 ⇒ 不推'; exit 0; }
+          git push origin "$BR"
+          echo "已推送：$BR"
