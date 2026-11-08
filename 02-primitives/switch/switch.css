@@ -175,6 +175,14 @@
      （border-box 下，轨道内容高 = 高 − 边框×2 = 24 − 2 = 22）*/
   --sw-thumb: calc(var(--sw-h) - var(--sw-inset) * 2 - var(--sw-pad) * 2);
 
+  /* 滑块行程 = 轨道内容宽 − 滑块 − 左右留白×2
+     （border-box 下轨道内容宽 = h×1.75 − 边框×2）
+     ⭐ 这个变量以前**只写在注释里**，实际 transform 用的是一长串内联 calc。
+        落实成变量才能被 RTL 规则复用 —— 否则 RTL 覆盖要把公式抄第二遍，
+        抄错一个数就变成"LTR 对、RTL 歪"。 */
+  --sw-travel: calc(var(--sw-h) * 1.75 - var(--sw-inset) * 2
+                    - var(--sw-pad) * 2 - var(--sw-thumb));
+
   /* 🔴 关键修正：轨道是 **content-box**（本库默认），
      ⇒ `width: var(--sw-w)` 设的是**内容宽**，
        渲染总宽 = 内容 + 边框×2 = 42 + 2 = **44px**（实测）。
@@ -258,12 +266,9 @@
 }
 
 .switch__input:checked ~ .switch__track .switch__thumb {
-  /* 20px = 40(轨) - 16(点) - 4(左右各 2) */
-  /* 🔴 用推导值，不用写死的 18px（原来与实际尺寸脱钩 ⇒ 圆圈看着歪）*/
-  transform: translateX(calc(var(--sw-h) * 1.75
-                                 - var(--sw-inset) * 2 - var(--sw-pad) * 2
-                                 - (var(--sw-h) - var(--sw-inset) * 2
-                                    - var(--sw-pad) * 2)));
+  /* 行程用变量（= 轨道内容宽 − 滑块 − 留白×2），不写死 18px：
+     改一个 --sw-h 整套几何自洽。RTL 下同一条变量取负，见文件末尾。 */
+  transform: translateX(var(--sw-travel));
   /* ⚠️ 原来是 `var(--accent)`。那时 border 是 0，这条**从来没生效过**。
      0.17.0 给滑块补了 `border: 1px solid transparent` 之后它会突然显形，
      在蓝底上多出一圈品牌色描边 ⇒ 必须显式写 transparent，
@@ -426,4 +431,21 @@
   .switch__input:disabled ~ .switch__label {
     color: GrayText;
   }
+}
+
+/* ============================================================================
+   RTL：滑块行程要反号
+   ----------------------------------------------------------------------------
+   🔴 原来的形状是「**逻辑**定位 + **物理**位移」：
+        定位  inset-inline-start: var(--sw-gap)   ← RTL 下自动变成"靠右"
+        位移  transform: translateX(+18px)        ← 物理向右，不跟着翻
+      ⇒ RTL 里滑块从右端**继续向右**滑 18px，直接滑出轨道外。
+      这种错不报错、不溢出容器、截图基线也只在 RTL 页面上才看得出来。
+
+   修法只改方向，不改几何：同一个 --sw-travel 取负。
+   同类还有 tree.css 的展开箭头、app-shell.css 的侧栏、nav.css 的抽屉 ——
+   凡是"逻辑属性定位 + 物理位移"的组合，都要成对写 RTL 覆盖。
+   ========================================================================== */
+[dir="rtl"] .switch__input:checked ~ .switch__track .switch__thumb {
+  transform: translateX(calc(-1 * var(--sw-travel)));
 }

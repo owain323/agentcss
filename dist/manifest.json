@@ -8,8 +8,8 @@
   ],
   "totals": {
     "sourceFiles": 80,
-    "sourceBytes": 1003568,
-    "distGzip": 116432
+    "sourceBytes": 1011891,
+    "distGzip": 116798
   },
   "files": [
     {
@@ -345,15 +345,15 @@
     },
     {
       "source": "02-primitives/date-range/date-range.js",
-      "sourceSha256": "57680fa51ba21ef74736e36270481ef6a8dd6da80dfe6fb09e04f86da8ad0ddb",
-      "sourceBytes": 12900,
-      "sourceGzip": 4925,
+      "sourceSha256": "2c1786b0f0383fa3764face7bc979ee83f6496db3ca41dafc90bca65887a4b24",
+      "sourceBytes": 13277,
+      "sourceGzip": 5096,
       "outputs": [
         {
           "path": "dist/02-primitives/date-range/date-range.js",
           "kind": "stripped",
-          "bytes": 8120,
-          "gzip": 2867
+          "bytes": 8137,
+          "gzip": 2870
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -459,15 +459,15 @@
     },
     {
       "source": "02-primitives/select/select.js",
-      "sourceSha256": "d1a77f0285eaaaee9931d7d4c054613aede6e04ff3f532c279b89d33e6f9ae03",
-      "sourceBytes": 26073,
-      "sourceGzip": 9392,
+      "sourceSha256": "4dc16ad1b72f3bdd792546ed9b8934a6d1752f88a7c8d1dee51c8f1e61c56a14",
+      "sourceBytes": 26148,
+      "sourceGzip": 9439,
       "outputs": [
         {
           "path": "dist/02-primitives/select/select.js",
           "kind": "stripped",
-          "bytes": 13951,
-          "gzip": 4393
+          "bytes": 13926,
+          "gzip": 4382
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -502,15 +502,15 @@
     },
     {
       "source": "02-primitives/switch/switch.css",
-      "sourceSha256": "dc6af9b14efa0bc2fffdb5c6bea935784df1ac5d27a8c8821dd631e53b75a36e",
-      "sourceBytes": 20982,
-      "sourceGzip": 8541,
+      "sourceSha256": "3bb2ebb0e2be4ff5ad2c059fdca5e51347050a440bb3e7d643b5125fa5c969f6",
+      "sourceBytes": 22394,
+      "sourceGzip": 9076,
       "outputs": [
         {
           "path": "dist/02-primitives/switch/switch.css",
           "kind": "minified",
-          "bytes": 2825,
-          "gzip": 833
+          "bytes": 2933,
+          "gzip": 871
         }
       ]
     },
@@ -544,15 +544,15 @@
     },
     {
       "source": "02-primitives/upload/upload.js",
-      "sourceSha256": "7141ff3eb1bef9d2f6f48e769f0844df624b36ec4bfa4dee69cf08095a36717b",
-      "sourceBytes": 29633,
-      "sourceGzip": 10422,
+      "sourceSha256": "6dd02e1cefd13908650676e1fc191f543b85cfce6b8e99d822c7d11cec3719af",
+      "sourceBytes": 30256,
+      "sourceGzip": 10597,
       "outputs": [
         {
           "path": "dist/02-primitives/upload/upload.js",
           "kind": "stripped",
-          "bytes": 14875,
-          "gzip": 4584
+          "bytes": 15062,
+          "gzip": 4596
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -616,15 +616,15 @@
     },
     {
       "source": "03-patterns/drawer/drawer.js",
-      "sourceSha256": "52bb666a8011c6168b8cb98d0b164e8570b923886ded091637c4107a6bee65bb",
-      "sourceBytes": 15909,
-      "sourceGzip": 6415,
+      "sourceSha256": "3ec63ca3c6f1eafa7cd72f27ca617de7fa73e75cd799b8975021e37d3b587a69",
+      "sourceBytes": 18178,
+      "sourceGzip": 7369,
       "outputs": [
         {
           "path": "dist/03-patterns/drawer/drawer.js",
           "kind": "stripped",
-          "bytes": 8343,
-          "gzip": 2896
+          "bytes": 8988,
+          "gzip": 3091
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -645,15 +645,15 @@
     },
     {
       "source": "03-patterns/dropdown/dropdown.js",
-      "sourceSha256": "2ee20491948e7e24918b16d83f2a4053c13529aa4b23c17c4cf811f8accefe93",
-      "sourceBytes": 22157,
-      "sourceGzip": 8187,
+      "sourceSha256": "10a7ea196839c8f45c1a891a61ed2dfa1f64c389cfe10ee1dce7cae3ab5ef283",
+      "sourceBytes": 22388,
+      "sourceGzip": 8292,
       "outputs": [
         {
           "path": "dist/03-patterns/dropdown/dropdown.js",
           "kind": "stripped",
-          "bytes": 11371,
-          "gzip": 3684
+          "bytes": 11346,
+          "gzip": 3673
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -703,15 +703,15 @@
     },
     {
       "source": "03-patterns/nav/nav.css",
-      "sourceSha256": "0084a745495339c62587d49f68488f595f90ce347014d6d51783cbaef3019e46",
-      "sourceBytes": 12426,
-      "sourceGzip": 4635,
+      "sourceSha256": "6190cfcd3dddcd23a06709e539f8df0cca2c7ee611a77776f4d310559dcbe358",
+      "sourceBytes": 13644,
+      "sourceGzip": 5065,
       "outputs": [
         {
           "path": "dist/03-patterns/nav/nav.css",
           "kind": "minified",
-          "bytes": 4770,
-          "gzip": 1266
+          "bytes": 4918,
+          "gzip": 1284
         }
       ]
     },
@@ -790,15 +790,15 @@
     },
     {
       "source": "03-patterns/pagination/pagination.js",
-      "sourceSha256": "4afd39b63ba8d79e15e0210d8c03cb9eacd2cd6974cc505282d774847a8dca5d",
-      "sourceBytes": 19187,
-      "sourceGzip": 7694,
+      "sourceSha256": "55e1d9587e65f488aabd3e2344e429c197ee76b655d67fe9d45130b0b3ce408b",
+      "sourceBytes": 19492,
+      "sourceGzip": 7805,
       "outputs": [
         {
           "path": "dist/03-patterns/pagination/pagination.js",
           "kind": "stripped",
-          "bytes": 8256,
-          "gzip": 2851
+          "bytes": 8224,
+          "gzip": 2838
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -920,15 +920,15 @@
     },
     {
       "source": "03-patterns/tree/tree.js",
-      "sourceSha256": "1565192c79692a2a87b595de7c141eaa5bcbcf06ab2c05fcdf854331b78b0643",
-      "sourceBytes": 18104,
-      "sourceGzip": 6666,
+      "sourceSha256": "e5697e0fefd13d2a3bf671c9a9b591894082f006423663eaad9720b05490d13c",
+      "sourceBytes": 18419,
+      "sourceGzip": 6786,
       "outputs": [
         {
           "path": "dist/03-patterns/tree/tree.js",
           "kind": "stripped",
-          "bytes": 9583,
-          "gzip": 3162
+          "bytes": 9513,
+          "gzip": 3151
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -1092,15 +1092,15 @@
     },
     {
       "source": "09-assets/model-viewer/model-viewer.js",
-      "sourceSha256": "0fe7a2f590cb9aee97614d92100188e3f14507c63670a42fe4165b445e116396",
-      "sourceBytes": 19521,
-      "sourceGzip": 7846,
+      "sourceSha256": "bbad9498b10d0d8c166282d75dff59b48b95c44ba736df1dbaffab3feaca994b",
+      "sourceBytes": 21019,
+      "sourceGzip": 8486,
       "outputs": [
         {
           "path": "dist/09-assets/model-viewer/model-viewer.js",
           "kind": "stripped",
-          "bytes": 10290,
-          "gzip": 3956
+          "bytes": 10728,
+          "gzip": 4102
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

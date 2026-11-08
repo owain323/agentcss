@@ -288,7 +288,8 @@ it.ul.hidden = !open;
 }
 
 root.addEventListener('focusin', function (e) {
-var node = e.target.closest ? closest(e.target, '.tree__node') : null;
+
+var node = closest(e.target, '.tree__node');
 if (!node) return;
 var list = visible();
 for (var i = 0; i < list.length; i++) {
@@ -362,7 +363,8 @@ if (opt.onSelect) opt.onSelect(it);
 }
 
 root.addEventListener('click', function (e) {
-var node = e.target.closest ? closest(e.target, '.tree__node') : null;
+
+var node = closest(e.target, '.tree__node');
 if (!node || !root.contains(node)) return;
 var list = visible();
 for (var i = 0; i < list.length; i++) {
@@ -371,7 +373,7 @@ if (list[i].node === node) { focusAt(i); break; }
 var it = current();
 if (it) {
 
-if (e.target.closest && closest(e.target, '.tree__marker') && it.ul) {
+if (closest(e.target, '.tree__marker') && it.ul) {
 setExpanded(it, it.li.getAttribute('aria-expanded') !== 'true');
 } else {
 select(it);

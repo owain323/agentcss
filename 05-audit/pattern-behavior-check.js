@@ -124,6 +124,56 @@ async function drawerCases(p) {
   ok('⑥ 反复开关后 Esc 只触发一次 onClose（无重复注册）',
     dup.before === 3 && dupAfter.closed === 4,
     '3 次 API 关闭后=' + dup.before + '，第 4 次 Esc 后=' + dupAfter.closed + '（期望 4）');
+
+  /* ⑦ 嵌套：内层关闭不得解除外层的背景隔离
+   *    🔴 这条是 README「嵌套用锁计数」那句话的**可执行版本**。
+   *    修之前 setBackgroundInert(false) 无条件清空全部 ⇒ 内层关掉后外层还开着，
+   *    背景已经可交互（Tab 能进、读屏能读到）——而 README 明写不会这样。
+   *    直接读 body 直接子元素的 inert / aria-hidden 来断言，不看内部变量。 */
+  const nested = await p.evaluate(() => {
+    let bg = document.getElementById('probe-bg');
+    if (!bg) {
+      bg = document.createElement('div');
+      bg.id = 'probe-bg';
+      bg.innerHTML = '<button id="probe-bg-btn">背景按钮</button>';
+      document.body.appendChild(bg);
+    }
+    const snap = () => ({ inert: bg.inert === true, aria: bg.getAttribute('aria-hidden') });
+    const before = snap();
+    const a = window.Drawer.open({ place: 'right', title: 'A', content: '<p>a</p>' });
+    const afterA = snap();
+    const b = window.Drawer.open({ place: 'right', title: 'B', content: '<p>b</p>' });
+    const afterB = snap();
+    b.close();
+    const afterBClose = snap();   // ← 关键：外层还在，必须仍然 inert
+    a.close();
+    const afterAClose = snap();   // ← 都关了，必须恢复原态
+    return { before, afterA, afterB, afterBClose, afterAClose };
+  });
+  ok('D1 打开抽屉后背景 inert + aria-hidden',
+    nested.afterA.inert === true && nested.afterA.aria === 'true',
+    JSON.stringify(nested.afterA));
+  ok('D2 内层关闭后外层仍开 ⇒ 背景必须仍然 inert（嵌套计数）',
+    nested.afterBClose.inert === true && nested.afterBClose.aria === 'true',
+    JSON.stringify(nested.afterBClose));
+  ok('D3 全部关闭后背景恢复原态（不留下 aria-hidden）',
+    nested.afterAClose.inert === nested.before.inert &&
+      nested.afterAClose.aria === nested.before.aria,
+    'before=' + JSON.stringify(nested.before) + ' after=' + JSON.stringify(nested.afterAClose));
+
+  /* ⑧ 背景**本来就是** inert ⇒ 关闭后必须仍然 inert（记原态，不是固定写回 false）
+   *    宿主可能自己有锁屏，或者另一个弹层正开着。 */
+  const prevState = await p.evaluate(() => {
+    const bg = document.getElementById('probe-bg');
+    bg.inert = true;
+    const a = window.Drawer.open({ place: 'right', title: 'P', content: '<p>p</p>' });
+    a.close();
+    const stillInert = bg.inert === true;
+    bg.inert = false;
+    return { stillInert };
+  });
+  ok('D4 背景原本就 inert ⇒ 关闭后仍保持 inert（记原态）',
+    prevState.stillInert === true, 'stillInert=' + prevState.stillInert);
 }
 
 /* -------------------------------------------------------------- 对话框 ---- */

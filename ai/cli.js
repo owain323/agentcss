@@ -210,6 +210,29 @@ var ENUMS = {
   recipe: function () {
     var r = require('./check-html.js').readRecipes();
     return r ? Object.keys(r.recipes) : [];
+  },
+  /* pitfalls 的 scope / tag 同样从数据推导，不手抄。
+     🔴 0.27.9 实测：`pitfalls --scope=gloabl`（拼错）静默返回 count:0、
+        退出码 0 —— 调用方会把它读成"这个 scope 没有坑"，而不是"你拼错了"。
+        `--tag=notarealtag` 同理。这两条是 AGENTS 契约里"拼错绝不退化为
+        空结果"的直接反例。 */
+  scope: function () {
+    var d = pitfallsDoc();
+    var seen = [];
+    (d.pitfalls || []).forEach(function (x) {
+      if (x.scope && seen.indexOf(x.scope) < 0) seen.push(x.scope);
+    });
+    return seen;
+  },
+  tag: function () {
+    var d = pitfallsDoc();
+    var seen = [];
+    (d.pitfalls || []).forEach(function (x) {
+      (x.tags || []).forEach(function (t) {
+        if (seen.indexOf(t) < 0) seen.push(t);
+      });
+    });
+    return seen;
   }
 };
 
@@ -580,8 +603,11 @@ function cmdPitfalls(args) {
   var doc = pitfallsDoc();
   var list = (doc.pitfalls || []).slice();
   var comp = flag('component', null);
-  var scope = flag('scope', null);
-  var tag = flag('tag', null);
+  /* 🔴 scope / tag 必须走 enumFlag：它们和 component 一样是**过滤条件**，
+     拼错就该吵。用 flag() 的话 `--scope=gloabl` 会静默成为"过滤后 0 条"，
+     调用方读到的结论是"这类没有坑"——一次错误的控制流。 */
+  var scope = enumFlag('scope');
+  var tag = enumFlag('tag');
 
   if (comp) {
     // 拼错的组件名要**吵**：静默返回 0 条会被读成"这个组件没坑"。
@@ -1154,14 +1180,18 @@ function cmdShot(args) {
       }
     }
 
+    /* 🔴 失败必须走 fail()：CLI 对外的承诺是"失败只有一种形状"
+       （{ok:false, command, error:{kind,message}}，见 EXIT 表上方那段注释）。
+       shot 原来直接 out(r)，产出的是 {ok:false, code, message} ——
+       同一个 CLI 两种失败形状（同样 exit 2），调用方得写两套解析。
+       已经成功的那几个宽度作为上下文挂在 extra.shots 里，不丢信息。 */
+    if (!r.ok) {
+      fail(r.code || 'render', r.message,
+        (r.shots && r.shots.length) ? { shots: r.shots } : undefined);
+    }
     if (isJson()) {
       out(r);
-      process.exitCode = r.ok ? 0 : (EXIT[r.code] || EXIT.render);
-      return;
-    }
-    if (!r.ok) {
-      process.stderr.write('  [FAIL] ' + r.message + '\n');
-      process.exitCode = EXIT[r.code] || EXIT.render;
+      process.exitCode = 0;
       return;
     }
     r.shots.forEach(function (s) {
@@ -1296,6 +1326,14 @@ function main() {
     usage();
     process.exit(0);
   }
+  /* 🔴 `--version` 必须能跑：llms.txt 与 STABILITY.md 都教了这个命令，
+     而分发器此前把它当"未知子命令"退回退出码 2 —— 文档里最靠前的那条
+     自检命令直接不能用。版本号只从 package.json 读，不在这里写死。 */
+  if (argv[0] === '--version' || argv[0] === '-v' || argv[0] === 'version') {
+    process.stdout.write(
+      readJSON(path.join(AI, '..', 'package.json')).version + '\n');
+    process.exit(0);
+  }
   var name = argv.shift();
   /* 🔴 `ai` 是可选的**前缀别名**（2026-11-02 补）：
      帮助里的命令一直写成 `ai components`，AGENTS.md / llms.txt / STABILITY.md /
@@ -1320,6 +1358,17 @@ function main() {
   /* 未知开关在**调用命令之前**拒掉：命令内部各自判断的话，
      遇到不认识的开关就只剩"忽略"和"崩"两种选择。 */
   rejectUnknownFlags(name, GLOBAL_FLAGS.concat(FLAGS[name] || []));
+  /* 🔴 `--json` 只认三态：不带值（=true）/ `=true` / `=false`。
+     0.27.9 实测 `components --json=banana` → 退出码 0 + 人读文本：
+     想拿 JSON 的调用方得到一段中文表格。用法错误必须当场判 2，
+     不许"看不懂就当没给"。 */
+  var jv = flag('json', false);
+  if (jv !== false && jv !== true && jv !== 'true' && jv !== 'false') {
+    fail('usage', '--json 只接受 true / false（不带值视为 true），收到 '
+      + JSON.stringify(jv));
+  }
+  var jn = flagCount('json');
+  if (jn > 1) fail('usage', '--json 给了 ' + jn + ' 次（只认一个）');
   try {
     fn(argv);
   } catch (e) {

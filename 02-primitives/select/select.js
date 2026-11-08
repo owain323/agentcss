@@ -595,7 +595,8 @@
     }
     function onListClick(e) {
       if (destroyed) return;
-      var o = e.target.closest ? closest(e.target, '[role="option"]') : null;
+      /* 同 combobox：helper 自带原生/兜底判断，不要在外面用原生 API 当门。 */
+      var o = closest(e.target, '[role="option"]');
       if (!o) return;
       commit(options.indexOf(o));
     }

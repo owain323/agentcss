@@ -84,8 +84,19 @@
 <pre class="code" tabindex="0"><code class="language-js">// ⭐ 记住&quot;打开那一刻的焦点&quot; —— 必须在插入 DOM 之前，
 //    否则会记到刚建出来的新节点上（那就等于没记）</code></pre>
 <p>抽屉没有 fallback：打开它的元素若被删了，就<strong>维持现状不动</strong>，不假装&quot;还回去了&quot;（那样会把焦点送到一个已经不存在的地方）。</p>
-<h2 id="s7">嵌套用锁计数<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
-<p>背景 <code>inert</code> 用 <code>lockCount</code> 计数管理 ⇒ 抽屉里再开抽屉时，外层的锁不会因为内层关闭而被提前解掉。</p>
+<h2 id="s7">嵌套用引用计数<a class="anchor" href="#s7" aria-label="本节直链">#</a></h2>
+<p>滚动锁与背景隔离<strong>各自</strong>计数，不是同一套：</p>
+<div class="table" tabindex="0" role="region" aria-label="嵌套用引用计数（可横向滚动）"><table>
+<thead><tr>
+<th>管什么</th><th>变量</th><th>降到 0 时做什么</th>
+</tr></thead>
+<tbody>
+<tr><td>整页滚动</td><td><code>lockCount</code></td><td>恢复 <code>body.overflow</code> 并滚回原位</td></tr>
+<tr><td>背景 <code>inert</code> / <code>aria-hidden</code></td><td><code>bgRefs</code></td><td>还原成<strong>打开之前</strong>的状态</td></tr>
+</tbody>
+</table></div>
+<p>背景隔离要记原态，因为宿主可能本来就把某块设成 <code>inert</code>（自己的锁屏、或者另一个弹层正开着）；固定写回 <code>false</code> 会把它误解锁。</p>
+<p>⇒ 抽屉里再开抽屉时，内层关闭不会把外层的隔离提前解掉。 <code>05-audit/pattern-behavior-check.js</code> 的 <strong>D1–D4</strong> 就是这句话的可执行版本：内层关闭后背景必须仍然 <code>inert</code>，全部关闭后必须恢复<strong>原态</strong>而不是固定 <code>false</code>。</p>
 <h2 id="s8">成熟度：beta（两条行为债，如实列出）<a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
 <div class="table" tabindex="0" role="region" aria-label="成熟度：beta（两条行为债，如实列出）（可横向滚动）"><table>
 <thead><tr>
@@ -96,7 +107,7 @@
 </tbody>
 </table></div>
 <h2 id="s9">反例<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
-<ul><li>❌ <strong>打开抽屉时不给背景加 <code>inert</code> / <code>aria-hidden</code></strong> —— 抽屉是<strong>模态</strong>：读屏会把抽屉与背景一起念出来（&quot;双重朗读&quot;），用户听到两套内容叠在一起</li><li>❌ <strong>省掉焦点陷阱</strong> —— Tab 会跑到抽屉外面，键盘用户在看不见的内容上操作，还以为抽屉坏了</li><li>❌ <strong><code>drawer__close</code> 做得很小</strong> —— 它是独立目标，要 44px。抽屉滑进来之后，用户第一件事就是找关闭</li><li>❌ <strong>在插入 DOM 之后才记录 <code>document.activeElement</code></strong> —— 记到的是新节点，关闭时焦点&quot;归还&quot;到一个已经不存在的位置，等于没还</li><li>❌ <strong>嵌套抽屉不用锁计数</strong> —— 内层关掉时会把外层的滚动锁一起解开，外层还在，背景却能滚了</li></ul>
+<ul><li>❌ <strong>打开抽屉时不给背景加 <code>inert</code> / <code>aria-hidden</code></strong> —— 抽屉是<strong>模态</strong>：读屏会把抽屉与背景一起念出来（&quot;双重朗读&quot;），用户听到两套内容叠在一起</li><li>❌ <strong>省掉焦点陷阱</strong> —— Tab 会跑到抽屉外面，键盘用户在看不见的内容上操作，还以为抽屉坏了</li><li>❌ <strong><code>drawer__close</code> 做得很小</strong> —— 它是独立目标，要 44px。抽屉滑进来之后，用户第一件事就是找关闭</li><li>❌ <strong>在插入 DOM 之后才记录 <code>document.activeElement</code></strong> —— 记到的是新节点，关闭时焦点&quot;归还&quot;到一个已经不存在的位置，等于没还</li><li>❌ <strong>嵌套抽屉不计数</strong> —— 内层关掉时会把外层的滚动锁<strong>和背景 <code>inert</code> 一起解开</strong>：外层还开着，背景却能滚、能 Tab 进去、读屏也能读到</li></ul>
 <hr>
 <h2 id="s10">门禁<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <p><code>05-audit/drawer-check.js</code></p>
@@ -108,11 +119,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">🔴 三条硬要求（一条都不能少）</a></li><li><a href="#s3">⚠️ 抽屉是模态：背景必须 inert</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s7">嵌套用锁计数</a></li><li><a href="#s8">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s9">反例</a></li><li><a href="#s10">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">🔴 三条硬要求（一条都不能少）</a></li><li><a href="#s3">⚠️ 抽屉是模态：背景必须 inert</a></li><li><a href="#s4">结构</a></li><li><a href="#s5">启用</a></li><li><a href="#s7">嵌套用引用计数</a></li><li><a href="#s8">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s9">反例</a></li><li><a href="#s10">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.27.9 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.27.10 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

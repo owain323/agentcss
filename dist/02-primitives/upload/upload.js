@@ -302,7 +302,14 @@ _handleChange: function () {
 var files = currentFiles(this.input);
 var r = this._validate(files);
 
-if (r.rejected.length) writeFiles(this.input, r.keep);
+if (r.rejected.length && !writeFiles(this.input, r.keep)) {
+this.progress = [];
+this.rejected = [{ file: r.rejected[0].file, reason: 'unsupported',
+text: this.labels.noDrop }];
+this.render();
+this.announce(this.labels.noDropShort);
+return;
+}
 
 this.progress = [];
 this.rejected = r.rejected;

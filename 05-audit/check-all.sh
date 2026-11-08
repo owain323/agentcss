@@ -1063,6 +1063,10 @@ run "focus-return" node 05-audit/focus-return-check.js
 # 上面两道测的是**核**（把核源码注入空白页直接调），这一道测**组件有没有接上核**：
 # 焦点是否进入、Esc 是否只关最内层、点遮罩/点外部是否符合各自语义、反复开关是否重复注册。
 run "pattern-behavior" node 05-audit/pattern-behavior-check.js
+# RTL 几何：「逻辑属性定位 + 物理位移」必须成对写 RTL 覆盖。
+# 像素基线只在 RTL 那十几张里偶然覆盖到 nav，switch 完全没覆盖 ——
+# 而这类错不报错、不溢出、不触发任何行为契约，只能量几何。
+run "rtl-geometry" node 05-audit/rtl-geometry-gate.js
 run "roving" node 05-audit/roving-check.js
 run "typeahead" node 05-audit/typeahead-check.js
 run "emit" node 05-audit/emit-check.js

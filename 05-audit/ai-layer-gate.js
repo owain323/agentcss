@@ -708,6 +708,74 @@ try {
   var rb = runCli(['check', tmpBad]);
   expect(rb.status === E.findings,
     '⑧⁸ 页面有错 ⇒ 退出码 1（是结论，不是工具坏了）', '实际 ' + rb.status);
+
+  /* ---------------------------------------------------------------- ⑨ 原型与契约
+     🔴 这一组来自 2026-11-08 两份独立审计实证过的破口。每一条都是
+        "数据来自外部、字段名不受我们控制"的场景 —— 不是理论风险。 */
+
+  var protoDoc = { schemaVersion: '1.0.0', root: ['b'],
+    nodes: { b: { id: 'b', kind: 'text', text: 'x', children: [] } } };
+
+  /* ⑨¹ 补丁 id=__proto__：曾经 ok:true 且 ({}).pwned === 1 */
+  var protoPatch = JSON.parse('{"schemaVersion":"1.0.0","ops":['
+    + '{"op":"update","id":"__proto__","set":{"pwned":1}}]}');
+  var protoRes = patch.apply(protoDoc, protoPatch);
+  expect(protoRes.ok === false && ({}).pwned === undefined,
+    '⑨¹ 补丁 id=__proto__ 被拒，且 Object.prototype 未被污染',
+    'ok=' + protoRes.ok + ' pwned=' + ({}).pwned);
+
+  /* ⑨² set 里的 __proto__ 键（JSON 来源才有自有键，JS 字面量测不出来） */
+  var protoSet = JSON.parse('{"schemaVersion":"1.0.0","ops":['
+    + '{"op":"update","id":"b","set":{"__proto__":{"pwned":2}}}]}');
+  var protoSetRes = patch.apply(protoDoc, protoSet);
+  expect(protoSetRes.ok === false && ({}).pwned === undefined,
+    '⑨² 补丁 set 里的 __proto__ 键被拒', 'ok=' + protoSetRes.ok);
+
+  /* ⑨³ validate 用 hasOwnProperty：required 撞上 Object.prototype 名字仍必须报缺 */
+  var vProto = validate.validate({ type: 'object', required: ['toString'] }, {});
+  expect(vProto.ok === false,
+    '⑨³ required 撞上 Object.prototype 名字时仍报"缺少必填字段"',
+    JSON.stringify(vProto.errors));
+
+  /* ⑨⁴ 拼错的过滤值必须吵：曾经 exit 0 + count:0，被读成"这类没有坑" */
+  var rScope = runCli(['pitfalls', '--scope=gloabl', '--json']);
+  expect(rScope.status === E.usage,
+    '⑨⁴ pitfalls --scope=<拼错> ⇒ 退出码 2（不退化成空结果）',
+    'status=' + rScope.status);
+
+  var rTag = runCli(['pitfalls', '--tag=notarealtag', '--json']);
+  expect(rTag.status === E.usage,
+    '⑨⁵ pitfalls --tag=<拼错> ⇒ 退出码 2', 'status=' + rTag.status);
+
+  /* ⑨⁶ --version：llms.txt / STABILITY.md 都教了这条命令 */
+  var rVer = runCli(['--version']);
+  var pkgVer = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
+  expect(rVer.status === 0 && String(rVer.stdout).trim() === pkgVer,
+    '⑨⁶ --version ⇒ 退出码 0 且等于 package.json 的版本',
+    'status=' + rVer.status + ' out=' + String(rVer.stdout).trim()
+      + ' pkg=' + pkgVer);
+
+  /* ⑨⁷ --json 的取值必须严格：`--json=banana` 曾经被静默当成人读 */
+  var rJsonBad = runCli(['components', '--json=banana']);
+  expect(rJsonBad.status === E.usage,
+    '⑨⁷ --json=<非布尔> ⇒ 退出码 2（不静默当成人读）',
+    'status=' + rJsonBad.status);
+
+  /* ⑨⁸ 失败形状唯一：shot 的两条失败路径必须同形
+     （曾经 {ok,code,message} vs {ok,command,error}，同 exit 2 不同形） */
+  var shotOut = path.join(require('os').tmpdir(), 'fl-shot-never.png');
+  var shotArgs = [path.join(ROOT, 'no-such-file-xyz.html')];
+  var sA = runCli(['shot'].concat(shotArgs).concat(['--out=' + shotOut, '--json']));
+  var sB = runCli(['shot'].concat(shotArgs).concat(['--bogus=1', '--json']));
+  var dA = parsed(sA), dB = parsed(sB);
+  var sameShape = !!(dA && dB && dA.ok === false && dB.ok === false
+    && dA.command === 'shot' && dB.command === 'shot'
+    && dA.error && dB.error && dA.error.kind === dB.error.kind
+    && Object.keys(dA).join(',') === Object.keys(dB).join(','));
+  expect(sA.status === sB.status && sameShape,
+    '⑨⁸ shot 两条失败路径形状一致（{ok,command,error}）',
+    'A=' + JSON.stringify(dA) + ' B=' + JSON.stringify(dB));
 })();
 
 // ---------------------------------------------------------------- 汇总

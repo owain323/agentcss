@@ -343,7 +343,8 @@
        ⚠️ 症状：鼠标点击正常，键盘 ↑↓ "没反应" —— 两者矛盾正是线索。
        ⇒ 正解：监听 focusin，实时把 cur 对齐到当前聚焦的节点。 */
     root.addEventListener('focusin', function (e) {
-      var node = e.target.closest ? closest(e.target, '.tree__node') : null;
+      /* 同 dropdown：helper 自带原生/兜底判断，不要在外面用原生 API 当门。 */
+      var node = closest(e.target, '.tree__node');
       if (!node) return;
       var list = visible();
       for (var i = 0; i < list.length; i++) {
@@ -438,7 +439,8 @@
 
     /* ---------- 点击 ---------- */
     root.addEventListener('click', function (e) {
-      var node = e.target.closest ? closest(e.target, '.tree__node') : null;
+      /* 同 dropdown：helper 自带原生/兜底判断，不要在外面用原生 API 当门。 */
+      var node = closest(e.target, '.tree__node');
       if (!node || !root.contains(node)) return;
       var list = visible();
       for (var i = 0; i < list.length; i++) {
@@ -446,8 +448,10 @@
       }
       var it = current();
       if (it) {
-        /* 点箭头只展开/收起，点文字则选中 */
-        if (e.target.closest && closest(e.target, '.tree__marker') && it.ul) {
+        /* 点箭头只展开/收起，点文字则选中。
+           ⚠️ 不要写成 `e.target.closest && closest(...)`：没有原生 closest 时
+           前半段恒假 ⇒ 点箭头会退化成"选中"，而不是展开/收起。 */
+        if (closest(e.target, '.tree__marker') && it.ul) {
           setExpanded(it, it.li.getAttribute('aria-expanded') !== 'true');
         } else {
           select(it);

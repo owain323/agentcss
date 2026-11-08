@@ -128,7 +128,7 @@ var inside = act && (act === self.node || self.node.contains(act));
 if (act && /^(INPUT|TEXTAREA|SELECT)$/.test(act.tagName)) return;
 if (act && act.isContentEditable) return;
 
-if (!inside && act && act !== document.body) return;
+if (!inside) return;
 
 var k = e.key;
 if (k === 'ArrowLeft') { self.go(self.page - 1); }

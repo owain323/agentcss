@@ -36,6 +36,47 @@
 
 var OPS = ['create', 'update', 'move', 'delete', 'replace'];
 
+/* 🔴 保留名：这些字符串不能当节点 id，也不能当 set 的键（原型污染）
+ * ----------------------------------------------------------------------------
+ * 曾经 `work.nodes` 是普通对象，`op.id = '__proto__'` 时
+ * `work.nodes['__proto__']` 取到的是 **Object.prototype**（truthy），
+ * `if (!n)` 这道"节点不存在"的守卫因此失效，紧接着 `n[k] = …` 直接写进
+ * Object.prototype —— 一次 apply 就能改掉整个进程的原型。
+ * 实测：apply 返回 ok:true，随后 `({}).pwned === 1`。
+ *
+ * 三层修（缺一层都能被绕过）：
+ *   ① 承载对象改无原型（nullProto）—— `__proto__` 在上面只是普通键；
+ *   ② 这类 id / 键明确拒绝 —— 因为即使不污染，`__proto__` 作为键在
+ *      JSON 往返、`for…in`、深比较里都会变形，不该出现在文档里；
+ *   ③ 输出前转回普通对象时，键集合已被 ② 保证干净。
+ * 补丁来自外部（AI agent 工作流的输入面），不能假设它是善意的。 */
+var RESERVED_KEYS = ['__proto__', 'constructor', 'prototype'];
+
+function isReserved(v) {
+  return typeof v === 'string' && RESERVED_KEYS.indexOf(v) >= 0;
+}
+
+/** 无原型承载：`obj['__proto__']` 在这里是普通属性，取不到原型链。 */
+function nullProto(src) {
+  var o = Object.create(null);
+  if (src && typeof src === 'object') {
+    Object.keys(src).forEach(function (k) {
+      if (!isReserved(k)) o[k] = src[k];
+    });
+  }
+  return o;
+}
+
+/** 找出某个节点的父 id（顶层返回 null）。 */
+function parentOf(nodes, id) {
+  var found = null;
+  Object.keys(nodes).forEach(function (pid) {
+    var ch = nodes[pid] && nodes[pid].children;
+    if (Array.isArray(ch) && ch.indexOf(id) >= 0) found = pid;
+  });
+  return found;
+}
+
 // 每种操作的必填字段。与 ai/patch.schema.json 的 opRequirements 保持一致。
 var REQUIRED = {
   create: ['op', 'node'],
@@ -89,6 +130,35 @@ function validatePatch(patch) {
     if (op.parent !== undefined && op.parent !== null &&
         typeof op.parent !== 'string') {
       errors.push(fail(p + '/parent', 'parent 必须是节点 id 或 null（表示顶层）'));
+    }
+    /* 🔴 保留名一律拒绝，理由见顶部 RESERVED_KEYS 注释 */
+    if (isReserved(op.id)) {
+      errors.push(fail(p + '/id', 'id 不能用保留名 ' + JSON.stringify(op.id) +
+        '（会改写原型链，见 patch.js 顶部说明）'));
+    }
+    if (isReserved(op.parent)) {
+      errors.push(fail(p + '/parent', 'parent 不能用保留名 ' +
+        JSON.stringify(op.parent)));
+    }
+    if (op.node && isReserved(op.node.id)) {
+      errors.push(fail(p + '/node/id', 'id 不能用保留名 ' +
+        JSON.stringify(op.node.id)));
+    }
+    if (op.set && typeof op.set === 'object' && !Array.isArray(op.set)) {
+      Object.keys(op.set).forEach(function (k) {
+        if (isReserved(k)) {
+          errors.push(fail(p + '/set/' + k, '不能设置保留名属性 ' +
+            JSON.stringify(k)));
+        }
+      });
+    }
+    if (Array.isArray(op.unset)) {
+      op.unset.forEach(function (k) {
+        if (isReserved(k)) {
+          errors.push(fail(p + '/unset/' + k, '不能删除保留名属性 ' +
+            JSON.stringify(k)));
+        }
+      });
     }
   });
   return errors;
@@ -149,7 +219,9 @@ function apply(doc, patch) {
   if (errs.length) return { ok: false, doc: doc, errors: errs, applied: 0 };
 
   var work = clone(doc);
-  work.nodes = work.nodes || {};
+  /* 🔴 无原型承载：即使有人绕过 validatePatch，`__proto__` 在这里也只是
+     一个普通键，写它不会碰到 Object.prototype。 */
+  work.nodes = nullProto(work.nodes);
   // root 用内部键承载，apply 结束时写回 doc.root
   work.nodes.__root = Array.isArray(work.root) ? work.root.slice() : [];
   delete work.root;
@@ -244,6 +316,11 @@ function apply(doc, patch) {
   var root = work.nodes.__root || [];
   delete work.nodes.__root;
   work.root = root;
+  /* 输出转回普通对象：调用方会 deepEqual、会直接改、会 JSON.stringify。
+     键集合已被 validatePatch 保证不含保留名 ⇒ 这里不会触发 __proto__ setter。 */
+  var plain = {};
+  Object.keys(work.nodes).forEach(function (k) { plain[k] = work.nodes[k]; });
+  work.nodes = plain;
   return { ok: true, doc: work, errors: [], applied: applied };
 }
 
@@ -275,13 +352,20 @@ function invert(doc, patch) {
     } else if (op.op === 'delete') {
       var n = nodes[op.id];
       if (!n) return { ok: false, ops: [], errors: [fail('/ops/' + i, '撤销失败：原节点已不存在')] };
-      var parentId = null, idx = 0;
-      Object.keys(nodes).forEach(function (pid) {
-        var at = (nodes[pid].children || []).indexOf(op.id);
-        if (at >= 0) { parentId = pid; idx = at; }
+      /* 🔴 delete 删的是**整棵子树**，undo 必须把子树一起建回来。
+         原来只 create 一个节点 ⇒ 撤销后父的 children 里全是不存在的 id：
+         文档结构悬空，而且 apply 不会报错（它不校验引用完整性）。
+         顺序必须父在前——subtree() 是 DFS，天然满足。 */
+      var ids = subtree(nodes, op.id);
+      ids.forEach(function (id, k) {
+        var node = clone(nodes[id]);
+        var p = parentOf(nodes, id);
+        var ix;
+        if (p === null) ix = (doc.root || []).indexOf(id);
+        else ix = (nodes[p].children || []).indexOf(id);
+        if (k > 0 && ix < 0) ix = undefined;   // 原位置已不可考 ⇒ 追加到末尾
+        ops.push({ op: 'create', node: node, parent: p, index: ix });
       });
-      if (parentId === null) idx = (doc.root || []).indexOf(op.id);
-      ops.push({ op: 'create', node: clone(n), parent: parentId, index: idx });
     } else if (op.op === 'move') {
       var parent0 = null, idx0 = 0;
       Object.keys(nodes).forEach(function (pid) {

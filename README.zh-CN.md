@@ -350,7 +350,8 @@ import 'agentcss/dist/02-primitives/button/button.css';
   必须解析出**同一份规则集**；`dist-fresh` 防"源码改了但 dist 没重建"。
 
 **采纳一个组件到底要付多少**：见 `dist/COSTS.md`（由脚本生成，每个数字都能复算）。
-`tokens` 的 min 版 **2.1 KB gzip**，比任何一个组件自己都贵 —— 那就是"只用一个组件"的真实起步价。
+`tokens` 的 min 版 **3.1 KB gzip**，比任何一个组件自己都贵 —— 那就是"只用一个组件"的真实起步价。
+（这个数字由 `05-audit/dist-cost-gate.py` 按实算校验，写错就红；本行曾经写 2.1 KB。）
 
 **4 · 要成套的页面（可选）** —— 页面骨架
 

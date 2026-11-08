@@ -31,6 +31,7 @@ Pico 在 README 上**按产物逐个公布体积**；Open Props 的 CDN 清单�
 import io
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -111,6 +112,33 @@ def components(manifest):
 
 def kb(n):
     return '%.1f KB' % (n / 1024.0)
+
+
+def readme_tokens_problems(gzip_of_tokens):
+    """README 里写的「tokens N.N KB gzip」必须与实算一致。
+
+    🔴 2026-11-08 外部审计现场：同一件事三处三值 ——
+       英文 README 2.6 KB、中文 README 2.1 KB、COSTS.md 3.1 KB（只有它对），
+       而 FACTS.md 自述"手抄数字已经根治"。数字写在散文里，就一定会漂；
+       唯一可靠的修法不是"下次记得同步"，而是**让门禁去读那句话**。
+    """
+    want = kb(gzip_of_tokens)
+    bad = []
+    for rel in ('README.md', 'README.zh-CN.md'):
+        p = os.path.join(ROOT, rel)
+        if not os.path.isfile(p):
+            continue
+        s = io.open(p, encoding='utf-8').read()
+        hits = re.findall(r'\*\*([0-9]+\.[0-9]) KB gzip\*\*', s)
+        if not hits:
+            bad.append('%s：找不到粗体的「N.N KB gzip」⇒ 数字被改写或删掉了，'
+                       '这条判据失去视野' % rel)
+            continue
+        for h in hits:
+            if (h + ' KB') != want:
+                bad.append('%s：写的是 %s KB gzip，实算是 %s'
+                           % (rel, h, want))
+    return bad
 
 
 def table(manifest, perturb=None):
@@ -210,6 +238,12 @@ def main():
         else:
             print('  [FAIL] dist/COSTS.md 不存在 ⇒ 跑 --update')
             return 1
+        # ③ README 数字判据也要有牙：把实算值改一笔，必须报出来
+        tg_real = index(manifest)['dist/01-tokens/tokens.css']['gzip']
+        if not readme_tokens_problems(tg_real + 1024):
+            print('  [FAIL] README 数字判据没有鉴别力（改了实算值却说一致）')
+            return 1
+        print('  [OK]   README 数字判据有鉴别力（实算值一变就报）')
         return 0
 
     want = table(manifest)
@@ -235,6 +269,15 @@ def main():
         return 1
     n = want.count('|') and want.count('\n')
     print('  OK dist/COSTS.md 与实算一致（每个数字都能用同一脚本复算）')
+
+    idx = index(manifest)
+    tg = idx['dist/01-tokens/tokens.css']['gzip']
+    rp = readme_tokens_problems(tg)
+    if rp:
+        for p in rp:
+            print('  [FAIL] ' + p)
+        return 1
+    print('  OK README / README.zh-CN 的 tokens gzip 数字与实算一致（%s）' % kb(tg))
     return 0
 
 

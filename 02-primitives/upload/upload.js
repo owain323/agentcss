@@ -415,8 +415,19 @@
       var files = currentFiles(this.input);
       var r = this._validate(files);
 
-      /* 超限/类型不符的文件不能留在 input 里（会真的被提交）⇒ 剔除后写回 */
-      if (r.rejected.length) writeFiles(this.input, r.keep);
+      /* 超限/类型不符的文件不能留在 input 里（会真的被提交）⇒ 剔除后写回。
+         🔴 写回失败必须当场说清楚：没有 `DataTransfer` 构造器的老 Safari 上
+            `writeFiles` 返回 false，此时 input.files 根本改不了 ⇒ 被拒的文件
+            仍会被提交。drop 路径一直有这条检查，change 路径漏了：
+            界面显示"已拒收"、提交里却有它 —— 比直接报错危险得多。 */
+      if (r.rejected.length && !writeFiles(this.input, r.keep)) {
+        this.progress = [];
+        this.rejected = [{ file: r.rejected[0].file, reason: 'unsupported',
+          text: this.labels.noDrop }];
+        this.render();
+        this.announce(this.labels.noDropShort);
+        return;
+      }
 
       this.progress = [];
       this.rejected = r.rejected;

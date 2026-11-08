@@ -507,7 +507,8 @@ if (list.hidden) open(); else close();
 }
 function onListClick(e) {
 if (destroyed) return;
-var o = e.target.closest ? closest(e.target, '[role="option"]') : null;
+
+var o = closest(e.target, '[role="option"]');
 if (!o) return;
 commit(options.indexOf(o));
 }

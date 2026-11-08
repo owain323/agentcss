@@ -163,9 +163,15 @@
       to.setAttribute('aria-invalid', msg ? 'true' : 'false');
       if (msg) {
         var id = 'dr-err-' + (++uid);
-        errBox.id = id;
-        from.setAttribute('aria-describedby', id);
-        to.setAttribute('aria-describedby', id);
+        /* 🔴 errBox 是**可选**的（标记里可以不给错误槽）。上面那段用
+           `if (errBox)` 守住了，这里原来没有 ⇒ 缺错误槽 + 只填一端日期
+           = TypeError 直接把正常输入路径炸掉。
+           没有错误槽时只是读不到具体原因；aria-invalid 仍然标了。 */
+        if (errBox) {
+          errBox.id = id;
+          from.setAttribute('aria-describedby', id);
+          to.setAttribute('aria-describedby', id);
+        }
       } else {
         from.removeAttribute('aria-describedby');
         to.removeAttribute('aria-describedby');

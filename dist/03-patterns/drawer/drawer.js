@@ -127,7 +127,54 @@ var FOCUSABLE = [
 '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-var lockCount = 0, savedScroll = 0, inerts = [];
+var lockCount = 0, savedScroll = 0;
+
+var bgRefs = [];
+
+function bgAcquire(node) {
+for (var i = 0; i < bgRefs.length; i++) {
+if (bgRefs[i].node === node) { bgRefs[i].count++; return; }
+}
+
+bgRefs.push({
+node: node, count: 1,
+prevInert: node.inert === true,
+prevAria: node.getAttribute('aria-hidden')
+});
+node.inert = true;
+node.setAttribute('aria-hidden', 'true');
+}
+
+function bgRelease(node) {
+for (var i = 0; i < bgRefs.length; i++) {
+if (bgRefs[i].node !== node) continue;
+var rec = bgRefs[i];
+rec.count--;
+if (rec.count <= 0) {
+node.inert = rec.prevInert === true;
+if (rec.prevAria === null) node.removeAttribute('aria-hidden');
+else node.setAttribute('aria-hidden', rec.prevAria);
+bgRefs.splice(i, 1);
+}
+return;
+}
+}
+
+function setBackgroundInert(on, bucket) {
+if (on) {
+var got = [];
+
+Array.prototype.forEach.call(document.body.children, function (n) {
+if (n.hasAttribute && n.hasAttribute('data-drawer-host')) return;
+if (n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
+bgAcquire(n);
+got.push(n);
+});
+return got;
+}
+(bucket || []).forEach(function (n) { bgRelease(n); });
+return [];
+}
 
 function lockScroll() {
 if (lockCount === 0) {
@@ -141,26 +188,6 @@ lockCount = Math.max(0, lockCount - 1);
 if (lockCount === 0) {
 document.body.style.overflow = '';
 window.scrollTo(0, savedScroll);
-}
-}
-
-function setBackgroundInert(on) {
-if (on) {
-if (inerts.length) return;
-
-Array.prototype.forEach.call(document.body.children, function (n) {
-if (n.hasAttribute && n.hasAttribute('data-drawer-host')) return;
-if (n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
-n.inert = true;
-n.setAttribute('aria-hidden', 'true');
-inerts.push(n);
-});
-} else {
-inerts.forEach(function (n) {
-n.inert = false;
-n.removeAttribute('aria-hidden');
-});
-inerts = [];
 }
 }
 
@@ -210,6 +237,8 @@ var host = document.createElement('div');
 host.className = 'drawer-backdrop';
 host.setAttribute('data-drawer-host', '');
 if (opt.label) host.setAttribute('aria-label', opt.label);
+
+var bgNodes = [];
 
 var d = document.createElement('aside');
 d.className = 'drawer ' + placeCls;
@@ -265,7 +294,7 @@ d.appendChild(foot);
 host.appendChild(d);
 document.body.appendChild(host);
 
-setBackgroundInert(true);
+bgNodes = setBackgroundInert(true);
 lockScroll();
 
 var f = d.querySelectorAll(FOCUSABLE);
@@ -319,7 +348,8 @@ d.setAttribute('data-state', 'leaving');
 d.removeEventListener('keydown', onKey);
 
 dm.destroy();
-setBackgroundInert(false);
+setBackgroundInert(false, bgNodes);
+bgNodes = [];
 unlockScroll();
 
 var done = false;

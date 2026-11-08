@@ -34,20 +34,35 @@ function fmtKB(bytes) {
 return Math.round(bytes / 1024) + ' KB';
 }
 
+function safeOverride(v) {
+if (typeof v !== 'string' || v === '') return false;
+if (/^[a-z][a-z0-9+.\-]*:/i.test(v)) return false;
+if (v.charAt(0) === '/' && v.charAt(1) === '/') return false;
+if (v.indexOf('\\') >= 0) return false;
+if (/[\u0000-\u001f\u007f]/.test(v)) return false;
+return true;
+}
+
 function Viewer(node) {
 this.node = node;
 
 var q = (location.search || '').replace(/^\?/, '');
+var overrode = false;
 function qp(k, dflt) {
 var m = new RegExp('(?:^|&)' + k + '=([^&]*)').exec(q);
-return m ? decodeURIComponent(m[1]) : dflt;
+if (!m) return dflt;
+var v;
+try { v = decodeURIComponent(m[1]); } catch (e) { return dflt; }
+if (!safeOverride(v)) return dflt;
+overrode = true;
+return v;
 }
-this.qOverride = !!q;
 this.src = qp('mv', node.getAttribute('data-mv') || '');
 this.h = parseInt(node.getAttribute('data-mv-height') || '320', 10);
 this.threeSrc = qp('three', node.getAttribute('data-mv-three') || '');
 this.gltfSrc = qp('gltf', node.getAttribute('data-mv-gltf') || '');
 this.orbitSrc = qp('orbit', node.getAttribute('data-mv-orbit') || '');
+this.qOverride = overrode;
 this.instances = {};
 this.state = 'idle';
 this.build();

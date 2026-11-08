@@ -213,8 +213,12 @@
       /* 焦点在页面其它可编辑元素里时不抢键盘 */
       if (act && /^(INPUT|TEXTAREA|SELECT)$/.test(act.tagName)) return;
       if (act && act.isContentEditable) return;
-      /* 有焦点且不在本组件内 ⇒ 只响应 Home/End 之外无意义，直接放行 */
-      if (!inside && act && act !== document.body) return;
+      /* 🔴 焦点必须在**本组件内**才响应。
+         原来还放行 `document.body`（注释说是"页面空闲"），实测这是错的：
+         页面一加载 activeElement 就是 body，于是 End / → 被翻页吞掉并
+         preventDefault ⇒ **整页滚动键全失效**，用户按 End 不滚屏而翻页。
+         翻页后焦点由 focusCurrent() 放回当前页按钮，不需要 body 兜底。 */
+      if (!inside) return;
 
       var k = e.key;
       if (k === 'ArrowLeft') { self.go(self.page - 1); }

@@ -488,7 +488,10 @@
 
     /* ---------- 菜单项 ---------- */
     menu.addEventListener('click', function (e) {
-      var li = e.target.closest ? closest(e.target, '[role="menuitem"]') : null;
+      /* 直接用 helper：它内部先试原生、没有就自己走上去。
+         写成 `e.target.closest ? closest(...) : null` 会让兜底永远跑不到
+         —— 没有原生 closest 的旧 WebView 里鼠标点菜单项等于没点。 */
+      var li = closest(e.target, '[role="menuitem"]');
       if (!li) return;
       e.stopPropagation();
       if (li.getAttribute('aria-disabled') === 'true') return;

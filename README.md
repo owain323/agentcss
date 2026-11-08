@@ -282,14 +282,15 @@ Three mistakes the template above already avoids:
 
 Adopting a component costs three things: `tokens` (always required), the component CSS, and optionally component JS.
 
-The token set is **2.6 KB gzip** as a minified build, and it is larger than any single component — so it *is* the real starting price for "just one button". The full per-component table is generated into [`dist/COSTS.md`](dist/COSTS.md) rather than repeated here, because a hand-written table drifts.
+The token set is **3.1 KB gzip** as a minified build, and it is larger than any single component — so it *is* the real starting price for "just one button". The full per-component table is generated into [`dist/COSTS.md`](dist/COSTS.md) rather than repeated here, because a hand-written table drifts. (This line used to say 2.6 KB; the number is machine-checked against `dist/COSTS.md` by `05-audit/costs-gate`.)
 
-Two builds ship:
+One build ships — there is no separate `.min.css` variant:
 
-| | Comments | Minified | Use it for |
+| | Comments | Whitespace | Use it for |
 |---|---|---|---|
-| `dist/` | stripped, formatting kept | no | copying, debugging |
-| `dist/**/*.min.css` | stripped | yes | production |
+| `dist/**/*.css` | stripped | collapsed (one line per file) | shipping |
+| `dist/**/*.js` | stripped | kept (line structure preserved) | shipping |
+| source tree | kept | kept | reading, debugging |
 
 The source tree keeps every comment — that is documentation, not payload.
 

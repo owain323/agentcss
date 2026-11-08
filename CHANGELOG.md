@@ -18,6 +18,84 @@
 
 ## [Unreleased]
 
+## [0.27.10] - 2026-11-08
+
+> 两份独立的外部审计（AI 工具链 / CSS 与交付卫生 / 行为 JS / 主理人复核）
+> 报了一批"违反自己定的标准"的问题。这一版逐条复核后修复：**属实的修，
+> 误判的留证据不改**。每一条都配了能红的判据。
+
+### Fixed — 安全
+
+- **补丁 API 的原型污染**（`ai/patch.js`）：`update` 的 `id="__proto__"` 会让
+  `work.nodes['__proto__']` 取到 `Object.prototype`，绕过"节点不存在"守卫后
+  直接写进原型链 —— 一次 `apply` 就能污染整个进程。现在：保留名
+  （`__proto__` / `constructor` / `prototype`，覆盖 `id` / `parent` /
+  `node.id` / `set` / `unset` 五个入口）明确拒绝 + 无原型对象承载。
+- **`ai/validate.js` 的原型链查找**：`k in data` 与 `props[k] !== undefined`
+  在字段名撞上 `Object.prototype`（`toString` 等）时给出错误答案，缺字段检查
+  被静默跳过。改用 `hasOwnProperty`。
+- **`model-viewer` 的 URL 查询参数可注入任意脚本**：`?three=` / `?gltf=` /
+  `?orbit=` 原样进 `<script src>` ⇒ 构造链接 + 点一次"加载"即在本站源执行
+  任意 JS。现在覆盖值只接受**同源相对路径**（拒绝 scheme / 协议相对 /
+  反斜杠 / 控制字符），绝对 URL 退回默认值。`SECURITY.md` 的 sink 表补记这一面。
+
+### Fixed — 行为
+
+- **drawer 嵌套时的背景隔离**：`setBackgroundInert` 无引用计数 ⇒ 内层关闭会
+  解除外层的 `inert`，外层还开着背景却能交互。改成与 `overlay` 同构的
+  引用计数 + **记原态**（`aria-hidden` 原值也一并还原）。
+  `drawer/README.md` 里那句"背景 inert 用 lockCount 计数管理"是**错的**
+  （`lockCount` 只管滚动锁），已改为如实描述。
+- **`closest` 死兜底**（`dropdown` / `select` / `tree` 共 4 处）：
+  `e.target.closest ? closest(...) : null` 让本地兜底永远跑不到 ——
+  没有原生 `closest` 的旧 WebView 里，鼠标点菜单项/选项/树节点全部失效，
+  点树箭头还退化成"选中"。helper 自带原生/兜底判断，直接调即可。
+- **`date-range`**：`errBox` 是可选节点，但 `errBox.id = id` 没守卫 ⇒
+  缺错误槽 + 只填一端日期 = TypeError 把正常输入路径炸掉。
+- **`upload`**：change 路径忽略 `writeFiles` 返回值 —— 老 Safari 上没有
+  `DataTransfer` 构造器时写回失败，界面显示"已拒收"但文件仍会被提交。
+  现在与 drop 路径一致：写不回去就明说不可用。
+- **`pagination`**：焦点在 `document.body`（页面默认态）时方向键 / Home /
+  End 被翻页吞掉并 `preventDefault` ⇒ 整页滚动键失效。现在只在本组件内响应。
+
+### Fixed — 几何 / RTL
+
+- **`switch`**：逻辑定位（`inset-inline-start`）+ 物理位移（`translateX(+行程)`）
+  ⇒ RTL 下滑块滑出轨道。行程变量 `--sw-travel` 落实成真变量（此前只写在注释里），
+  RTL 下取负。
+- **`nav`**：抽屉 `inset-inline-end: 0` + 收起 `translateX(100%)` ⇒ RTL 下
+  抽屉从视口外**移进**视口盖住内容。补 RTL 覆盖。
+- 新增门禁 `05-audit/rtl-geometry-gate.js`：量真实几何（等过渡结束再读），
+  覆盖 switch 行程方向与 nav 收/开位置。像素基线只偶然覆盖到 nav，
+  switch 完全没覆盖 —— 这类错不报错、不溢出、不触发行为契约。
+
+### Fixed — 文档与数字
+
+- **`tokens` 的 gzip 起步价三处三值**：英文 README 2.6 KB、中文 2.1 KB、
+  `COSTS.md` 3.1 KB（只有它对，实测 3144 B）。现在两个 README 都写 3.1 KB，
+  并且 **`dist-cost-gate.py` 会去读这两句话**：数字一漂就红。
+- **README 的"两种构建"表是假的**：实测 49 个 dist CSS 全是单行压缩版，
+  `.min.css` 从 0.9.0 起就不存在了。改成如实的三种形态（CSS 压缩 /
+  JS 只剥注释 / 源码树留注释）。
+- **`llms.txt`**：`behaviors.json` 是**四个**核（没有 scroll lock）；
+  "其余子命令都是只读"对 `pdf` 与 `patch -o` 不成立。
+
+### Added
+
+- `ai-layer-gate.js` ⑨¹–⑨⁸：原型污染（patch 两处 + validate 一处）、
+  `pitfalls --scope/--tag` 拼错必须 exit 2、`--version`、`--json` 取值严格、
+  `shot` 两条失败路径形状一致。
+- `pattern-behavior-check.js` D1–D4：嵌套抽屉的 inert 引用计数与原态还原。
+- `rtl-geometry-gate.js`：如上。
+- `dist-cost-gate.py` 新增"README 里的 tokens 数字必须与实算一致"。
+
+### 复核后**未改**的（审计误判或不属于本库范围）
+
+- 审计报"`shot` 缺 `--src`"—— `shot` 本来就不接受 `--src`（用位置参数），
+  报"不认识开关"是对的。
+- 审计报"`benchmark/models/` 只有参考解法"—— 这是既定事实，门禁一直如实
+  标 `UNVERIFIED`，不是缺陷。
+
 ## [0.27.9] - 2026-11-07
 
 ### Fixed

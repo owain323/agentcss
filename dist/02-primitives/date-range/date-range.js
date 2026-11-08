@@ -136,9 +136,12 @@ from.setAttribute('aria-invalid', msg ? 'true' : 'false');
 to.setAttribute('aria-invalid', msg ? 'true' : 'false');
 if (msg) {
 var id = 'dr-err-' + (++uid);
+
+if (errBox) {
 errBox.id = id;
 from.setAttribute('aria-describedby', id);
 to.setAttribute('aria-describedby', id);
+}
 } else {
 from.removeAttribute('aria-describedby');
 to.removeAttribute('aria-describedby');

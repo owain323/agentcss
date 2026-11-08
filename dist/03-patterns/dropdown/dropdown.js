@@ -416,7 +416,8 @@ if (menu.hidden) open(); else close();
 });
 
 menu.addEventListener('click', function (e) {
-var li = e.target.closest ? closest(e.target, '[role="menuitem"]') : null;
+
+var li = closest(e.target, '[role="menuitem"]');
 if (!li) return;
 e.stopPropagation();
 if (li.getAttribute('aria-disabled') === 'true') return;

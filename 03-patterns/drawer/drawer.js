@@ -150,7 +150,71 @@
     '[tabindex]:not([tabindex="-1"])',
   ].join(',');
 
-  var lockCount = 0, savedScroll = 0, inerts = [];
+  var lockCount = 0, savedScroll = 0;
+  /* 背景隔离的引用计数栈（E: 嵌套 early-release）。
+     🔴 原来只有一个 `inerts` 数组：
+          setBackgroundInert(true) 在 inerts 非空时**早退**（第二次打开不记录）
+          setBackgroundInert(false) **无条件清空全部**
+        ⇒ 外层开 → 内层开（早退）→ 内层关（全解锁）→ 外层还开着，背景已可交互。
+        而 README「嵌套用锁计数」那段把这件事说成已解决，实际 lockCount 只管滚动锁。
+     同库 overlay.js 早有正确实现（inertAcquire/inertRelease + prev 原态），
+     这里改成同一套：**计数 + 记原态**，只有降到 0 才还原。
+     ⚠️ aria-hidden 也一起计数：原来内层关闭会顺手撤掉外层还在的 aria-hidden。 */
+  var bgRefs = [];
+
+  function bgAcquire(node) {
+    for (var i = 0; i < bgRefs.length; i++) {
+      if (bgRefs[i].node === node) { bgRefs[i].count++; return; }
+    }
+    /* 记下打开**之前**的状态：页面可能本来就是 inert / 已经有 aria-hidden
+       （宿主自己的锁屏、或另一个弹层）。固定写回 false / 删掉了事都会误伤。 */
+    bgRefs.push({
+      node: node, count: 1,
+      prevInert: node.inert === true,
+      prevAria: node.getAttribute('aria-hidden')
+    });
+    node.inert = true;
+    node.setAttribute('aria-hidden', 'true');
+  }
+
+  function bgRelease(node) {
+    for (var i = 0; i < bgRefs.length; i++) {
+      if (bgRefs[i].node !== node) continue;
+      var rec = bgRefs[i];
+      rec.count--;
+      if (rec.count <= 0) {
+        node.inert = rec.prevInert === true;
+        if (rec.prevAria === null) node.removeAttribute('aria-hidden');
+        else node.setAttribute('aria-hidden', rec.prevAria);
+        bgRefs.splice(i, 1);
+      }
+      return;
+    }
+  }
+
+  /**
+   * 背景整体取/还一个引用。
+   * @param {boolean} on
+   * @param {Array} bucket 关闭时传打开时返回的那个数组 ——
+   *        不能重新扫 body：期间可能新增了别人的节点，释放不该碰到它们。
+   * @returns {Array} on=true 时返回本次 acquire 的节点列表
+   */
+  function setBackgroundInert(on, bucket) {
+    if (on) {
+      var got = [];
+      /* ⚠️ 只把 body 的**直接子元素**（除抽屉容器）设 inert。
+         抽屉本身也在 body 下 ⇒ 必须排除，否则刚打开就 inert 了。 */
+      Array.prototype.forEach.call(document.body.children, function (n) {
+        if (n.hasAttribute && n.hasAttribute('data-drawer-host')) return;
+        if (n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
+        bgAcquire(n);
+        got.push(n);
+      });
+      return got;
+    }
+    (bucket || []).forEach(function (n) { bgRelease(n); });
+    return [];
+  }
 
   function lockScroll() {
     if (lockCount === 0) {
@@ -164,27 +228,6 @@
     if (lockCount === 0) {
       document.body.style.overflow = '';
       window.scrollTo(0, savedScroll);
-    }
-  }
-
-  function setBackgroundInert(on) {
-    if (on) {
-      if (inerts.length) return;
-      /* ⚠️ 只把 body 的**直接子元素**（除抽屉容器）设 inert。
-         抽屉本身也在 body 下 ⇒ 必须排除，否则刚打开就 inert 了。 */
-      Array.prototype.forEach.call(document.body.children, function (n) {
-        if (n.hasAttribute && n.hasAttribute('data-drawer-host')) return;
-        if (n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
-        n.inert = true;
-        n.setAttribute('aria-hidden', 'true');
-        inerts.push(n);
-      });
-    } else {
-      inerts.forEach(function (n) {
-        n.inert = false;
-        n.removeAttribute('aria-hidden');
-      });
-      inerts = [];
     }
   }
 
@@ -255,6 +298,9 @@
     host.className = 'drawer-backdrop';
     host.setAttribute('data-drawer-host', '');
     if (opt.label) host.setAttribute('aria-label', opt.label);
+    /* 本次打开 acquire 到的背景节点。关闭时按这个列表逐个 release —— 不能
+       重新扫 body：期间宿主可能插入了新节点，释放不该碰到它们。 */
+    var bgNodes = [];
 
     var d = document.createElement('aside');
     d.className = 'drawer ' + placeCls;
@@ -313,9 +359,8 @@
     host.appendChild(d);
     document.body.appendChild(host);
 
-    setBackgroundInert(true);
+    bgNodes = setBackgroundInert(true);
     lockScroll();
-
     /* 初始焦点：优先指定项，其次第一个**真的能聚焦**的元素，最后容器本身。
        ------------------------------------------------------------------
        🔴 0.19.0 修：原来写的是 `if (t) t.focus(); else (f[0] || d).focus();`
@@ -391,7 +436,8 @@
       /* 核的监听器与栈记录必须一起摘：只摘 Esc 不摘栈的话，
          点外部仍会关到一个已经没了的抽屉（dismissable 门禁 ⑥ 守这条）。 */
       dm.destroy();
-      setBackgroundInert(false);
+      setBackgroundInert(false, bgNodes);
+      bgNodes = [];
       unlockScroll();
       /* 动画结束再移除；reduced-motion 下没有 transition ⇒ 兜底定时器 */
       var done = false;

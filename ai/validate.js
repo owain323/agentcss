@@ -28,6 +28,10 @@
 
 var fs = require('fs');
 var path = require('path');
+/* 原型链安全的"自有属性"判定：`k in data` / `obj[k] !== undefined`
+   在字段名撞上 Object.prototype（toString / constructor / valueOf …）时
+   会给出错误答案 —— 数据里根本没有该字段，检查却通过了。 */
+var HAS_OWN = Object.prototype.hasOwnProperty;
 
 var AI_DIR = __dirname;
 
@@ -238,13 +242,19 @@ function validate(schema, data, root, ptr, errors) {
   }
   if (isPlainObject(data)) {
     (schema.required || []).forEach(function (k) {
-      if (!(k in data)) {
+      /* 🔴 必须用 hasOwnProperty，不能用 `k in data`：
+         `in` 会沿原型链查找 ⇒ required 里若出现 `toString` / `constructor`
+         这类名字，任何普通对象都"有"该字段，缺字段检查被静默跳过。
+         数据来自外部（AI 写的 doc.json），字段名不受我们控制。 */
+      if (!HAS_OWN.call(data, k)) {
         errors.push({ path: ptr, msg: '缺少必填字段 ' + k });
       }
     });
     var props = schema.properties || {};
     Object.keys(data).forEach(function (k) {
-      if (props[k] !== undefined) {
+      /* 同理：`props[k] !== undefined` 在 k 命中原型链时会拿到
+         Object.prototype 上的函数，把函数当 schema 用。 */
+      if (HAS_OWN.call(props, k)) {
         validate(props[k], data[k], root, ptr + '/' + k, errors);
         return;
       }
