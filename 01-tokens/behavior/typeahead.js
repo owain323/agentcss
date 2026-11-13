@@ -118,6 +118,14 @@ var flTypeahead = function (opts) {
     type: type,
     clear: clear,
     buffer: function () { return buf; },
+    /* 🔴 锚点同步口（APG typeahead：搜索从"当前聚焦项之后"开始）。
+       没有它，焦点被方向键/点击挪走后，锚点仍停在上一次命中项
+       => 打字会绕回旧位置，不符合 APG Tree View 的键盘契约。 */
+    setLast: function (i) {
+      if (typeof i === 'number' && i >= -1 && i < (items() || []).length) {
+        last = i;
+      }
+    },
     destroy: function () { stop(); },
   };
 };

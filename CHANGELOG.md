@@ -65,6 +65,27 @@
 - **tree 的 destroy 不再没收内容**：原来直接清空 root 的全部子节点，销毁即永久
   删除使用者的树标记。现在恢复打开前的原样（快照回写），root 级三份监听一并摘除；
   嵌套 `ul` 自动补 `role="group"`（APG 层级语义，作者已写的不覆盖）。
+- **弹层 id 时间戳撞车**：overlay / drawer / dropdown 的生成节点 id 用
+  `Date.now()` / `getTime()` —— 同一毫秒批量开两个弹层（自动化测试、框架批量渲染）
+  时 aria-labelledby / aria-describedby 指到同一个 id。改模块级自增序号。
+- **动作按钮 variant 走白名单**：drawer 原样拼接 `' btn--' + variant`，任何字符串
+  都能拼出无 CSS 命中的类名；overlay 的三元链让 ghost 永远到不了。两个组件统一
+  白名单（primary / danger / ghost / secondary，未知值退回默认），类型同步
+  （`DialogAction.kind` → `variant` —— runtime 与 demo 两处一致读的都是 variant）。
+- **typeahead 锚点随焦点同步**（APG Tree View）：核加 `setLast(i)` 同步口；
+  原来锚点只在打字命中时更新 ⇒ 方向键挪走后再打字，搜索从旧位置绕回旧节点。
+- **toc scrollspy 改文档绝对坐标**：`offsetTop` 相对 offsetParent —— 节标题祖先
+  一带 positioning（sticky 头、relative 容器）高亮就错节。改
+  `getBoundingClientRect + 滚动偏移`，对定位环境免疫。
+- **nav 抽屉兜底焦点生效**：无路可落时聚焦列表本身，但页面写的 `<ul>` 天生
+  不可聚焦 ⇒ focus() 静默无效。初始化时给列表补 `tabindex="-1"`
+  （只开编程聚焦，不进 Tab 序）。
+- **pagination 触屏 hover 粘滞**：一条未门控的 `:hover` 与下方
+  `@media (hover: hover)` 里的同规则并存 —— 删除裸写的那条，只留门控块。
+- **content 外链 ↗ 提示覆盖段落内链接**：`.prose > a[target=_blank]` 改后代
+  选择器（正文链接几乎都在 `<p>` 里，直接子选择器一条都匹配不上）。
+- **npm 包排除开发脚本**：`04-recipes/detail-page/verify-skeleton.py` 不再随包
+  分发（页内的 `full/partial/null.html` 是文档登记的数据完整度示例，保留）。
 
 ### Fixed — 契约与文档
 

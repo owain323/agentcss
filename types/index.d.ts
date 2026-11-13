@@ -490,8 +490,13 @@ export interface ToastOptions {
 export interface DialogAction {
   text: string;
   value?: string;
-  /** 视觉/语义变体（源码按 `actions` 的 `kind` 判定，未知值退回默认） */
-  kind?: 'primary' | 'danger' | 'ghost';
+  /**
+   * 视觉/语义变体，对应 button.css 真实存在的类（白名单）：
+   * primary / danger / ghost / secondary；未知值退回次要按钮。
+   * ⚠️ 之前这里声明成 `kind` —— runtime 与 demo 两处一致读的都是
+   *    `variant`（drawer.js / overlay.js），`kind` 是个传了没用的幻影名。
+   */
+  variant?: 'primary' | 'danger' | 'ghost' | 'secondary';
   onClick?(): void;
 }
 
@@ -752,7 +757,7 @@ export interface DrawerOpenOptions {
   /** 逐次净化钩子（优先于模块级 `Drawer.setSanitizer`） */
   sanitize?(html: string): string;
   labels?: DrawerLabels;
-  actions?: Array<{ text: string; kind?: 'primary' | 'danger' | 'ghost'; onClick?(): void }>;
+  actions?: Array<{ text: string; variant?: 'primary' | 'danger' | 'ghost' | 'secondary'; onClick?(): void }>;
 }
 
 export interface UploadOptions {

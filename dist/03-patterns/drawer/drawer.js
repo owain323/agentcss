@@ -127,6 +127,12 @@ var FOCUSABLE = [
 '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
+var drawerUid = 0;
+
+var BTN_VARIANT = {
+primary: 'btn--primary', danger: 'btn--danger',
+ghost: 'btn--ghost', secondary: 'btn--secondary',
+};
 var lockCount = 0, savedScroll = 0;
 
 var sbwChanged = false, sbwSaved = '';
@@ -260,7 +266,8 @@ var d = document.createElement('aside');
 d.className = 'drawer ' + placeCls;
 d.setAttribute('role', 'dialog');
 d.setAttribute('aria-modal', 'true');
-if (!d.id) d.id = 'drawer-' + (new Date()).getTime();
+
+if (!d.id) d.id = 'drawer-' + (++drawerUid);
 if (opt.title) d.setAttribute('aria-labelledby', d.id + '-title');
 else d.setAttribute('aria-label', opt.label || L.dialog);
 d.tabIndex = -1;
@@ -296,7 +303,8 @@ foot.className = 'drawer__foot';
 opt.actions.forEach(function (a) {
 var b = document.createElement('button');
 b.type = 'button';
-b.className = 'btn' + (a.variant ? ' btn--' + a.variant : '');
+
+b.className = 'btn' + (BTN_VARIANT[a.variant] ? ' ' + BTN_VARIANT[a.variant] : '');
 b.textContent = a.label;
 b.addEventListener('click', function () {
 if (a.onClick) a.onClick(close);

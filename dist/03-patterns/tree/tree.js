@@ -160,6 +160,12 @@ return {
 type: type,
 clear: clear,
 buffer: function () { return buf; },
+
+setLast: function (i) {
+if (typeof i === 'number' && i >= -1 && i < (items() || []).length) {
+last = i;
+}
+},
 destroy: function () { stop(); },
 };
 };
@@ -301,7 +307,12 @@ var node = closest(e.target, '.tree__node');
 if (!node) return;
 var list = visible();
 for (var i = 0; i < list.length; i++) {
-if (list[i].node === node) { cur = i; break; }
+if (list[i].node === node) {
+cur = i;
+
+typeahead.setLast(i);
+break;
+}
 }
 }
 root.addEventListener('focusin', onRootFocusin);

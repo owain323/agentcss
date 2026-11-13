@@ -194,6 +194,14 @@
       type: type,
       clear: clear,
       buffer: function () { return buf; },
+      /* 🔴 锚点同步口（APG typeahead：搜索从"当前聚焦项之后"开始）。
+         没有它，焦点被方向键/点击挪走后，锚点仍停在上一次命中项
+         => 打字会绕回旧位置，不符合 APG Tree View 的键盘契约。 */
+      setLast: function (i) {
+        if (typeof i === 'number' && i >= -1 && i < (items() || []).length) {
+          last = i;
+        }
+      },
       destroy: function () { stop(); },
     };
   };
@@ -366,7 +374,14 @@
       if (!node) return;
       var list = visible();
       for (var i = 0; i < list.length; i++) {
-        if (list[i].node === node) { cur = i; break; }
+        if (list[i].node === node) {
+          cur = i;
+          /* 🔴 typeahead 锚点随焦点同步（APG：搜索从当前项之后开始）。
+             原来锚点只在 type() 命中时更新 => 方向键挪走后再打字，
+             搜索从旧位置绕回旧节点。Tab/点击/编程聚焦三条路径都走这里。 */
+          typeahead.setLast(i);
+          break;
+        }
       }
     }
     root.addEventListener('focusin', onRootFocusin);

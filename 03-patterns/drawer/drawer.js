@@ -150,6 +150,13 @@
     '[tabindex]:not([tabindex="-1"])',
   ].join(',');
 
+  var drawerUid = 0;   /* 抽屉元素 id 自增 */
+
+  /* 动作按钮的 variant 白名单 —— 只允许 button.css 里真实存在的类 */
+  var BTN_VARIANT = {
+    primary: 'btn--primary', danger: 'btn--danger',
+    ghost: 'btn--ghost', secondary: 'btn--secondary',
+  };
   var lockCount = 0, savedScroll = 0;
   /* 滚动条宽度补偿：只记录自己真的改过的（unlock 只回写这些，见 unlockScroll） */
   var sbwChanged = false, sbwSaved = '';
@@ -330,7 +337,9 @@
     d.className = 'drawer ' + placeCls;
     d.setAttribute('role', 'dialog');
     d.setAttribute('aria-modal', 'true');
-    if (!d.id) d.id = 'drawer-' + (new Date()).getTime();
+    /* 🔴 id 用模块级自增：同一毫秒开两个抽屉，时间戳撞车
+       => aria-labelledby 指错对象（同 overlay.js dlgUid）。 */
+    if (!d.id) d.id = 'drawer-' + (++drawerUid);
     if (opt.title) d.setAttribute('aria-labelledby', d.id + '-title');
     else d.setAttribute('aria-label', opt.label || L.dialog);
     d.tabIndex = -1;              /* 焦点陷阱的兜底落点 */
@@ -369,7 +378,10 @@
       opt.actions.forEach(function (a) {
         var b = document.createElement('button');
         b.type = 'button';
-        b.className = 'btn' + (a.variant ? ' btn--' + a.variant : '');
+        /* 🔴 variant 走白名单：拼 `' btn--' + a.variant` 会把任何字符串都
+           拼成类名（'tp' => .btn--tp，无 CSS 命中、门禁也认不出谁在用）。
+           同 overlay.js 的 TOAST_VARIANT：未知值退回默认按钮。 */
+        b.className = 'btn' + (BTN_VARIANT[a.variant] ? ' ' + BTN_VARIANT[a.variant] : '');
         b.textContent = a.label;
         b.addEventListener('click', function () {
           if (a.onClick) a.onClick(close);

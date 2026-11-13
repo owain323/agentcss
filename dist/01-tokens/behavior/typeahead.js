@@ -56,6 +56,12 @@ return {
 type: type,
 clear: clear,
 buffer: function () { return buf; },
+
+setLast: function (i) {
+if (typeof i === 'number' && i >= -1 && i < (items() || []).length) {
+last = i;
+}
+},
 destroy: function () { stop(); },
 };
 };

@@ -67,12 +67,16 @@
        ---------------------------------------------------------------- */
     function currentId() {
       var y = global.pageYOffset || document.documentElement.scrollTop || 0;
-      /* 偏移 100px：标题滚到视口顶之前就认为进入该节，
-         否则用户看标题时高亮还停在上一个 */
+      /* 🔴 不用 offsetTop：它是相对 offsetParent 的 —— 节标题的任何一个
+         祖先带 position（sticky 头、relative 容器都常见）时，
+         offsetTop 就不再等于文档坐标 ⇒ 高亮错节且无报错。
+         getBoundingClientRect + 滚动偏移 = 文档绝对坐标，对定位环境免疫。
+         （update 已 rAF 节流，每次滚动帧算十几个 rect 成本同级。） */
       var line = y + 100;
       var found = sections[0];
       for (var n = 0; n < sections.length; n++) {
-        if (sections[n].offsetTop <= line) { found = sections[n]; } else { break; }
+        var r = sections[n].getBoundingClientRect();
+        if (r.top + y <= line) { found = sections[n]; } else { break; }
       }
       /* 滚到底部时高亮最后一节，否则最后一段永远不亮 */
       var doc = document.documentElement;

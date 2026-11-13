@@ -41,7 +41,7 @@ return null;
 
 function toArray(x) { return Array.prototype.slice.call(x); }
 
-function checkField(field, labels) {
+function checkField(field) {
 var input = field.querySelector('.field__input');
 var err = field.querySelector('.field__error');
 if (!input || !err) return true;
@@ -114,7 +114,7 @@ form.fvInstance = this;
 }
 
 FormValidation.prototype.check = function (field) {
-return checkField(field, this.labels);
+return checkField(field);
 };
 
 FormValidation.prototype.checkAll = function () {

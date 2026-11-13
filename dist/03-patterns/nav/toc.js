@@ -37,7 +37,8 @@ var y = global.pageYOffset || document.documentElement.scrollTop || 0;
 var line = y + 100;
 var found = sections[0];
 for (var n = 0; n < sections.length; n++) {
-if (sections[n].offsetTop <= line) { found = sections[n]; } else { break; }
+var r = sections[n].getBoundingClientRect();
+if (r.top + y <= line) { found = sections[n]; } else { break; }
 }
 
 var doc = document.documentElement;

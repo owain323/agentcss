@@ -57,6 +57,7 @@
     "02-primitives/",
     "03-patterns/",
     "04-recipes/",
+    "!04-recipes/detail-page/verify-skeleton.py",
     "09-assets/",
     "!09-assets/model-viewer/vendor",
     "!09-assets/model-viewer/models",

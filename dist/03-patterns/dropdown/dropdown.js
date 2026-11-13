@@ -1,6 +1,8 @@
 (function (global) {
 'use strict';
 
+var ddUid = 0;
+
 var flEmit = function (el, name, detail) {
 if (!el || !el.dispatchEvent) return null;
 var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
@@ -255,6 +257,12 @@ return {
 type: type,
 clear: clear,
 buffer: function () { return buf; },
+
+setLast: function (i) {
+if (typeof i === 'number' && i >= -1 && i < (items() || []).length) {
+last = i;
+}
+},
 destroy: function () { stop(); },
 };
 };
@@ -406,7 +414,7 @@ usable: function (el) { return el.getAttribute('aria-disabled') !== 'true'; },
 onHit: function (i) { focusAt(i); },
 });
 
-if (!menu.id) menu.id = 'dd-menu-' + (new Date()).getTime();
+if (!menu.id) menu.id = 'dd-menu-' + (++ddUid);
 btn.setAttribute('aria-haspopup', 'true');
 btn.setAttribute('aria-expanded', 'false');
 btn.setAttribute('aria-controls', menu.id);
