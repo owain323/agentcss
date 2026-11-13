@@ -457,6 +457,11 @@
         vEl.textContent = label;
         vEl.classList.toggle('select__value--placeholder', empty);
       }
+      /* 🔴 role="combobox" 在 ARIA 1.2 里不支持 name-from-content ——
+         可见文字（.select__value）读屏**不作数**，可访问名必须由作者提供。
+         ⇒ aria-label 跟随 paint 的当前值（与可见文字同串，无覆盖冲突）。
+         没有 A2 补 role 之前 axe 不查这条；补了 role 才暴露出来。 */
+      btn.setAttribute('aria-label', label);
       /* 多选标签会被 CSS 截断：title 里留全量，鼠标悬停能看全 */
       if (empty) btn.removeAttribute('title');
       else btn.setAttribute('title', label);

@@ -161,7 +161,11 @@ return rtl ? 'start' : 'end';
 function attach(el, text, place) {
 if (!el || !text) return;
 
-if (el.tooltipInstance) return;
+if (el.tooltipInstance) {
+
+el.tooltipInstance.reensureLive();
+return;
+}
 
 var fr = flFocusReturn({ fallback: el });
 
@@ -174,6 +178,8 @@ tip.setAttribute('role', 'tooltip');
 tip.textContent = text;
 
 var live = ensureLiveRegion();
+
+function reensureLive() { live = ensureLiveRegion(); }
 
 var openBy = null;
 
@@ -271,7 +277,7 @@ if (live.textContent === text) live.textContent = '';
 openBy = null;
 }
 
-el.tooltipInstance = { el: el, tip: tip, text: text, destroy: destroy };
+el.tooltipInstance = { el: el, tip: tip, text: text, destroy: destroy, reensureLive: reensureLive };
 }
 
 function detach(el) {

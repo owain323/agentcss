@@ -243,7 +243,13 @@ var flDismissable = function (opts) {
     /* 幂等守卫：同一元素重复 attach 不再双注册（监听会翻倍、
        dismissable 栈记录会一条条攒成泄漏）。与 upload/tabs 的
        xxxInstance 是同一套约定。 */
-    if (el.tooltipInstance) return;
+    if (el.tooltipInstance) {
+      /* 🔴 live region 可能被**外部**摘走（使用者清 body、框架重建都会）：
+         实例手里攥着的是游离节点 ⇒ 念不出声且无报错。重 attach 是使用者的
+         合理修复动作 —— 守卫只拦"重复注册"，不拦"重建播报通道"。 */
+      el.tooltipInstance.reensureLive();
+      return;
+    }
 
     /* 焦点归位核：在 show() 之前声明，避免读代码时误以为fr 还没定义。
        声明写在 attach 开头 ⇒ show()/hide() 用到时它一定已赋值。 */
@@ -258,6 +264,10 @@ var flDismissable = function (opts) {
     tip.textContent = text;
 
     var live = ensureLiveRegion();
+
+    /* 🔴 live region 被“外部摘除”后的重建口（幂等 attach 路径调用）。
+       ensureLiveRegion 自带"在 DOM 里就复用"判断，重复调用安全。 */
+    function reensureLive() { live = ensureLiveRegion(); }
 
     /* 气泡"为什么开着"：hover / focus / click / null。
        click 只翻转 openBy==='click' 的（文件头"触发规则"）。 */
@@ -379,7 +389,7 @@ var flDismissable = function (opts) {
       openBy = null;
     }
 
-    el.tooltipInstance = { el: el, tip: tip, text: text, destroy: destroy };
+    el.tooltipInstance = { el: el, tip: tip, text: text, destroy: destroy, reensureLive: reensureLive };
   }
 
   /**

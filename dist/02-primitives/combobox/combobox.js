@@ -502,10 +502,12 @@ return String(s).replace(/[&<>"]/g, function (c) {
       ⇒ 正确做法是调**核的** destroy()，它自己会摘 document 监听
          并且把自己从共享栈里移除。
          0.x 起核拆成两份（见 create 顶部的说明）：Esc 常驻份与
-         外部点击份都要摘，后者可能还挂在栈上（列表开着时销毁）。 */
-      releaseOutside();
-      releaseEsc();
+         外部点击份都要摘。外部点击份由 close() 统一出栈（它是唯一咽喉 ——
+         所有关闭路径都走它），destroy 里再调一次是冗余双保险，
+         双保险会让「close() 忘了出栈」这类回归永远测不到
+         （beh-reverse 实测：删一份另一份兜住，突变永远抓不到）。 */
       close();
+      releaseEsc();
     }
 
     paintTags();

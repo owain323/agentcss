@@ -185,9 +185,13 @@
     });
 
     form.addEventListener('submit', function (e) {
+      /* 🔴 无条件拦截默认提交（demo 原脚本也是首行拦截）：拦截后才有机会
+         显示汇总/成功提示 —— 只在失败分支拦的话，成功分支页面直接导航走，
+         提示闪现即逝（MODE=full 的 clicktest 实测抓到）。要真提交，
+         使用者在自己的 submit 监听（或 onChange 校验回调）里自行处理。 */
+      if (e.preventDefault) e.preventDefault();
       var bad = self.checkAll();
       if (bad.length) {
-        if (e.preventDefault) e.preventDefault();
         form.classList.add('form--has-summary');
         if (self.slot) {
           var box = buildSummary(form, self.slot, bad, self.labels);

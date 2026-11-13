@@ -151,9 +151,10 @@ if (field.hasAttribute('data-dirty')) self.check(field);
 });
 
 form.addEventListener('submit', function (e) {
+
+if (e.preventDefault) e.preventDefault();
 var bad = self.checkAll();
 if (bad.length) {
-if (e.preventDefault) e.preventDefault();
 form.classList.add('form--has-summary');
 if (self.slot) {
 var box = buildSummary(form, self.slot, bad, self.labels);

@@ -112,6 +112,29 @@
 - **ARCHITECTURE 不再断言"全部稳定可用"**：成熟度是逐组件事实，以
   ai/components.json 为准。
 
+### Fixed — MODE=full（组件层）首跑暴露的 5 项
+
+> fast 档跳过的组件层在完整档首跑暴露一批问题，逐项清零后 253 道全绿。
+
+- **select 触发按钮无可访问名**：`role="combobox"` 在 ARIA 1.2 里不支持
+  name-from-content —— 可见文字读屏不作数（axe `button-name` critical）。
+  paint() 现同步写 `aria-label`（与可见值同串，无覆盖冲突）。朗读序列从
+  「组名」变为「当前值」，快照按指引核实更新。
+- **form-validation 成功分支页面直接导航走**：正式文件只在失败分支
+  preventDefault ⇒ 全部填对提交时，成功提示闪现即逝（clicktest 实测抓到）。
+  改为首行无条件拦截（demo 原脚本同款），真提交由使用者在自己的监听里处理。
+- **tooltip live region 被外部摘除后播报通道丢失**：幂等 attach 的守卫
+  连"重建播报节点"也一并拦掉 ⇒ 实例攥着游离节点，念不出声且无报错。
+  新增 `reensureLive()`（幂等路径调用，ensureLiveRegion 自带复用判断）。
+- **combobox destroy 的冗余双保险让反向控制失牙**：destroy 与 close() 各调
+  一次 releaseOutside() ⇒ 突变删掉任何一份都被另一份兜住，泄漏回归测不到。
+  destroy 收敛为单一咽喉（close() 出栈），反向突变瞄准咽喉后 8/8 变异体
+  全部有鉴别力；门禁新增「开着时销毁必须弹出共享栈记录」探针
+  （document click 监听是全库共享一个，量栈深度不量监听个数）。
+- **三个突变夹具跟上代码形状**：roving 的 Home/End（双轨判定）、combobox 的
+  destroy（拆核后形状）、proper-noun 白名单（DialogAction/FormValidation/
+  FakeElement 均技术词）。a11y-ax 两处朗读漂移核实为预期修复后更新。
+
 ## [0.27.10] - 2026-11-08
 
 > 两份独立的外部审计（AI 工具链 / CSS 与交付卫生 / 行为 JS / 主理人复核）

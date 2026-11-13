@@ -85,8 +85,8 @@
       "raw": 7168
     },
     "02-primitives/combobox/combobox.js": {
-      "gzip": 8687,
-      "raw": 24405
+      "gzip": 8812,
+      "raw": 24644
     },
     "02-primitives/date-range/date-range.css": {
       "gzip": 2249,
@@ -125,8 +125,8 @@
       "raw": 4540
     },
     "02-primitives/select/select.js": {
-      "gzip": 10492,
-      "raw": 28781
+      "gzip": 10663,
+      "raw": 29193
     },
     "02-primitives/separator/separator.css": {
       "gzip": 1310,
@@ -185,8 +185,8 @@
       "raw": 12129
     },
     "03-patterns/form-validation/form-validation.js": {
-      "gzip": 3679,
-      "raw": 9845
+      "gzip": 3891,
+      "raw": 10241
     },
     "03-patterns/list/flip.js": {
       "gzip": 3382,
@@ -249,8 +249,8 @@
       "raw": 3983
     },
     "03-patterns/tooltip/tooltip.js": {
-      "gzip": 7109,
-      "raw": 17528
+      "gzip": 7373,
+      "raw": 18153
     },
     "03-patterns/tree/tree.css": {
       "gzip": 1958,
@@ -290,6 +290,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 366177,
-  "total_raw": 924554
+  "total_gzip": 366949,
+  "total_raw": 926226
 }

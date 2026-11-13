@@ -7,11 +7,11 @@ RootWebArea "select · 下拉选择 · agentcss"
     paragraph "依据 APG Select-Only Combobox 。四条最容易漏的： ① 打开后焦点落在 选中项 （不是第一项） "
     heading "1 · 基本（默认选中第二项）" [level=2]
     LabelText "投资主体"
-    button "投资主体" [hasPopup=listbox]
+    combobox "A 股主板" [hasPopup=listbox]
     heading "2 · 多选" [level=2]
-    button "请选择板块" [hasPopup=listbox]
+    combobox "请选择板块" [hasPopup=listbox]
     heading "3 · 禁用 + 靠右对齐" [level=2]
-    button "请选择" [disabled=true hasPopup=listbox]
+    combobox "请选择" [disabled=true hasPopup=listbox]
     heading "对比：错写法 vs 本库写法" [level=2]
     heading "❌ 常见写法：选项挤在一起" [level=3]
     paragraph "行高只有 28px：手指点下去必然压到隔壁那一行。鼠标用户感觉不到，触屏用户每点错一次就要重来。"

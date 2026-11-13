@@ -4,8 +4,8 @@
 RootWebArea "tooltip · 文字提示 · agentcss"
   main
     heading "tooltip · 文字提示" [level=1]
-    paragraph "⛔ tooltip 不承载必要信息 —— 触屏没有 hover， 只放在 tooltip 里的内容等于不存在。 ✅ 键盘"
-    heading "1 · 键盘可达（Tab 聚焦即出）" [level=2]
+    paragraph "⛔ tooltip 不承载必要信息 —— 触屏没有 hover， 只放在 tooltip 里的内容等于不存在。 ✅ 悬停"
+    heading "1 · 悬停 / 键盘可达（Tab 聚焦即出）" [level=2]
     button "悬停/聚焦我"
     heading "2 · 四个方位" [level=2]
     button "上方"
@@ -17,6 +17,9 @@ RootWebArea "tooltip · 文字提示 · agentcss"
     button "删除"
     heading "4 · 正确示范：补充说明" [level=2]
     button "导出 CSV"
+    heading "5 · 触发规则试炼场（修过的行为，对着试）" [level=2]
+    paragraph "真指针 / 触屏的 第一次点击必是"开" ，再点一下才是关 （focus / hover 刚弹出的那一下点击不再翻转关闭"
+    button "点我两下试试"
     heading "对比：错写法 vs 本库写法" [level=2]
     heading "❌ 常见写法：关键信息只放在气泡里" [level=3]
     paragraph "（把鼠标停在那颗 ⓘ 上才看得到说明）"

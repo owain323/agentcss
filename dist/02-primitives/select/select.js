@@ -383,6 +383,8 @@ vEl.textContent = label;
 vEl.classList.toggle('select__value--placeholder', empty);
 }
 
+btn.setAttribute('aria-label', label);
+
 if (empty) btn.removeAttribute('title');
 else btn.setAttribute('title', label);
 options.forEach(function (o) {
