@@ -274,6 +274,8 @@ seed(opt.value);
 list.setAttribute('role', 'listbox');
 if (isMulti) list.setAttribute('aria-multiselectable', 'true');
 list.setAttribute('aria-label', opt.label || L.option);
+
+btn.setAttribute('role', 'combobox');
 btn.setAttribute('aria-haspopup', 'listbox');
 btn.setAttribute('aria-expanded', 'false');
 btn.setAttribute('aria-controls', list.id);
@@ -297,7 +299,7 @@ return options.filter(function (o) { return o.getAttribute('aria-disabled') !== 
 
 var typeahead = flTypeahead({
 items: function () { return options; },
-textOf: optText,
+textOf: optMatchText,
 usable: function (o) { return o.getAttribute('aria-disabled') !== 'true'; },
 onHit: function (i) { setActive(i, 1); },
 });
@@ -319,7 +321,11 @@ return texts.length ? texts.join('、') : (opt.placeholder || L.placeholder);
 function optText(o) {
 if (!o) return '';
 var t = o.querySelector('.select__opt-text');
-return ((t || o).textContent || '').replace(/[✓\s]/g, '').trim();
+return ((t || o).textContent || '').replace(/✓/g, '').trim();
+}
+
+function optMatchText(o) {
+return optText(o).replace(/\s/g, '');
 }
 
 function value() {
@@ -469,28 +475,36 @@ close(true);
 function onBtnKey(e) {
 if (destroyed) return;
 var k = e.key;
+var c = e.keyCode;
 var opened = !list.hidden;
 
-if (k === 'ArrowDown' || k === 'ArrowUp' || k === 'Enter' || k === ' ' || k === 'Spacebar') {
+var isDown = k === 'ArrowDown' || c === 40;
+var isUp = k === 'ArrowUp' || c === 38;
+var isEnter = k === 'Enter' || c === 13;
+var isSpace = k === ' ' || k === 'Spacebar' || c === 32;
+var isHome = k === 'Home' || c === 36;
+var isEnd = k === 'End' || c === 35;
+
+if (isDown || isUp || isEnter || isSpace) {
 e.preventDefault();
 if (!opened) {
 open();
 
-if (k === 'ArrowUp' && options.length) setActive(options.length - 1, -1);
+if (isUp && options.length) setActive(options.length - 1, -1);
 return;
 }
-if (k === 'ArrowDown') { setActive(activeIndex() + 1, 1); return; }
-if (k === 'ArrowUp') { setActive(activeIndex() - 1, -1); return; }
+if (isDown) { setActive(activeIndex() + 1, 1); return; }
+if (isUp) { setActive(activeIndex() - 1, -1); return; }
 if (activeIdx >= 0) commit(activeIdx);
 return;
 }
-if (k === 'Home' || k === 'End') {
+if (isHome || isEnd) {
 e.preventDefault();
 if (!opened) open();
-if (options.length) setActive(k === 'Home' ? 0 : options.length - 1, k === 'Home' ? 1 : -1);
+if (options.length) setActive(isHome ? 0 : options.length - 1, isHome ? 1 : -1);
 return;
 }
-if (k === 'Tab') { if (opened) close(false); return; }
+if (k === 'Tab' || c === 9) { if (opened) close(false); return; }
 
 if (k && k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
 if (!opened) open();

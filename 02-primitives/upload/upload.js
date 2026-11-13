@@ -231,9 +231,13 @@
     this.maxFiles = opt.maxFiles || parseInt(root.getAttribute('data-max-files'), 10) || 0;
 
     /* 进度是**唯一的非镜像状态**：它不在 `input.files` 里（文件本身没有进度）。
-       单独存，重建列表时按索引恢复，否则拖一次文件进度就全丢了。
-       语义：null = 待上传（无进度条）/ 0–99 = 上传中 / -1 = 已完成 */
-    this.progress = [];
+       🔴 0.x 起按**文件身份**记，不按下标：按下标的话，removeAt 之后
+          in-flight 的进度回调会把进度/完成态写到**另一个文件**的行上
+          （下标整体前移了），而且拒收项排在列表后面会把下标顶错位。
+       `_fileRefs`：[{ f, id }] 文件引用 → 内部自增 id（引用相等即同一文件）；
+       `_progressById`：id → null = 待上传（无进度条）/ 0–99 = 上传中 / -1 = 已完成 */
+    this._fileRefs = [];
+    this._progressById = {};
     this.rejected = [];
     this._announceTimer = null;
     this._dragDepth = 0;
@@ -247,10 +251,21 @@
       this._onDragEnter = function (e) { self._handleDragEnter(e); };
       this._onDragLeave = function (e) { self._handleDragLeave(e); };
       this._onDrop = function (e) { self._handleDrop(e); };
+      /* 🔴 系统取消一次拖拽（Esc、拖到别的窗口松手）时，部分内核**不发**
+         dropzone 的 dragleave ⇒ _dragDepth 卡在 >0，data-state="dragover"
+         永远不消。挂两个 window 级的兜底复位信号（dragend 会冒泡；
+         拖拽离窗的 dragleave relatedTarget 为空）—— 平时是 no-op
+         （深度早已归零），只救"卡住"的场合。 */
+      this._onDragEndAny = function () { self._resetDragState(); };
+      this._onDragLeaveWin = function (e) {
+        if (!e.relatedTarget) self._resetDragState();
+      };
       this.dropzone.addEventListener('dragover', this._onDragOver);
       this.dropzone.addEventListener('dragenter', this._onDragEnter);
       this.dropzone.addEventListener('dragleave', this._onDragLeave);
       this.dropzone.addEventListener('drop', this._onDrop);
+      global.addEventListener('dragend', this._onDragEndAny, false);
+      global.addEventListener('dragleave', this._onDragLeaveWin, false);
     }
 
     /* 初始渲染：HTML 里预置了已选文件（服务端回显场景）时把它画出来 */
@@ -259,6 +274,23 @@
 
   Upload.prototype = {
     constructor: Upload,
+
+    /* ================================================================ 身份 */
+
+    /**
+     * 文件 → 稳定的内部 id。引用相等（===）视为同一文件：
+     * `input.files` 里持有的 File 引用不变，所以跨 render / 回调都稳定。
+     * 进度与行寻址（data-fl-id）全靠它 —— 见构造器里的说明。
+     */
+    _fileId: function (file) {
+      for (var i = 0; i < this._fileRefs.length; i++) {
+        if (this._fileRefs[i].f === file) return this._fileRefs[i].id;
+      }
+      this._nextFileId = (this._nextFileId || 0) + 1;
+      var id = this._nextFileId;
+      this._fileRefs.push({ f: file, id: id });
+      return id;
+    },
 
     /* ================================================================ 拖放 */
 
@@ -291,8 +323,7 @@
 
     _handleDrop: function (e) {
       e.preventDefault();
-      this._dragDepth = 0;
-      this.setState('');
+      this._resetDragState();
 
       var dt = e.dataTransfer;
       if (!dt) return;
@@ -317,6 +348,12 @@
 
       if (!dropped.length && !dirCount) return;
       this.add(dropped, dirCount);
+    },
+
+    /** 拖拽高亮态整体复位：drop、系统取消的两个兜底信号都走这里。 */
+    _resetDragState: function () {
+      this._dragDepth = 0;
+      this.setState('');
     },
 
     /* ================================================================ 校验 */
@@ -396,7 +433,7 @@
       }
 
       /* 换了文件集合 ⇒ 旧进度全部作废。不清会让新文件直接显示上一批的 42%。 */
-      this.progress = [];
+      this._progressById = {};
       this.rejected = r.rejected;
       this.render();
       this.announce(this.summary(r.keep.length, r.rejected.length));
@@ -421,7 +458,7 @@
             仍会被提交。drop 路径一直有这条检查，change 路径漏了：
             界面显示"已拒收"、提交里却有它 —— 比直接报错危险得多。 */
       if (r.rejected.length && !writeFiles(this.input, r.keep)) {
-        this.progress = [];
+        this._progressById = {};
         this.rejected = [{ file: r.rejected[0].file, reason: 'unsupported',
           text: this.labels.noDrop }];
         this.render();
@@ -429,7 +466,7 @@
         return;
       }
 
-      this.progress = [];
+      this._progressById = {};
       this.rejected = r.rejected;
       this.render();
       this.announce(this.summary(r.keep.length, r.rejected.length));
@@ -443,18 +480,26 @@
     /** 全量重渲染。只在"文件集合变了"时调用；单个移除走局部删除（见 removeAt）。 */
     render: function () {
       var files = currentFiles(this.input);
-      var keep = [];
 
       /* `innerHTML=''` 在这里安全：列表内容随后全部由 createElement + textContent
          重建，任何用户提供的字符串（文件名）都不会被当作 HTML 解析。 */
       this.list.innerHTML = '';
 
+      /* 🔴 进度按**文件身份**读（不按下标）：下标在移除后会漂移，
+         而文件 → id 的映射是稳定的（见 _fileId / 构造器说明）。 */
       for (var i = 0; i < files.length; i++) {
-        var pct = this.progress[i];
-        keep.push(pct === undefined ? null : pct);
+        var pct = this._progressById[this._fileId(files[i])];
+        if (pct === undefined) pct = null;
         this.list.appendChild(this.itemEl(files[i], i, null, pct));
       }
-      this.progress = keep;
+
+      /* 只保留当前文件的引用映射：被移除的文件不再占位（长驻页面不积累） */
+      this._fileRefs = this._fileRefs.filter(function (r) {
+        for (var k = 0; k < files.length; k++) {
+          if (files[k] === r.f) return true;
+        }
+        return false;
+      });
 
       /* 拒收项追加在同一张表里（视觉同构，靠 data-state="error" 区分）。
          ⚠️ 不能在 render 开头清空 `this.rejected` —— 它是**本次渲染的输入**。 */
@@ -480,6 +525,11 @@
       var li = document.createElement('li');
       li.className = 'upload__item';
       li.setAttribute('data-state', state);
+      if (!rejected) {
+        /* 🔴 行按文件身份寻址（data-fl-id）：setProgress 与后续状态更新
+           都靠它找行 —— 不按"列表里第几个"，拒收项排在后面会顶错下标。 */
+        li.setAttribute('data-fl-id', String(this._fileId(file)));
+      }
 
       var mark = document.createElement('span');
       mark.className = 'upload__mark';
@@ -562,19 +612,38 @@
     /* ================================================================ 进度 */
 
     /**
-     * 设置第 i 个文件的上传进度。
-     * @param {number} i   索引
+     * 设置某个文件的上传进度。
+     * @param {File|number} target 文件对象（推荐，按**身份**定位）
+     *                             或"当前列表位置"的下标（兼容入口）
      * @param {number} pct 0–100；`-1` 或 `>=100` 表示完成（去掉进度条）
+     *
+     * 🔴 0.x 修：以前按下标找行（`querySelectorAll('.upload__item')[i]`）
+     *    有两处真错：
+     *      ① 拒收项排在真实文件**后面**，列表里第 i 个 ≠ files 里第 i 个；
+     *      ② removeAt 之后下标整体前移，in-flight 回调会把进度/完成态
+     *         写到**另一个文件**的行上。
+     *    现在统一按文件身份（_fileId → data-fl-id）定位。下标入口只为
+     *    兼容保留：先换算成"当前位置上的文件"，再走同一条身份路径 ——
+     *    上传期间列表可能变动（用户中途删文件）的调用方请传 File 对象
+     *    （fl-upload 事件 detail.files 里有），id 映射不受下标漂移影响。
      */
-    setProgress: function (i, pct) {
-      var li = this.list.querySelectorAll('.upload__item')[i];
-      if (!li || li.getAttribute('data-state') === 'error') return;
+    setProgress: function (target, pct) {
       var files = currentFiles(this.input);
-      var f = files[i];
+      var file = null;
+      if (target && typeof target === 'object') {
+        file = target;
+      } else {
+        var i = typeof target === 'number' ? target : parseInt(target, 10);
+        if (!(i >= 0 && i < files.length)) return;
+        file = files[i];
+      }
+      var id = this._fileId(file);
+      var li = this.list.querySelectorAll('[data-fl-id="' + id + '"]')[0];
+      if (!li || li.getAttribute('data-state') === 'error') return;
       var meta = li.querySelector('.upload__meta');
 
       if (pct < 0 || pct >= 100) {
-        this.progress[i] = -1;
+        this._progressById[id] = -1;
         li.setAttribute('data-state', 'done');
         var mark = li.querySelector('.upload__mark');
         if (mark) {
@@ -585,23 +654,23 @@
           sr.textContent = this.labels.done;
           mark.appendChild(sr);
         }
-        if (meta && f) meta.textContent = humanSize(f.size);
+        if (meta && file) meta.textContent = humanSize(file.size);
         var bar = li.querySelector('.upload__progress');
         if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
         return;
       }
 
-      this.progress[i] = pct;
+      this._progressById[id] = pct;
       li.setAttribute('data-state', 'pending');
-      var bar = li.querySelector('.upload__progress');
-      if (!bar) {
+      var bar2 = li.querySelector('.upload__progress');
+      if (!bar2) {
         /* 第一次出现进度时才建槽（无进度时不留空行，见 itemEl 里的说明） */
-        bar = document.createElement('span');
-        bar.className = 'upload__progress';
+        bar2 = document.createElement('span');
+        bar2.className = 'upload__progress';
         var rmBtn = li.querySelector('.upload__remove');
-        li.insertBefore(bar, rmBtn || null);
+        li.insertBefore(bar2, rmBtn || null);
       }
-      this.paintProgress(bar, pct);
+      this.paintProgress(bar2, pct);
       /* 进度也写成文本：**信息不能只在图形里**，否则强制色/色盲下丢失 */
       if (meta) meta.textContent = this.labels.uploading(pct);
     },
@@ -616,7 +685,8 @@
       var rest = files.slice(0, i).concat(files.slice(i + 1));
       if (!writeFiles(this.input, rest)) return false;   /* 不可写 ⇒ 不假成功 */
 
-      this.progress.splice(i, 1);
+      /* 🔴 进度按文件身份记（_progressById）：被删文件的进度条目留在原地
+         也不影响别的文件（下标不再参与），下次 render 会对引用做修剪。 */
 
       /* 🔴 只删这一个节点、不整表重建：重建会把焦点从"移除"按钮上打掉，
          键盘用户连按删除时每删一个就丢一次焦点，得重新 Tab 回来。 */
@@ -678,9 +748,13 @@
         this.dropzone.removeEventListener('dragenter', this._onDragEnter);
         this.dropzone.removeEventListener('dragleave', this._onDragLeave);
         this.dropzone.removeEventListener('drop', this._onDrop);
+        global.removeEventListener('dragend', this._onDragEndAny, false);
+        global.removeEventListener('dragleave', this._onDragLeaveWin, false);
       }
       if (this._announceTimer) global.clearTimeout(this._announceTimer);
       if (this.list) this.list.innerHTML = '';
+      this._fileRefs = [];
+      this._progressById = {};
       this.root.removeAttribute('data-count');
       this.root.removeAttribute('data-state');
       if (this.root.uploadInstance === this) this.root.uploadInstance = null;

@@ -36,6 +36,8 @@ const TARGETS = {
   Dropdown: '/03-patterns/dropdown/demo.html',
   Overlay: '/03-patterns/overlay/demo.html',
   Drawer: '/03-patterns/drawer/demo.html',
+  /* 表单校验行为层（2026-11 起正式发布）：direct 形态，init/rule/setLabels */
+  FormValidation: '/03-patterns/form-validation/demo.html',
   Tooltip: '/03-patterns/tooltip/demo.html',
   Toc: '/03-patterns/nav/demo.html',
   /* 抽屉行为层（0.11.2 新增）：attach 形态，实例挂 el.navInstance。

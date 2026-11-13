@@ -15,7 +15,7 @@
       "recipe": 5
     },
     "total": 40,
-    "withBehaviorLayer": 21
+    "withBehaviorLayer": 22
   },
   "dependencies": {
     "dev": 7,

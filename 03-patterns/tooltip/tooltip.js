@@ -6,11 +6,19 @@
  *   ② **Esc 能关**（WCAG 1.4.13 Content on Hover or Focus）
  *   ③ ⛔ **不承载必要信息** —— 触屏没有 hover，只放 tooltip 等于不存在
  *
+ * 🔴 触发规则（0.27 审查实测修出，这里只写"为什么"）：
+ *   气泡记一个"openBy"（hover / focus / click 谁开的）：
+ *   click **只翻转自己开的**（openBy==='click' 才关）——
+ *   否则真指针/触屏的第一次点击 = focus 先出 + click 再翻转关，
+ *   气泡闪一下就没（实测：第一次点击以关闭收场）。
+ *   focus / hover 刚开的那一下 click 只把 openBy 改成 click（钉住）。
+ *
  * 无依赖 · ES5 · 用法：
  *   Tooltip.attach(el, '文字')            // 默认 bottom
  *   Tooltip.attach(el, '文字', 'top')     // 指定方位
  *   Tooltip.attach(el, '文字', 'start')   // 内联起点侧（RTL 下自动换到右边）
  *   Tooltip.attach(el, '文字', 'left')    // 物理左（RTL 下**仍是物理左**）
+ *   Tooltip.detach(el)                    // 换页/销毁时摘干净（防泄漏）
  *
  * 🔴 0.4.2 修了两个实测出来的既有缺陷（都不报错，只是"看着不对"）：
  *   ① `place='left'|'right'` 拼出的 `tooltip--left` / `--right` **CSS 里没有**
@@ -18,6 +26,17 @@
  *      ⇒ 现在按书写方向换算类名：物理左在 LTR 是内联起点、RTL 是内联终点。
  *   ② 定位前**先入 DOM 再量**：游离元素 getBoundingClientRect() 全是 0
  *      ⇒ top 方位与锚点完全重叠（实测 tip.top == anchor.top），左右上下偏半身。
+ *
+ * 🔴 0.27 审查又修了三个（都在 0.27.10 的包上实测复现）：
+ *   ① **hover 是死的**：CSS 只写了 `[data-tooltip]:hover + .tooltip`（相邻兄弟），
+ *      而 attach() 把气泡挂到 body ⇒ 永远不是兄弟 ⇒ hover 从未生效。
+ *      ⇒ 补 mouseenter/mouseleave（pointerenter 老 WebView 没有，不用）；
+ *        触屏点按会**合成** mouse 事件 ⇒ touchstart 后 700ms 内的 mouseenter
+ *        一律忽略，触屏仍只走 click / focus（不"粘住"）。
+ *   ② **第一次点击是关不是开**（见上面"触发规则"）。
+ *   ③ **attach 泄漏**：dismissable 记录进了共享 __flDismiss 栈，没人摘
+ *      （drawer/popover 都 dm.destroy()，tooltip 没有销毁路径）。
+ *      ⇒ 新增 Tooltip.detach(el)；attach 同时幂等（重复挂不双注册）。
  */
 (function (global) {
 
@@ -140,10 +159,20 @@ var flDismissable = function (opts) {
     }
   }
 
-  function ensureStyle() {
-    if (document.getElementById('tooltip-css')) return;
-    /* 说明：样式由页面通过 <link> 引入；这里只做"有没有"的提示，
-       避免"以为引了其实没引"的静默失效。 */
+  /* 触屏点按会合成 mouse 事件（iOS 点按钮也会 fire mouseenter）：
+     不挡的话气泡会被"假的 hover"打开并粘住 ⇒ touchstart 后一小段时间里，
+     mouseenter 一律当点按的副产物，不给它开气泡的权力。
+     挂 document 捕获、模块级一次（共享，不随 attach 增长）。 */
+  var TOUCH_WINDOW_MS = 700;
+  var lastTouchAt = 0;
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('touchstart', function () {
+      lastTouchAt = Date.now();
+    }, true);
+  }
+
+  function recentTouch() {
+    return (Date.now() - lastTouchAt) < TOUCH_WINDOW_MS;
   }
 
   function ensureLiveRegion() {
@@ -186,9 +215,14 @@ var flDismissable = function (opts) {
    * 物理方位换算成逻辑方位。
    * 物理「左」在 LTR 里是内联起点，在 RTL 里是内联终点 ——
    * 不换算的话，RTL 下小三角会指向气泡外侧（见 tooltip.css 的注释）。
+   * 🔴 inset-inline-start/end 是文档里长期写着的取值，但这里只认
+   * start/end ⇒ 静默落到 bottom。现在把别名收进来（映射到同一个类），
+   * 文档和行为终于一致，旧调用不用改。
    */
   function resolve(el, place) {
     var p = place || 'bottom';
+    if (p === 'inset-inline-start') p = 'start';
+    else if (p === 'inset-inline-end') p = 'end';
     if (p === 'top' || p === 'bottom' || p === 'start' || p === 'end') return p;
     if (p !== 'left' && p !== 'right') return 'bottom';
     var rtl = getComputedStyle(el).direction === 'rtl';
@@ -201,14 +235,19 @@ var flDismissable = function (opts) {
    * @param {Element} el 触发元素
    * @param {string} text 提示文字
    * @param {string} [place] top / bottom / start / end（默认 bottom）；
-   *                 left / right 也接受（物理方位，RTL 下按方向换算类名）
+   *                 left / right 也接受（物理方位，RTL 下按方向换算类名）；
+   *                 inset-inline-start / -end 作为 start / end 的别名
    */
   function attach(el, text, place) {
+    if (!el || !text) return;
+    /* 幂等守卫：同一元素重复 attach 不再双注册（监听会翻倍、
+       dismissable 栈记录会一条条攒成泄漏）。与 upload/tabs 的
+       xxxInstance 是同一套约定。 */
+    if (el.tooltipInstance) return;
+
     /* 焦点归位核：在 show() 之前声明，避免读代码时误以为fr 还没定义。
        声明写在 attach 开头 ⇒ show()/hide() 用到时它一定已赋值。 */
     var fr = flFocusReturn({ fallback: el });
-    if (!el || !text) return;
-    ensureStyle();
 
     var pos = resolve(el, place);
     var id = 'tt' + (++uid);
@@ -220,7 +259,12 @@ var flDismissable = function (opts) {
 
     var live = ensureLiveRegion();
 
-    function show() {
+    /* 气泡"为什么开着"：hover / focus / click / null。
+       click 只翻转 openBy==='click' 的（文件头"触发规则"）。 */
+    var openBy = null;
+
+    function show(reason) {
+      openBy = reason || 'focus';
       /* 🔴 打开的**这一刻**先记住焦点，关闭时才能还回去。
          必须在任何可能改变焦点的操作**之前**做（否则记到的是新元素）。 */
       fr.save();
@@ -255,45 +299,104 @@ var flDismissable = function (opts) {
     }
 
     function hide() {
+      openBy = null;
       tip.removeAttribute('data-state');
       live.textContent = '';
     }
 
-    /* ① 键盘可达：focus 也出 */
-    el.addEventListener('focus', show);
-    el.addEventListener('blur', hide);
+    /* ① 键盘可达：focus 也出。重复 focus（点按、编程式）重定位无害，
+       只是把 openBy 升级成 focus —— blur 接管关闭。 */
+    function onFocus() { show('focus'); }
+    function onBlur() { hide(); }
 
-    /* 触屏：click 也出（没有 hover 的设备唯一入口）*/
-    el.addEventListener('click', function (e) {
+    /* ② 悬停（0.27 审查补，见文件头 ①）：attach() 的气泡挂在 body，
+       CSS 的相邻兄弟 hover 规则打不中 ⇒ hover 必须由 JS 驱动。
+       手写兄弟结构的那条 CSS 路径不受影响，照旧生效。 */
+    function onMouseEnter() {
+      if (recentTouch()) return;           /* 触屏合成事件，不给开 */
+      if (openBy === 'hover') return;
+      show('hover');                       /* focus/click 开着就不动它 */
+    }
+    function onMouseLeave() {
+      /* 只关"hover 自己开的"；click 钉住的、focus 持有的各自负责关 */
+      if (openBy === 'hover') hide();
+    }
+
+    /* ③ 触屏唯一入口 + 指针显式操作（文件头"触发规则"）：
+       第一次点击必是开，第二次才是关；Esc / 点外部 / blur 也都能关。 */
+    function onClick(e) {
       e.stopPropagation();
-      if (tip.getAttribute('data-state') === 'open') hide(); else show();
-    });
+      if (openBy === 'click') { hide(); return; }
+      if (openBy) { openBy = 'click'; return; }   /* focus/hover 刚开的，改归 click，不翻转 */
+      show('click');
+    }
 
-    /* ② Esc 能关（WCAG 1.4.13）+ 点击外部关闭
-      🔴 0.8.6 收编到 dismissable 核（原先是手写的）：
-      手写版是 `document.addEventListener('click', hide)` ——
-      **冒泡阶段**判定"是不是外部"，于是点在浮层**内部**也会关掉气泡
-      （点击应该能选中提示里的文字）。核把判定挂在 **document 捕获阶段**，
-      并且把触发元素算进 `inside`，解决"点触发器刚打开就被关"的老坑。
-      核同时负责"一次 Esc 只关最内层"（Esc 挂在元素上冒泡，不挂 document 捕获）。
-      ⚠️ Esc 关闭后的焦点归位走 focus-return 核，不再手写 `el.focus()`：
-         手写版在触发元素已被移除时会focus 一个不存在的元素。 */
+    el.addEventListener('focus', onFocus);
+    el.addEventListener('blur', onBlur);
+    el.addEventListener('mouseenter', onMouseEnter);
+    el.addEventListener('mouseleave', onMouseLeave);
+    el.addEventListener('click', onClick);
+
+    /* ④ Esc 能关（WCAG 1.4.13）+ 点击外部关闭 —— 走 dismissable 核
+      （0.8.6 收编，原先手写 `document.addEventListener('click', hide)`
+      在冒泡阶段判定，点浮层内部也会关掉）。Esc 关闭后的焦点归位
+      走 focus-return 核。⚠️ destroy 时 dismiss.destroy() 必须一起调：
+      只摘监听不摘栈记录的话，__flDismiss 栈只增不减（实测泄漏）。 */
     var dismiss = flDismissable({
       escOn: [el],
       inside: [el, tip],
-      when: function () { return tip.getAttribute('data-state') === 'open'; },
+      when: function () { return openBy !== null; },
       onDismiss: function (ev, reason) {
         hide();
-        if (reason === 'esc') fr.restore();
+        /* 有"存进去的焦点"才还（focus 路径）；hover/click 开的没有存档，
+           Esc 不该凭空把焦点搬到触发元素上 */
+        if (reason === 'esc' && fr.target()) fr.restore();
       }
     });
 
-    /* ③ 关联：aria-describedby（不是 aria-label ——
-       label 是名字，describedby 是补充说明，语义不同）*/
-    var cur = el.getAttribute('aria-describedby');
-    el.setAttribute('aria-describedby', cur ? (cur + ' ' + id) : id);
+    /* ⑤ 关联：aria-describedby（不是 aria-label ——
+       label 是名字，describedby 是补充说明，语义不同）。
+       记住挂之前的值：detach 时原样还回去，不吞掉页面上已有的描述。 */
+    var prevDescribed = el.getAttribute('aria-describedby');
+    el.setAttribute('aria-describedby', prevDescribed ? (prevDescribed + ' ' + id) : id);
+    var hadDataTooltip = el.hasAttribute('data-tooltip');
     el.setAttribute('data-tooltip', text);
+
+    /* 销毁路径：detach() 的全部依据。谁挂的监听、栈记录、
+       aria 关联、气泡节点，挂了什么摘什么。 */
+    function destroy() {
+      el.removeEventListener('focus', onFocus);
+      el.removeEventListener('blur', onBlur);
+      el.removeEventListener('mouseenter', onMouseEnter);
+      el.removeEventListener('mouseleave', onMouseLeave);
+      el.removeEventListener('click', onClick);
+      dismiss.destroy();
+      if (prevDescribed) el.setAttribute('aria-describedby', prevDescribed);
+      else el.removeAttribute('aria-describedby');
+      if (!hadDataTooltip) el.removeAttribute('data-tooltip');
+      if (tip.parentNode) tip.parentNode.removeChild(tip);
+      if (live.textContent === text) live.textContent = '';
+      openBy = null;
+    }
+
+    el.tooltipInstance = { el: el, tip: tip, text: text, destroy: destroy };
   }
 
-  global.Tooltip = { attach: attach, setLabels: setLabels };
+  /**
+   * 摘掉 attach() 挂上的监听、dismissable 记录与气泡节点。
+   * SPA 换页 / 动态销毁元素时必须调用，否则 __flDismiss 栈只增不减。
+   * @param {Element} el 之前传给 attach 的同一个元素
+   */
+  function detach(el) {
+    if (!el || !el.tooltipInstance) return;
+    var inst = el.tooltipInstance;
+    if (inst && inst.destroy) inst.destroy();
+    try {
+      delete el.tooltipInstance;
+    } catch (e) {
+      el.tooltipInstance = null;   /* 老 IE 删宿主属性会抛 ⇒ 退化为置空 */
+    }
+  }
+
+  global.Tooltip = { attach: attach, detach: detach, setLabels: setLabels };
 })(typeof window !== 'undefined' ? window : globalThis);

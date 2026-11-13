@@ -94,18 +94,23 @@
       var i = indexOfNode(e.target);
       if (i < 0) return;
       var k = e.key;
+      var c = e.keyCode;
       var next = -1;
       var reason = 'step';
 
+      /* 🔴 双轨判定：老 WebView 不给 e.key（只有 keyCode），只认 e.key 的
+         话方向键在那些机器上全部失灵 —— 同 dismissable 核认 keyCode 27 的
+         原则。映射：→39 ←37 ↓40 ↑38 Home36 End35。
+         e.key 在时两轨指向同一键，不会误判。 */
       if (axis === 'y') {
-        if (k === 'ArrowDown') next = step(i, 1);
-        else if (k === 'ArrowUp') next = step(i, -1);
+        if (k === 'ArrowDown' || c === 40) next = step(i, 1);
+        else if (k === 'ArrowUp' || c === 38) next = step(i, -1);
       } else {
-        if (k === 'ArrowRight') next = step(i, 1);
-        else if (k === 'ArrowLeft') next = step(i, -1);
+        if (k === 'ArrowRight' || c === 39) next = step(i, 1);
+        else if (k === 'ArrowLeft' || c === 37) next = step(i, -1);
       }
-      if (homeEnd && k === 'Home') { next = 0; reason = 'home'; }
-      else if (homeEnd && k === 'End') { next = l.length - 1; reason = 'end'; }
+      if (homeEnd && (k === 'Home' || c === 36)) { next = 0; reason = 'home'; }
+      else if (homeEnd && (k === 'End' || c === 35)) { next = l.length - 1; reason = 'end'; }
 
       if (next < 0 || next >= l.length) return;
       /* ③ 只拦事件，不替组件决定移动后做什么 */
@@ -252,10 +257,17 @@
   var L = flLabels(DEFAULT_LABELS, opt && opt.labels);
 
     opt = opt || {};
-    root.classList.add('tree');
-    if (!root.getAttribute('role')) root.setAttribute('role', 'tree');
+    /* 🔴 destroy 的还原基线：必须在**任何突变之前**拍快照。
+       原来 destroy 直接把 root 清成空壳 —— 使用者的树标记永久删掉，
+       销毁即不可恢复，重建也没依据。现在恢复到打开前的原样。 */
+    var origHTML = root.innerHTML;
+    var applied = { cls: false, role: false, label: false };
+    root.classList.add('tree'); applied.cls = true;
+    if (!root.getAttribute('role')) {
+      root.setAttribute('role', 'tree'); applied.role = true;
+    }
     if (!root.getAttribute('aria-label') && !root.getAttribute('aria-labelledby')) {
-      root.setAttribute('aria-label', opt.label || L.tree);
+      root.setAttribute('aria-label', opt.label || L.tree); applied.label = true;
     }
 
     /* ---------- 初始化结构 ---------- */
@@ -267,6 +279,10 @@
       li.setAttribute('role', 'treeitem');
       var kids = li.querySelector(':scope > ul');
       if (kids) {
+        /* 🔴 APG：treeitem 的子列表必须是 role="group" —— 层级语义的载体。
+           原来只补 treeitem/none，group 全靠作者手写，漏写则层级塌掉。
+           作者已写的不覆盖。 */
+        if (!kids.getAttribute('role')) kids.setAttribute('role', 'group');
         li.setAttribute('aria-expanded', kids.hidden ? 'false' : 'true');
       }
       var node = li.querySelector(':scope > .tree__node') || li.firstElementChild;
@@ -342,7 +358,9 @@
        ⇒ 那些路径下 `cur` 仍是 -1 ⇒ 按 ↑↓ 会跳到第 0 项（= 没动）。
        ⚠️ 症状：鼠标点击正常，键盘 ↑↓ "没反应" —— 两者矛盾正是线索。
        ⇒ 正解：监听 focusin，实时把 cur 对齐到当前聚焦的节点。 */
-    root.addEventListener('focusin', function (e) {
+    /* 命名引用：destroy 必须能摘掉 root 上的三份监听，
+       否则销毁→重建（SPA/HMR）会双份触发。 */
+    function onRootFocusin(e) {
       /* 同 dropdown：helper 自带原生/兜底判断，不要在外面用原生 API 当门。 */
       var node = closest(e.target, '.tree__node');
       if (!node) return;
@@ -350,10 +368,11 @@
       for (var i = 0; i < list.length; i++) {
         if (list[i].node === node) { cur = i; break; }
       }
-    });
+    }
+    root.addEventListener('focusin', onRootFocusin);
 
     /* ---------- 键盘（APG Tree View 12 条里最常用的 6 条）---------- */
-    root.addEventListener('keydown', function (e) {
+    function onRootKeydown(e) {
       var k = e.key;
       var it = current();
       if (!it) return;
@@ -426,7 +445,8 @@
         e.preventDefault();
         typeahead.type(k);
       }
-    });
+    }
+    root.addEventListener('keydown', onRootKeydown);
 
     function select(it) {
       items.forEach(function (x) { x.node.setAttribute('aria-selected', 'false'); });
@@ -438,7 +458,7 @@
     }
 
     /* ---------- 点击 ---------- */
-    root.addEventListener('click', function (e) {
+    function onRootClick(e) {
       /* 同 dropdown：helper 自带原生/兜底判断，不要在外面用原生 API 当门。 */
       var node = closest(e.target, '.tree__node');
       if (!node || !root.contains(node)) return;
@@ -457,7 +477,8 @@
           select(it);
         }
       }
-    });
+    }
+    root.addEventListener('click', onRootClick);
 
     /* 🔴 修一个**整棵树进不去**的 bug：
        JS 只在 `focusAt()` 里把当前节点设成 tabindex="0"，
@@ -471,7 +492,22 @@
     return {
       focusAt: focusAt,
       get selected() { return current(); },
-      destroy: function () { roving.destroy(); typeahead.destroy(); root.innerHTML = ''; },
+      destroy: function () {
+        roving.destroy();
+        typeahead.destroy();
+        root.removeEventListener('focusin', onRootFocusin);
+        root.removeEventListener('keydown', onRootKeydown);
+        root.removeEventListener('click', onRootClick);
+        /* 🔴 恢复打开前的原样，而不是把 root 清成空壳：
+           树标记是使用者的内容，销毁不等于没收（原来 destroy 直接清空
+           全部子节点，删了就永远回不来）。 */
+        /* @html-sink internal — origHTML 是本组件 create() 时从同一 root
+           拍下的原文快照，不经过任何外部输入；destroy 还原即回写原文。 */
+        root.innerHTML = origHTML;
+        if (applied.cls) root.classList.remove('tree');
+        if (applied.role) root.removeAttribute('role');
+        if (applied.label) root.removeAttribute('aria-label');
+      },
     };
   }
 

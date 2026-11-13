@@ -61,12 +61,23 @@
       if (el.tagName.toLowerCase() !== m[1].toLowerCase()) return false;
       rest = rest.slice(m[1].length);
     }
-    /* 类 */
+    /* 类
+       🔴 两个实测踩出来的坑（0.x 修）：
+       ① **运算符优先级**：原写法 `!(' ' + cn + ' ').indexOf(...)` 是
+          `(!x) > -1` —— `!` 先算，`!任何字符串` 都是 false ⇒
+          `false > -1` 恒为 true ⇒ **类选择器永远判"不匹配"**。
+          没有 closest 的老 WebView 上（正是本库的目标环境），
+          凡按类匹配的路径全部**静默失效**。必须写成显式的 `=== -1`。
+       ② **SVG 的 className 是 SVGAnimatedString 对象**，不是字符串；
+          拼进 `' ' + cn + ' '` 会变成 "[object SVGAnimatedString]" ⇒
+          永不匹配。className 不是字符串时退回 getAttribute('class')。 */
     var cls = rest.match(/\.([\w-]+)/g);
     if (cls) {
+      var cn = (typeof el.className === 'string') ? el.className
+               : ((el.getAttribute && el.getAttribute('class')) || '');
       for (var i = 0; i < cls.length; i++) {
         var name = cls[i].slice(1);
-        if (!(' ' + el.className + ' ').indexOf(' ' + name + ' ') > -1) return false;
+        if ((' ' + cn + ' ').indexOf(' ' + name + ' ') === -1) return false;
       }
     }
     /* id */

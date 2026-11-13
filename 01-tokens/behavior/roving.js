@@ -117,18 +117,23 @@ var flRoving = function (opts) {
     var i = indexOfNode(e.target);
     if (i < 0) return;
     var k = e.key;
+    var c = e.keyCode;
     var next = -1;
     var reason = 'step';
 
+    /* 🔴 双轨判定：老 WebView 不给 e.key（只有 keyCode），只认 e.key 的
+       话方向键在那些机器上全部失灵 —— 同 dismissable 核认 keyCode 27 的
+       原则。映射：→39 ←37 ↓40 ↑38 Home36 End35。
+       e.key 在时两轨指向同一键，不会误判。 */
     if (axis === 'y') {
-      if (k === 'ArrowDown') next = step(i, 1);
-      else if (k === 'ArrowUp') next = step(i, -1);
+      if (k === 'ArrowDown' || c === 40) next = step(i, 1);
+      else if (k === 'ArrowUp' || c === 38) next = step(i, -1);
     } else {
-      if (k === 'ArrowRight') next = step(i, 1);
-      else if (k === 'ArrowLeft') next = step(i, -1);
+      if (k === 'ArrowRight' || c === 39) next = step(i, 1);
+      else if (k === 'ArrowLeft' || c === 37) next = step(i, -1);
     }
-    if (homeEnd && k === 'Home') { next = 0; reason = 'home'; }
-    else if (homeEnd && k === 'End') { next = l.length - 1; reason = 'end'; }
+    if (homeEnd && (k === 'Home' || c === 36)) { next = 0; reason = 'home'; }
+    else if (homeEnd && (k === 'End' || c === 35)) { next = l.length - 1; reason = 'end'; }
 
     if (next < 0 || next >= l.length) return;
     /* ③ 只拦事件，不替组件决定移动后做什么 */

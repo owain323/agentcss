@@ -154,7 +154,8 @@ throw new Error('upload: 缺少 .upload__input —— 没有它就没有真值�
 this.maxSize = opt.maxSize || parseInt(root.getAttribute('data-max-size'), 10) || 0;
 this.maxFiles = opt.maxFiles || parseInt(root.getAttribute('data-max-files'), 10) || 0;
 
-this.progress = [];
+this._fileRefs = [];
+this._progressById = {};
 this.rejected = [];
 this._announceTimer = null;
 this._dragDepth = 0;
@@ -168,10 +169,17 @@ this._onDragOver = function (e) { self._handleDragOver(e); };
 this._onDragEnter = function (e) { self._handleDragEnter(e); };
 this._onDragLeave = function (e) { self._handleDragLeave(e); };
 this._onDrop = function (e) { self._handleDrop(e); };
+
+this._onDragEndAny = function () { self._resetDragState(); };
+this._onDragLeaveWin = function (e) {
+if (!e.relatedTarget) self._resetDragState();
+};
 this.dropzone.addEventListener('dragover', this._onDragOver);
 this.dropzone.addEventListener('dragenter', this._onDragEnter);
 this.dropzone.addEventListener('dragleave', this._onDragLeave);
 this.dropzone.addEventListener('drop', this._onDrop);
+global.addEventListener('dragend', this._onDragEndAny, false);
+global.addEventListener('dragleave', this._onDragLeaveWin, false);
 }
 
 this.render();
@@ -179,6 +187,16 @@ this.render();
 
 Upload.prototype = {
 constructor: Upload,
+
+_fileId: function (file) {
+for (var i = 0; i < this._fileRefs.length; i++) {
+if (this._fileRefs[i].f === file) return this._fileRefs[i].id;
+}
+this._nextFileId = (this._nextFileId || 0) + 1;
+var id = this._nextFileId;
+this._fileRefs.push({ f: file, id: id });
+return id;
+},
 
 _handleDragOver: function (e) {
 
@@ -207,8 +225,7 @@ this.setState('');
 
 _handleDrop: function (e) {
 e.preventDefault();
-this._dragDepth = 0;
-this.setState('');
+this._resetDragState();
 
 var dt = e.dataTransfer;
 if (!dt) return;
@@ -230,6 +247,11 @@ for (var j = 0; j < dt.files.length; j++) dropped.push(dt.files[j]);
 
 if (!dropped.length && !dirCount) return;
 this.add(dropped, dirCount);
+},
+
+_resetDragState: function () {
+this._dragDepth = 0;
+this.setState('');
 },
 
 _validate: function (incoming) {
@@ -287,7 +309,7 @@ this.announce(this.labels.noDropShort);
 return false;
 }
 
-this.progress = [];
+this._progressById = {};
 this.rejected = r.rejected;
 this.render();
 this.announce(this.summary(r.keep.length, r.rejected.length));
@@ -303,7 +325,7 @@ var files = currentFiles(this.input);
 var r = this._validate(files);
 
 if (r.rejected.length && !writeFiles(this.input, r.keep)) {
-this.progress = [];
+this._progressById = {};
 this.rejected = [{ file: r.rejected[0].file, reason: 'unsupported',
 text: this.labels.noDrop }];
 this.render();
@@ -311,7 +333,7 @@ this.announce(this.labels.noDropShort);
 return;
 }
 
-this.progress = [];
+this._progressById = {};
 this.rejected = r.rejected;
 this.render();
 this.announce(this.summary(r.keep.length, r.rejected.length));
@@ -322,16 +344,21 @@ files: currentFiles(this.input), added: r.keep.length, rejected: r.rejected
 
 render: function () {
 var files = currentFiles(this.input);
-var keep = [];
 
 this.list.innerHTML = '';
 
 for (var i = 0; i < files.length; i++) {
-var pct = this.progress[i];
-keep.push(pct === undefined ? null : pct);
+var pct = this._progressById[this._fileId(files[i])];
+if (pct === undefined) pct = null;
 this.list.appendChild(this.itemEl(files[i], i, null, pct));
 }
-this.progress = keep;
+
+this._fileRefs = this._fileRefs.filter(function (r) {
+for (var k = 0; k < files.length; k++) {
+if (files[k] === r.f) return true;
+}
+return false;
+});
 
 var rej = this.rejected || [];
 for (var j = 0; j < rej.length; j++) {
@@ -349,6 +376,10 @@ var state = rejected ? 'error' : (pct === -1 ? 'done' : 'pending');
 var li = document.createElement('li');
 li.className = 'upload__item';
 li.setAttribute('data-state', state);
+if (!rejected) {
+
+li.setAttribute('data-fl-id', String(this._fileId(file)));
+}
 
 var mark = document.createElement('span');
 mark.className = 'upload__mark';
@@ -419,15 +450,23 @@ if (s) this.root.setAttribute('data-state', s);
 else this.root.removeAttribute('data-state');
 },
 
-setProgress: function (i, pct) {
-var li = this.list.querySelectorAll('.upload__item')[i];
-if (!li || li.getAttribute('data-state') === 'error') return;
+setProgress: function (target, pct) {
 var files = currentFiles(this.input);
-var f = files[i];
+var file = null;
+if (target && typeof target === 'object') {
+file = target;
+} else {
+var i = typeof target === 'number' ? target : parseInt(target, 10);
+if (!(i >= 0 && i < files.length)) return;
+file = files[i];
+}
+var id = this._fileId(file);
+var li = this.list.querySelectorAll('[data-fl-id="' + id + '"]')[0];
+if (!li || li.getAttribute('data-state') === 'error') return;
 var meta = li.querySelector('.upload__meta');
 
 if (pct < 0 || pct >= 100) {
-this.progress[i] = -1;
+this._progressById[id] = -1;
 li.setAttribute('data-state', 'done');
 var mark = li.querySelector('.upload__mark');
 if (mark) {
@@ -438,23 +477,23 @@ sr.className = 'upload__status';
 sr.textContent = this.labels.done;
 mark.appendChild(sr);
 }
-if (meta && f) meta.textContent = humanSize(f.size);
+if (meta && file) meta.textContent = humanSize(file.size);
 var bar = li.querySelector('.upload__progress');
 if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
 return;
 }
 
-this.progress[i] = pct;
+this._progressById[id] = pct;
 li.setAttribute('data-state', 'pending');
-var bar = li.querySelector('.upload__progress');
-if (!bar) {
+var bar2 = li.querySelector('.upload__progress');
+if (!bar2) {
 
-bar = document.createElement('span');
-bar.className = 'upload__progress';
+bar2 = document.createElement('span');
+bar2.className = 'upload__progress';
 var rmBtn = li.querySelector('.upload__remove');
-li.insertBefore(bar, rmBtn || null);
+li.insertBefore(bar2, rmBtn || null);
 }
-this.paintProgress(bar, pct);
+this.paintProgress(bar2, pct);
 
 if (meta) meta.textContent = this.labels.uploading(pct);
 },
@@ -466,8 +505,6 @@ if (i < 0 || i >= files.length) return false;
 var removed = files[i];
 var rest = files.slice(0, i).concat(files.slice(i + 1));
 if (!writeFiles(this.input, rest)) return false;
-
-this.progress.splice(i, 1);
 
 var li = this.list.querySelectorAll('.upload__item')[i];
 if (li && li.parentNode) li.parentNode.removeChild(li);
@@ -516,9 +553,13 @@ this.dropzone.removeEventListener('dragover', this._onDragOver);
 this.dropzone.removeEventListener('dragenter', this._onDragEnter);
 this.dropzone.removeEventListener('dragleave', this._onDragLeave);
 this.dropzone.removeEventListener('drop', this._onDrop);
+global.removeEventListener('dragend', this._onDragEndAny, false);
+global.removeEventListener('dragleave', this._onDragLeaveWin, false);
 }
 if (this._announceTimer) global.clearTimeout(this._announceTimer);
 if (this.list) this.list.innerHTML = '';
+this._fileRefs = [];
+this._progressById = {};
 this.root.removeAttribute('data-count');
 this.root.removeAttribute('data-state');
 if (this.root.uploadInstance === this) this.root.uploadInstance = null;

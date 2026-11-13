@@ -32,7 +32,7 @@ import re
 import sys as _sys
 import os as _os
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
-from _css import declared_tokens, resolve_vars  # noqa: E402
+from _css import declared_tokens, resolve_vars, strip_media  # noqa: E402
 RAW_PREFIX = '--raw-'
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -123,7 +123,13 @@ def extract(src):
                 break
 
     light_toks = resolve_vars(declared_tokens(light))
-    dark_toks = resolve_vars(declared_tokens(plain))     # 全文 = 层叠结果
+    # 🔴 全文层叠解析前必须剥掉 @media print（与 dark-gate.py / contrast.py 同一判断）：
+    #    tokens.css 末尾的纸面墨阶块把 --paper 压成 #fff、--text-primary 压成 #000，
+    #    按"全文取最后声明"解析会把**纸面值当成暗色值**写进 tierA ——
+    #    实测产物：暗色段 paper/surface 全 #fff、text 全 #000（白底黑字的"暗色"），
+    #    而 print 没覆盖的 skeleton/danger 保留暗色值，恰是这条污染的指纹。
+    #    修法与 contrast.py:108 / dark-gate.py:65 完全一致：先 strip_media 再解析。
+    dark_toks = resolve_vars(declared_tokens(strip_media(plain, 'print')))
 
     def rewrite(block, toks, drop_l1):
         out = []
@@ -167,9 +173,88 @@ def count(t):
     return len(re.findall(r'(--[a-z0-9-]+)\s*:', t))
 
 
+# 🔴 金丝雀判据：暗色段的基本面必须**真的比浅色暗**。
+#    2026-11 的 print 污染事故里，暗色段 paper=#fff / text=#000 照样生成成功，
+#    门禁全绿 —— 因为没有任何判据检查"暗色段的值是不是暗色"。
+#    这里挑四个最不可能合法相等的令牌做硬断言，违反即拒绝生成。
+_CANARY = ('--paper', '--surface', '--text-primary', '--surface-sunken')
+
+
+def _pull(block, name):
+    m = re.search(re.escape(name) + r'\s*:\s*([^;\s]+)', block)
+    return m.group(1) if m else None
+
+
+def canary(light, dark):
+    for name in _CANARY:
+        lv, dv = _pull(light, name), _pull(dark, name)
+        if lv is None or dv is None:
+            raise SystemExit('金丝雀判据：%s 在浅色/暗色段缺失（浅=%s 暗=%s）'
+                             % (name, lv, dv))
+        if lv.lower() == dv.lower():
+            raise SystemExit(
+                '金丝雀判据：%s 在浅暗两段取值相同（%s）—— 暗色段大概率被'
+                '纸面/其他介质块污染，请检查 extract() 的层叠解析范围'
+                % (name, lv))
+    acc = _pull(dark, '--accent')
+    on_acc = _pull(dark, '--text-on-accent')
+    if acc and on_acc and acc.lower() == on_acc.lower():
+        raise SystemExit('金丝雀判据：暗色 --accent 与 --text-on-accent 同值（%s），'
+                         '主按钮文字将不可见' % acc)
+
+
+_SELFTEST_CSS = """\
+:root {
+  --raw-paper: #f6f7f8;
+  --raw-text-primary: #15181c;
+  --raw-accent: #1b4d8f;
+  --paper: var(--raw-paper);
+  --text-primary: var(--raw-text-primary);
+  --accent: var(--raw-accent);
+  --text-on-accent: var(--raw-text-on-accent);
+  --raw-text-on-accent: #ffffff;
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --raw-paper: #14171A;
+    --raw-text-primary: #f0f2f5;
+    --raw-text-on-accent: #10141a;
+  }
+}
+@media print {
+  :root {
+    --raw-paper: #ffffff;
+    --raw-text-primary: #000000;
+    --raw-text-on-accent: #000000;
+  }
+}
+"""
+
+
+def _selftest():
+    """判据自检：合成一份「浅色 + 暗色 + print 尾块」的源，
+    断言暗色段取的是暗色值而不是纸面值（print 污染事故的反向控制）。"""
+    light, dark = extract(_SELFTEST_CSS)
+    checks = [('--paper', '#14171A'), ('--text-primary', '#f0f2f5'),
+              ('--text-on-accent', '#10141a')]
+    bad = []
+    for name, want in checks:
+        got = _pull(dark, name)
+        if got is None or got.lower() != want.lower():
+            bad.append('%s: 期望 %s 实得 %s' % (name, want, got))
+    if bad:
+        print('  [FAIL] make-tiersnippet 自检：暗色段解析被污染 —— ' + '；'.join(bad))
+        return 1
+    print('  [OK  ] make-tiersnippet 自检：暗色段不受 print 尾块污染（3/3）')
+    return 0
+
+
 def main():
+    if '--selftest' in sys.argv:
+        return _selftest()
     src = io_src = open(SRC, encoding='utf-8').read()
     light, dark = extract(src)
+    canary(light, dark)
     body = '\n'.join([HEADER.replace('{n_light}', str(count(light)))
                              .replace('{n_dark}', str(count(dark))),
                        light, '', dark, ''])

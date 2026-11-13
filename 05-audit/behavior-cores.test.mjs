@@ -875,3 +875,207 @@ test('roving · Home / End 经事件路径也能到首尾', () => {
   container.dispatchEvent(Object.assign(key('Home'), { target: items[2] }));
   assert.deepEqual(moved.pop(), [0, 'home'], 'Home ⇒ 第一项');
 });
+
+/* 🔴 roving 核的 keyCode 双轨判定（0.x 加：老 WebView 不给 e.key）
+      —— 与 mini-dom 的 key() 同构：桩同时带 key 与 keyCode，
+      这里验证"只给 keyCode 也认得"这条老 WebView 真机路径。 */
+test('roving · 只给 keyCode（无 e.key）也响应方向键 / Home / End', () => {
+  const { ctx, document } = loadCore('roving');
+  const items = rovingItems(document);
+  const container = bel('div', document);
+  items.forEach((n) => container._adopt(n));
+  const moved = [];
+  ctx.flRoving({
+    container, items: () => items, movable: () => items, nodeOf: (x) => x,
+    onMove: (i, node, reason) => moved.push([i, reason]),
+  });
+
+  container.dispatchEvent({ type: 'keydown', key: undefined, keyCode: 39, target: items[0] });
+  assert.equal(moved.length, 1, 'keyCode 39（→）必须响应');
+  container.dispatchEvent({ type: 'keydown', key: undefined, keyCode: 37, target: items[1] });
+  assert.equal(moved[moved.length - 1][0], 0, 'keyCode 37（←）必须响应');
+  container.dispatchEvent({ type: 'keydown', key: undefined, keyCode: 36, target: items[2] });
+  assert.deepEqual(moved[moved.length - 1], [0, 'home'], 'keyCode 36（Home）必须响应');
+  container.dispatchEvent({ type: 'keydown', key: undefined, keyCode: 35, target: items[0] });
+  assert.deepEqual(moved[moved.length - 1], [2, 'end'], 'keyCode 35（End）必须响应');
+});
+
+/* ==========================================================================
+ * 6 · combobox × dismissable 的接线（0.x 修「仲裁被截胡」的回归）
+ * ---------------------------------------------------------------------------
+ *   为什么放在这里：combobox.js 是组件不是核，但被测的是「组件**怎么用**
+ *   dismissable 核」—— 共享栈挂在 window 上、外部点击判定挂在 document 上，
+ *   只有本文件的 mini-dom 桨能同时提供这两样。
+ *
+ *   🔴 背景：combobox 曾在 create() 时建一份 `when(){return true}` 的
+ *      **常驻**记录。核的 onDocClick 只认「栈里最后一个 when() 为真的
+ *      记录」⇒ 这份常驻 no-op 记录把排在**前面**的 select / popover
+ *      全部截胡：点外部时轮不到它们，被 combobox 的 close() 吃掉。
+ *      修复：Esc 份 outside:false 不进栈（常驻，保三级 Esc）；
+ *      外部点击份 open() 时创建、close() 时销毁 —— 关着的 combobox
+ *      不再占栈位。
+ * ========================================================================== */
+function loadCombobox() {
+  const { document, window } = makeDoc();
+  /* dismissable 核与 combobox 组件载入**同一个 window**：
+     共享栈 window.__flDismiss 是跨文件全局，仲裁就发生在它上面。
+     ⚠️ 组件把构造器挂到 window 上（global.Combobox），核的顶层 var
+        才落在执行上下文里 —— 两者取法不同（见返回值）。 */
+  const core = loadScript(fs.readFileSync(
+    path.join(ROOT, '01-tokens', 'behavior', 'dismissable.js'), 'utf8'), window);
+  loadScript(fs.readFileSync(
+    path.join(ROOT, '02-primitives', 'combobox', 'combobox.js'), 'utf8'), window);
+  return { core, Combobox: window.Combobox, document, window };
+}
+
+/** combobox create() 需要的最小 DOM 桩（mini-dom 没有选择器，槽位写死） */
+function mkCombo(document) {
+  const input = bel('input', document);
+  const list = bel('ul', document);
+  const root = bel('div', document);
+  input.value = '';
+  list.hidden = true;
+  root.querySelector = (sel) => (
+    sel === '[data-combo-input]' ? input :
+    sel === '[data-combo-list]' ? list : null);
+  list.querySelectorAll = () => [];
+  return { input, list, root };
+}
+
+/* 🔴 P1-2 主证：先创建的浮层必须还能被"点外部"关掉。 */
+test('combobox · 关着时不占仲裁栈：先创建的浮层点外部仍会被关', () => {
+  const { core, Combobox, document, window } = loadCombobox();
+  const E = (t) => bel(t, document);
+  const selRoot = E('div');
+  let selectClosed = 0;
+  /* 模拟"先于 combobox 创建"的 select：常驻记录（when 恒真） */
+  core.flDismissable({
+    escOn: [], inside: [selRoot], when: () => true,
+    onDismiss: (ev, r) => { if (r === 'outside') selectClosed += 1; },
+  });
+
+  const f = mkCombo(document);
+  Combobox.create(f.root);
+
+  assert.equal(window.__flDismiss.stack.length, 1,
+    'combobox 创建、列表关着 ⇒ 栈里只该有 select 的记录（常驻记录会凑成 2）');
+
+  document.dispatchEvent({ type: 'click', target: E('div') });
+  assert.equal(selectClosed, 1,
+    '点外部必须轮到先创建的浮层 —— 旧的常驻 when()=true 记录会截胡');
+});
+
+test('combobox · 列表开着才占栈、关了就出栈；重复 open 不重复入栈', () => {
+  const { Combobox, document, window } = loadCombobox();
+  const E = (t) => bel(t, document);
+  const f = mkCombo(document);
+  Combobox.create(f.root, { options: [{ value: 'a', label: 'A' }] });
+
+  assert.equal(window.__flDismiss.stack.length, 0, '初始关着 ⇒ 不占栈');
+  f.input.dispatchEvent({ type: 'input' });                 /* onInput ⇒ open */
+  assert.equal(f.list.hidden, false, 'input 事件 ⇒ 列表打开');
+  assert.equal(f.input.getAttribute('aria-expanded'), 'true');
+  assert.equal(window.__flDismiss.stack.length, 1, '开着 ⇒ 恰好一条记录');
+
+  /* 开着时点外部：最内层是 combobox ⇒ 关它自己 */
+  document.dispatchEvent({ type: 'click', target: E('div') });
+  assert.equal(f.list.hidden, true, '点外部关闭');
+  assert.equal(f.input.getAttribute('aria-expanded'), 'false');
+  assert.equal(window.__flDismiss.stack.length, 0, '关了 ⇒ 记录必须出栈（不泄漏）');
+
+  /* 快速开关 / 重复 open：不重复入栈、不泄漏 */
+  f.input.dispatchEvent({ type: 'focus' });
+  f.input.dispatchEvent({ type: 'click' });
+  assert.equal(window.__flDismiss.stack.length, 1, '重复 open 只能有一条记录');
+  document.dispatchEvent({ type: 'click', target: E('div') });
+  assert.equal(window.__flDismiss.stack.length, 0);
+});
+
+/* 🔴 拆成两份核实例的目的：三级 Esc 必须原样保留（Esc 份常驻、不进栈）。 */
+test('combobox · 三级 Esc 在新接线下保持：关列表 → 清输入 → 放弃', () => {
+  const { Combobox, document, window } = loadCombobox();
+  const f = mkCombo(document);
+  Combobox.create(f.root);
+
+  /* ① 列表开着 → Esc 关列表（核接管） */
+  f.input.dispatchEvent({ type: 'input' });
+  assert.equal(f.list.hidden, false);
+  const e1 = key('Escape');
+  f.input.dispatchEvent(e1);
+  assert.equal(f.list.hidden, true, '一级 Esc：关列表');
+  assert.equal(e1.defaultPrevented, true, '一级 Esc：核接管 preventDefault');
+  assert.equal(window.__flDismiss.stack.length, 0, '关列表后外部点击记录出栈');
+
+  /* ② 列表关了、输入有字 → Esc 清输入（列表关着 ⇒ 靠常驻的 Esc 份） */
+  f.input.value = '未上屏的拼音';
+  const e2 = key('Escape');
+  f.input.dispatchEvent(e2);
+  assert.equal(f.input.value, '', '二级 Esc：清输入');
+  assert.equal(e2.defaultPrevented, true);
+
+  /* ③ 都没了 → 放弃（Esc 要继续传给外层浮层） */
+  const e3 = key('Escape');
+  f.input.dispatchEvent(e3);
+  assert.equal(e3.defaultPrevented, false, '三级 Esc：组件说"没关" ⇒ 核不抢默认行为');
+});
+
+/* 🔴 P2-8：paintList 重绘即"游标作废"，aria-activedescendant 不许再指旧 id。 */
+test('combobox · paintList 必须清掉过期的 aria-activedescendant', () => {
+  const { Combobox, document } = loadCombobox();
+  const f = mkCombo(document);
+  Combobox.create(f.root, { options: [{ value: 'a', label: 'A' }] });
+
+  f.input.setAttribute('aria-activedescendant', 'combo-list-9-o2');
+  f.input.dispatchEvent({ type: 'input' });               /* open ⇒ paintList */
+  assert.equal(f.input.getAttribute('aria-activedescendant'), null,
+    '过滤/重绘后旧 option id 已销毁，不许继续指着它');
+});
+
+/* 🔴 P1-5：拼音合成期间按键语义必须全部让路（目标读者就是中文用户）。 */
+test('combobox · IME 合成期间按键让路：isComposing / keyCode 229 / composition 事件', () => {
+  const { Combobox, document } = loadCombobox();
+  const f = mkCombo(document);
+  Combobox.create(f.root, { options: [{ value: 'a', label: 'A' }] });
+
+  f.input.dispatchEvent({ type: 'input' });               /* open */
+  assert.equal(f.list.hidden, false);
+
+  f.input.dispatchEvent({ type: 'compositionstart' });    /* 合成中 */
+
+  const down = key('ArrowDown');
+  f.input.dispatchEvent(down);
+  assert.equal(down.defaultPrevented, false, '合成中 ↑↓ 不许劫持（候选会乱跳）');
+
+  const enter = key('Enter');
+  f.input.dispatchEvent(enter);
+  assert.equal(enter.defaultPrevented, false, '合成中 Enter 不许把半截拼音提交成标签');
+
+  /* 老 WebView 整段合成只报 keyCode=229，连 isComposing 都不给 */
+  const legacy = { type: 'keydown', key: undefined, keyCode: 229 };
+  f.input.dispatchEvent(legacy);
+  assert.equal(legacy.defaultPrevented, false, 'keyCode 229 必须被认作合成中');
+
+  /* 事件自带 isComposing=true（compositionstart 可能被错过时的兜底） */
+  const ic = key('Enter');
+  ic.isComposing = true;
+  f.input.dispatchEvent(ic);
+  assert.equal(ic.defaultPrevented, false, 'isComposing=true 也必须让路');
+
+  /* 合成结束 ⇒ 按键语义恢复 */
+  f.input.dispatchEvent({ type: 'compositionend' });
+  const down2 = key('ArrowDown');
+  f.input.dispatchEvent(down2);
+  assert.equal(down2.defaultPrevented, true, '合成结束后按键语义恢复正常');
+});
+
+test('combobox · 列表开着时 destroy ⇒ 两份 dismissable 都摘净、记录出栈', () => {
+  const { Combobox, document, window } = loadCombobox();
+  const f = mkCombo(document);
+  const inst = Combobox.create(f.root);
+  f.input.dispatchEvent({ type: 'input' });
+  assert.equal(window.__flDismiss.stack.length, 1, '开着 ⇒ 有一条记录');
+
+  inst.destroy();
+  assert.equal(window.__flDismiss.stack.length, 0, 'destroy 后不许残留记录（闭包泄漏）');
+  assert.doesNotThrow(() => inst.destroy(), '重复 destroy 必须幂等');
+});

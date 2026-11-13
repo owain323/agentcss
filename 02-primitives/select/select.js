@@ -3,6 +3,15 @@
  *
  * 依据：APG Select-Only Combobox 模式
  * ============================================================================
+ * ⭐ 角色模型（0.x 修）：触发按钮 = **select-only combobox 本体**。
+ *    以前按钮是"裸 button + aria-haspopup"—— 而 aria-activedescendant
+ *    只有 combobox / listbox 等复合部件支持，裸 button 上读屏会**忽略**它
+ *    ⇒ 键盘游标对读屏完全不可见，宣称的 APG 模式其实是残缺的。
+ *    现在补上 role="combobox"：button + combobox + aria-haspopup="listbox"
+ *    + aria-expanded + aria-activedescendant 指进 listbox ——
+ *    与 APG「Select-Only Combobox」的语义一致（Downshift 等同型实现同款），
+ *    axe 的 aria-allowed-role 表允许 button → combobox。
+ *
  * ⭐ 四条最容易漏的键盘契约（逐条实现并在注释里标出）：
  *
  * ① **打开后焦点落在"选中项"**（不是第一项，也不是按钮）
@@ -321,6 +330,10 @@
     list.setAttribute('role', 'listbox');
     if (isMulti) list.setAttribute('aria-multiselectable', 'true');
     list.setAttribute('aria-label', opt.label || L.option);
+    /* 🔴 APG Select-Only Combobox：aria-activedescendant 只被**复合部件**
+       （combobox 等）支持 —— 裸 button 上读屏直接忽略（见文件头）。
+       axe 的 aria-allowed-role 允许 button 承担 combobox 角色。 */
+    btn.setAttribute('role', 'combobox');
     btn.setAttribute('aria-haspopup', 'listbox');
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-controls', list.id);
@@ -349,7 +362,7 @@
        ⇒ 核一次把两半都补齐（APG 的 typeahead 约定），两处共用一份规则。 */
     var typeahead = flTypeahead({
       items: function () { return options; },
-      textOf: optText,
+      textOf: optMatchText,
       usable: function (o) { return o.getAttribute('aria-disabled') !== 'true'; },
       onHit: function (i) { setActive(i, 1); },
     });
@@ -369,10 +382,20 @@
     }
     /* ⚠️ 空列表也会被调用（初始化 / 清空后重绘）：必须能接住 undefined，
        老实现直接 o.querySelector 会抛 "Cannot read properties of undefined"。 */
+    /* 展示文案（按钮 label / title / fl-change 的 text）：
+       🔴 只去掉 ✓ 与首尾空白，**保留词中空格** —— 0.x 修。
+       以前 `[✓\s]` 连内部空格一起删："A 股主板" 变 "A股主板"、
+       "Fund 基金" 变 "Fund基金"，显示的就是错的。 */
     function optText(o) {
       if (!o) return '';
       var t = o.querySelector('.select__opt-text');
-      return ((t || o).textContent || '').replace(/[✓\s]/g, '').trim();
+      return ((t || o).textContent || '').replace(/✓/g, '').trim();
+    }
+    /* 匹配文案（typeahead 专用）：空格对"打字定位"是噪音 —— 键盘路径里
+       Space 被拦作"选中"，永远进不了缓冲，所以按旧的"全去空白"口径匹配，
+       使 "Fund 基金" 用 "fund基" 连打也能命中（保持 0.x 之前的手感）。 */
+    function optMatchText(o) {
+      return optText(o).replace(/\s/g, '');
     }
 
     /** 对外值：单选给字符串（无值 null），多选给数组副本 */
@@ -554,28 +577,39 @@
     function onBtnKey(e) {
       if (destroyed) return;
       var k = e.key;
+      var c = e.keyCode;
       var opened = !list.hidden;
+      /* 🔴 双轨判定：老 WebView 不给 e.key（只有 keyCode），只认 e.key 的话
+         ↑↓/Home/End 在那些机器上全部失灵 —— 与 Space 的 'Spacebar' 兜底、
+         dismissable 核的 keyCode 27 同一原则。映射：↓40 ↑38 Home36 End35
+         Enter13 Space32 Tab9（Esc 由核按 27 接管）。 */
+      var isDown = k === 'ArrowDown' || c === 40;
+      var isUp = k === 'ArrowUp' || c === 38;
+      var isEnter = k === 'Enter' || c === 13;
+      var isSpace = k === ' ' || k === 'Spacebar' || c === 32;
+      var isHome = k === 'Home' || c === 36;
+      var isEnd = k === 'End' || c === 35;
 
-      if (k === 'ArrowDown' || k === 'ArrowUp' || k === 'Enter' || k === ' ' || k === 'Spacebar') {
+      if (isDown || isUp || isEnter || isSpace) {
         e.preventDefault();
         if (!opened) {
           open();
           /* APG：↑ 打开时游标落**末项**，↓ 打开落选中项 */
-          if (k === 'ArrowUp' && options.length) setActive(options.length - 1, -1);
+          if (isUp && options.length) setActive(options.length - 1, -1);
           return;
         }
-        if (k === 'ArrowDown') { setActive(activeIndex() + 1, 1); return; }
-        if (k === 'ArrowUp') { setActive(activeIndex() - 1, -1); return; }
+        if (isDown) { setActive(activeIndex() + 1, 1); return; }
+        if (isUp) { setActive(activeIndex() - 1, -1); return; }
         if (activeIdx >= 0) commit(activeIdx);     /* 多选：切一次、不关闭 */
         return;
       }
-      if (k === 'Home' || k === 'End') {
+      if (isHome || isEnd) {
         e.preventDefault();
         if (!opened) open();
-        if (options.length) setActive(k === 'Home' ? 0 : options.length - 1, k === 'Home' ? 1 : -1);
+        if (options.length) setActive(isHome ? 0 : options.length - 1, isHome ? 1 : -1);
         return;
       }
-      if (k === 'Tab') { if (opened) close(false); return; }
+      if (k === 'Tab' || c === 9) { if (opened) close(false); return; }
 
       /* 单个可打印字符 = 类型搜索（Enter/Space/Tab 各有语义，不能算打字） */
       if (k && k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {

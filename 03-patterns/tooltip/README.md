@@ -29,22 +29,28 @@ Tooltip.attach(按钮, '说明文字', 'top');
 |---|---|---|
 | `el` | Element | 触发元素 |
 | `text` | string | 纯文本（用 `textContent` 写入，**天然免疫注入**）|
-| `place` | `top`（默认）/ `bottom` / `inset-inline-start` / `inset-inline-end` | 方位 |
+| `place` | `bottom`（默认）/ `top` / `start` / `end` / `left` / `right`；`inset-inline-start` / `inset-inline-end` 也接受，分别映射到 `start` / `end` | 方位 |
 
-`place` 原样拼进类名（`.tooltip--` + `place`），所以四个方位对应的就是这四个类：
+`start` / `end` 是**内联轴**方位（随书写方向镜像）；`left` / `right` 是**物理**方位
+（RTL 下仍是物理左 / 右，不镜像）。
 
-| 类 | 出现位置 |
-|---|---|
-| `.tooltip--top` | 在触发元素**下方**，箭头朝上（默认） |
-| `.tooltip--bottom` | 在触发元素**上方**，箭头朝下 |
-| `.tooltip--inset-inline-start` | 在触发元素**右侧**，箭头朝左。用逻辑属性，RTL 下自动镜像到左边 |
-| `.tooltip--inset-inline-end` | 在触发元素**左侧**，箭头朝右。同样随书写方向镜像 |
+类名说的是**气泡的位置**，小三角一律指向锚点：
 
-⚠️ 方位名容易读反：`--top` 指的是**箭头朝上**，所以气泡在下方。
-换成"气泡在哪边"去想会写错。
+| 类 | 气泡在哪 | 小三角 |
+|---|---|---|
+| `.tooltip--top` | 锚点**上方** | 气泡底缘，尖朝下 |
+| `.tooltip--bottom` | 锚点**下方** | 气泡顶缘，尖朝上 |
+| `.tooltip--inset-inline-start` | 锚点**内联起点侧**（LTR 在左 / RTL 在右） | 靠锚点一侧，尖朝锚点 |
+| `.tooltip--inset-inline-end` | 锚点**内联终点侧**（LTR 在右 / RTL 在左） | 靠锚点一侧，尖朝锚点 |
 
-公开 API 只有 `Tooltip.attach()`，**没有** `show` / `hide` ——
-显隐由 hover / focus / click 自动驱动。
+⚠️ `--top` / `--bottom` 指的是**气泡在哪**，不是箭头朝哪。
+（旧文档把这条写反过 —— 以为"`--top` 箭头朝上所以气泡在下方"，
+对着 CSS 量过：`--top` 的小三角在气泡底缘、尖朝下，气泡在锚点上方。）
+
+公开 API 是 `Tooltip.attach()` / `Tooltip.detach(el)` / `Tooltip.setLabels()`，
+**没有** `show` / `hide` —— 显隐由 hover / focus / click 自动驱动。
+`attach` 对同一元素幂等（重复调用不会双注册）；SPA 换页销毁元素前要
+`detach`，否则 dismissable 栈只增不减。
 
 ## 🔴 用 `aria-describedby`，不是 `aria-label`
 
@@ -59,13 +65,19 @@ el.setAttribute('aria-describedby', cur ? (cur + ' ' + id) : id);
 
 `role="tooltip"` + `aria-live="polite"`：内容变化时读屏会念出来。
 
-## 键盘与触屏
+## 触发矩阵（attach() 路径）
 
 | 输入 | 行为 |
 |---|---|
-| 键盘 `focus` | 出（**键盘必须可达**，只做 hover 等于对键盘用户不存在）|
+| 悬停（可悬停设备） | 出；移开就关 |
+| 键盘 `focus` | 出（**键盘必须可达**，只做 hover 等于对键盘用户不存在）；`blur` 关 |
+| `click` | **只翻转"click 自己开的"**：focus/hover 刚弹出的那一下点击**不**翻转 —— 真指针 / 触屏的第一次点击必是"开"，click 开的再点一下才是关 |
 | `Esc` | 关（WCAG 1.4.13 Content on Hover or Focus）|
-| 触屏 `click` | 切换开/关 |
+| 点外部 | 关 |
+
+触屏没有 hover：点按合成的 mouse 事件被 touchstart 后 700ms 的抑制窗挡住，
+触屏只走 click / focus。手写兄弟结构的纯 CSS 路径（见 tooltip.css）
+仍只有 hover / focus-visible 驱动，没有 JS 保护。
 
 ## 🔴 定位前必须先入 DOM
 
@@ -89,18 +101,21 @@ JS 只切`data-state`，显隐与动画全交给 CSS。
 |---|---|
 | `prefers-color-scheme: dark` | 已适配 |
 | `prefers-reduced-motion: reduce` | 已关闭动效 |
-| 无 `(hover: hover) and (pointer: fine)` | 只保留点击触发 |
+| 触屏（无 hover） | 只走 click / focus（JS 端有触屏抑制窗，不靠 CSS hover）|
 
-## 成熟度：beta（两条行为债，如实列出）
+## 成熟度与行为债（如实列出）
 
-契约里标的是 `beta`，两条债都记在这儿，**别当stable 用**：
+成熟度以 `ai/components.json` 的 tooltip 条目为准（生成器按门禁与行为债现状算，
+这里不重复写死 —— 写死就会漂）。0.8.6 收编统一行为层后，
+原先两条"手写债"（`dismissable:manual` / `focus-return:manual`）**已经还清**：
+Esc / 点外部 / 焦点归位都走 dismissable + focus-return 核，
+`Tooltip.detach()` 也补上了销毁路径。还剩这些限制，如实列出：
 
-| 债 | 含义 | 现在能做什么 |
+| 限制 | 含义 | 现在的行为 |
 |---|---|---|
-| `dismissable:manual` | 关闭逻辑是手写的，不是统一机制 | 点击/`Esc` 能关，但**点击外部空白不关** |
-| `focus-return:manual` | 焦点归位是手写的 | 关闭后焦点**不一定**回到触发元素 |
-
-要接统一行为层，得先清这两条债。
+| `position:no-flip` | 定位不做视口避让 | 靠视口边缘时气泡会被裁掉一角，不自动翻转 |
+| `position:no-reposition` | 打开后不跟随滚动 / 改尺寸重算 | 滚动页面时气泡留在原坐标，与锚点脱开 |
+| `css-sibling:manual` | 手写兄弟结构是纯 CSS 路径，没有 JS | 只有 hover / focus-visible 驱动，Esc / 点外部关不掉 —— 要完整行为请用 `Tooltip.attach()` |
 
 ## 反例
 
@@ -118,4 +133,6 @@ JS 只切`data-state`，显隐与动画全交给 CSS。
 ## 门禁
 
 `05-audit/tooltip-check.js`（契约 `gates` 里登记的唯一一道）——
-覆盖 `aria-describedby` 关联、`Esc` 关闭、触屏点击三条。
+覆盖 `aria-describedby` 关联、`Esc` 关闭、键盘 Tab 触发，以及
+悬停弹出 / 一次点击打开（不双翻转）/ 点外部关闭 / `detach` 清理
+`__flDismiss` 栈四条行为判据。

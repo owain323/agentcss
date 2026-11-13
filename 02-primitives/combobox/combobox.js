@@ -174,25 +174,63 @@
     var tagBox = root.querySelector('[data-combo-tags]');
     if (!input || !list) throw new Error('Combobox: 缺少 [data-combo-input] 或 [data-combo-list]');
 
-    /* 「关得掉」核（0.8.8 收编）。
-       🔴 本组件的 Esc 是**分级**的，核原，表达不了（见 onDismiss）：
+    /* 「关得掉」核（0.8.8 收编；0.x 拆成两份，原因见下）。
+       🔴 本组件的 Esc 是**分级**的：
          ① 列表开着 → 关列表（核接管）
          ② 列表已关、输入有字 → 清空输入（核接管）
          ③ 都没了 → **不关**，返回 false 让核不干预默认行为
             （此时 Esc 该继续传给外层浮层，而不是被吃掉）
-       ⇒ 0.8.8 给核加了返回值语义：onDismiss 返回 false ⇒ 核不抢preventDefault。 */
-    var dismiss = flDismissable({
-      escOn: [input],
-      inside: [root],
-      when: function () { return true; },   /* 三级 Esc 都要响应，见下 */
-      onDismiss: function (ev, reason) {
-        if (reason === 'outside') { close(); return true; }
-        /* Esc：按「列表 → 输入 → 放弃」的顺序处理 */
-        if (!list.hidden) { close(); return true; }
-        if (input.value) { input.value = ''; paintList(); return true; }
-        return false;/* ③ 什么都不做 ⇒ 核不干预，Esc 继续往外传 */
-      }
-    });
+       ⇒ 0.8.8 给核加了返回值语义：onDismiss 返回 false ⇒ 核不抢preventDefault。
+
+       🔴 为什么拆成**两个**核实例（0.x 修「仲裁被截胡」）：
+         原来这里建了**一份常驻**记录，`when(){return true}` 永远为真 ⇒
+         核的 onDocClick 只认「栈里最后一个 when() 为真的记录」，
+         这份常驻 no-op 记录把排在自己前面的 select / popover 全部截胡：
+         点外部时轮不到它们，被本组件的 close() 吃掉 ⇒ 别的浮层点外面关不掉。
+       ⇒ 按「键盘 / 指针」两种语义拆开：
+         · **Esc 是键盘语义**，只挂在 input 上（escOn），outside:false **不进栈**
+           （先例见核文件头 ④：模态层也是 outside:false）。二、三级 Esc 在
+           列表**关着**时也要响应，所以这份监听必须常驻。
+         · **点外部是指针语义**，只在列表开着时才有意义 ⇒ open() 时创建、
+           close() 时销毁 —— 记录只在开着时占栈位，关着的 combobox 不再参加
+           仲裁，先开的后浮层恢复「点外部就关」。 */
+    var escDismiss = null;      /* 三级 Esc：常驻，不进栈 */
+    var outDismiss = null;      /* 点外部关闭：列表开着才存在 */
+    function dismissEsc() {
+      if (escDismiss) return;
+      escDismiss = flDismissable({
+        escOn: [input],
+        inside: [root],
+        outside: false,       /* 键盘语义不进栈、不参与外部点击仲裁（见上） */
+        when: function () { return true; },   /* 三级 Esc 都要响应，见下 */
+        onDismiss: function (ev, reason) {
+          if (reason === 'outside') { close(); return true; }  /* outside:false，兜底 */
+          /* Esc：按「列表 → 输入 → 放弃」的顺序处理 */
+          if (!list.hidden) { close(); return true; }
+          if (input.value) { input.value = ''; paintList(); return true; }
+          return false;/* ③ 什么都不做 ⇒ 核不干预，Esc 继续往外传 */
+        }
+      });
+    }
+    function releaseEsc() {
+      if (!escDismiss) return;
+      escDismiss.destroy();
+      escDismiss = null;
+    }
+    function armOutside() {
+      if (outDismiss) return;               /* 快速开关不去重挂（幂等） */
+      outDismiss = flDismissable({
+        escOn: [],                          /* Esc 已由 escDismiss 管，这里不能重复听 */
+        inside: [root],
+        onDismiss: function (ev, reason) { close(); return true; },
+      });
+    }
+    function releaseOutside() {
+      if (!outDismiss) return;
+      outDismiss.destroy();
+      outDismiss = null;
+    }
+    dismissEsc();
     if (!list.id) list.id = 'combo-list-' + (++uid);
 
     /* 🔴 每个实例进来就领一个序号：
@@ -246,6 +284,10 @@
     function paintList() {
       var q = input.value.trim();
       shown = filter(q).slice(0, 50);
+      /* 🔴 重绘即「游标作废」：以前只清 activeIdx、不清 aria-activedescendant
+         ⇒ 过滤后它还指着已销毁的 option id，读屏念的是一个不存在的项。 */
+      activeIdx = -1;
+      input.removeAttribute('aria-activedescendant');
       if (!shown.length) {
         /* @html-sink escaped — 插值只有 q，且过了 esc() */
         list.innerHTML = '<li class="combo__empty" role="presentation">' +
@@ -272,7 +314,6 @@
                (o.disabled ? ' aria-disabled="true"' : '') + '>' +
                '<span class="combo__opt-text">' + label + '</span></li>';
       }).join('');
-      activeIdx = -1;
     }
 
     /* ---------- 标签 ---------- */
@@ -352,12 +393,17 @@
       paintList();
       list.hidden = false;
       input.setAttribute('aria-expanded', 'true');
+      /* 列表开着才进「点外部要关」的仲裁（0.x：关着时不许截胡别的浮层） */
+      armOutside();
     }
     function close() {
       list.hidden = true;
       input.setAttribute('aria-expanded', 'false');
       activeIdx = -1;
       input.removeAttribute('aria-activedescendant');
+      /* 关了就出栈、摘 document 监听：所有关闭路径（Esc 一级 / 点外部 /
+         选满自动关）都走这里 ⇒ 记录不会残留（见 armOutside 的说明）。 */
+      releaseOutside();
     }
     function commitActive() {
       if (activeIdx < 0) return false;
@@ -372,9 +418,24 @@
       return ok;
     }
 
+    /* ---------- 输入法合成（IME）守卫 ----------
+       🔴 本库的目标读者就是中文用户 + 老 WebView：拼音合成期间，keydown
+       会把**还没上屏的字母**当"真实按键"上报（部分内核整段只报
+       keyCode=229，不给 isComposing）。不拦住的后果：
+         · Enter 把当前高亮项（或半截拼音）提交成标签并清空输入
+         · ↑↓ 在候选间乱跳、Backspace 删掉刚敲好的标签
+       ⇒ compositionstart/end 维护标志；keydown 再兜一层 e.isComposing 与
+         keyCode===229（合成收尾的那次 Enter，标志可能已复位但 229 还在）。
+       只拦**按键语义**；input 事件照常 —— 合成中的建议列表必须照常刷新。 */
+    var composing = false;
+    function onCompositionStart() { composing = true; }
+    function onCompositionEnd() { composing = false; }
+
     /* ---------- 键盘（焦点常驻 input）----------
        ⭐ 具名函数：`destroy()` 要按同一个引用摘除，匿名的摘不掉。 */
     function onKeydown(e) {
+      /* 合成中 ⇒ 本组件的一切按键语义让路（理由见上） */
+      if (composing || e.isComposing || e.keyCode === 229) return;
       var k = e.key;
 
       /* ↑↓ 在建议间移动 */
@@ -447,6 +508,8 @@
       input.focus();
     }
     input.addEventListener('keydown', onKeydown);
+    input.addEventListener('compositionstart', onCompositionStart);
+    input.addEventListener('compositionend', onCompositionEnd);
     input.addEventListener('input', onInput);
     input.addEventListener('focus', onFocus);
     input.addEventListener('click', onClick);
@@ -474,6 +537,8 @@
       if (destroyed) return;
       destroyed = true;
       input.removeEventListener('keydown', onKeydown);
+      input.removeEventListener('compositionstart', onCompositionStart);
+      input.removeEventListener('compositionend', onCompositionEnd);
       input.removeEventListener('input', onInput);
       input.removeEventListener('focus', onFocus);
       input.removeEventListener('click', onClick);
@@ -485,8 +550,11 @@
          却漏了这里的手动摘除 ⇒ `destroy()` 一调就抛
          「onDocClick is not defined」⇒ 实例销毁路径直接崩。
       ⇒ 正确做法是调**核的** destroy()，它自己会摘 document 监听
-         并且把自己从共享栈里移除。 */
-      dismiss.destroy();
+         并且把自己从共享栈里移除。
+         0.x 起核拆成两份（见 create 顶部的说明）：Esc 常驻份与
+         外部点击份都要摘，后者可能还挂在栈上（列表开着时销毁）。 */
+      releaseOutside();
+      releaseEsc();
       close();
     }
 

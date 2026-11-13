@@ -18,6 +18,79 @@
 
 ## [Unreleased]
 
+> 来源：一次独立评审（行为 JS 实测 + 工具链审读 + 真浏览器复现）。
+> 每一条都有能红的判据：单测（unit/behavior-cores 新增 13 条）、组件门禁
+> （tooltip-check 新增 5 条并修活 1 条假绿）、突变自检（roving 正则跟上双轨判定）。
+
+### Fixed — 行为 JS
+
+- **polyfill 类选择器永不匹配**：closest 补丁里 `!x.indexOf(...) > -1`
+  因运算符优先级恒真 ⇒ 没有原生 closest 的老 WebView 上所有按类匹配的路径
+  静默失效。改为显式 `=== -1`；SVG 元素（className 非字符串）退回
+  `getAttribute('class')`。配 4 条沙箱单测。
+- **combobox 截胡外部点击仲裁**：create() 时挂了一份常驻 `when(){return true}`
+  的 dismissable 记录，比它先创建的 select / popover 点外部关不掉。
+  现在 Esc 份 `outside:false` 常驻（三级 Esc 原样保留），外部点击份随列表
+  开/关进出栈。配 6 条 mini-dom 回归测试。
+- **combobox 拼音合成期按键劫持**：合成中的 Enter 会把半截拼音提交成标签并清空
+  输入、↑↓ 乱跳。compositionstart/end + isComposing + keyCode 229 三层守卫，
+  合成期间按键语义让路（建议列表照常刷新）。
+- **popover 的 aria-expanded 永远是 false**：open()/close() 现在同步更新，
+  Esc / 点外部一并覆盖。
+- **select 补上 APG 角色模型**：触发按钮补 `role="combobox"`（aria-activedescendant
+  只被复合部件支持）；按钮文案不再吞词中空格（"A 股主板"），typeahead 匹配口径
+  单独保留；↑↓/Home/End/Enter/Space 增加 keyCode 双轨（老 WebView 无 e.key）。
+- **date-range 真值三连**：input+change 双发按值去重；`valid` 在没有错误槽时
+  恒真（改读最近一次校验结果）；「本季度/上月」等快捷区间改为使用时取当前日期。
+- **upload 进度按下标寻址错位**：上传中途移除文件会把进度写到另一行的行上。
+  改按文件身份（id 映射）寻址，`setProgress` 新增接受 File 对象（数字入口兼容）；
+  系统取消拖拽（dragend / 离窗 dragleave）时拖放高亮兜底复位。
+- **tooltip 悬停生效**：`attach()` 的气泡挂在 body 上，CSS 的相邻兄弟 hover
+  规则永远打不中，JS 又没有任何 mouse 监听 ⇒ hover 一直是死的。现在由
+  mouseenter/mouseleave 驱动；触屏合成 mouse 事件被 touchstart 后 700ms 抑制窗
+  挡住，触屏仍只走 click / focus。
+- **tooltip 第一次点击不再"闪一下就没"**：原先真指针/触屏的点击 = focus 先弹出
+  + click 无条件翻转关闭。现在 click 只翻转自己开的气泡 —— 一次点击必是开，
+  再点才是关；Esc / 点外部 / blur 照旧能关。
+- **tooltip 新增 `Tooltip.detach(el)`，修 attach 泄漏**：原先每 attach 一个元素
+  就向共享 `__flDismiss` 栈压入记录且永不销毁。detach 摘净监听、栈记录、
+  aria-describedby 与气泡节点；attach 幂等（同元素重复调用不再双注册）。
+- **drawer 双开隔离失效**：背景隔离排除的是**所有** `data-drawer-host`，
+  双抽屉嵌套时两层同时暴露给读屏。改为只跳过自己这一层（overlay.js 同款修复），
+  引用计数保证任意关闭顺序都正确还原。
+- **drawer 开抽屉整页横移**：滚动锁无滚动条宽度补偿（overlay 有、drawer 没同步）。
+  补上先量后锁 + padding 补偿；transitionend 只认抽屉自己的（子元素冒泡不再截断淡出）。
+- **toast 进度条跑到区域左下角**：`.toast` 不是定位元素，`__timer` 的 absolute
+  相对 `.toast-region` 定位。补 `position: relative`。
+- **tree 的 destroy 不再没收内容**：原来直接清空 root 的全部子节点，销毁即永久
+  删除使用者的树标记。现在恢复打开前的原样（快照回写），root 级三份监听一并摘除；
+  嵌套 `ul` 自动补 `role="group"`（APG 层级语义，作者已写的不覆盖）。
+
+### Fixed — 契约与文档
+
+- **精简档 tierA 的"暗色"是白底黑字**：`make-tiersnippet.py` 解析暗色段时
+  没剥掉文件末尾的 `@media print` 纸面墨阶块 ⇒ paper/surface 全 `#fff`、
+  text 全 `#000`（与 dark-gate.py / contrast.py 同一类事故，唯独这里漏改）。
+  修生成器 + 重新生成；新增金丝雀判据（浅暗两段 paper/surface/text-primary
+  相同即拒绝生成）与 `--selftest`（合成 fixture 证明 print 尾块不再污染）。
+- **types 与运行时双向对齐**：删掉 6 个幻影字段（`SelectOptions.options` /
+  `SelectOptions.disabled` / `DateRangeOptions.label` / `.editable` / `.disabled` /
+  `AccordionOptions.duration` —— runtime 从不读取，全部走废弃登记册 retroactive
+  补登）；`Popover.attach` 补返回句柄、`current` 改为句柄类型；补上 runtime 真实
+  存在的 `Select.values/destroy`、`Upload.add` 布尔返回与 `destroy`；
+  Accordion 选项改为真实的 `onChange(trigger, open)`。
+- **form-validation 行为层正式发布**：校验时机 / 错误汇总 / 焦点管理此前只活在
+  demo 的 90 行内联脚本里。现发布为 `form-validation.js`（自动初始化
+  `[data-validate-form]`，规则用 `FormValidation.rule()` 注册，汇总条 DOM API
+  构建不走 innerHTML）；demo 改为消费正式文件。契约（behaviors 矩阵 / 探针表 /
+  事实链 / START-HERE）四处同步登记。
+- **tooltip 契约文档对齐真实行为**：默认方位实为 `bottom`（文档误写 top）；
+  方位几何表原先与 CSS 相反；`inset-inline-start/end` 被 `resolve()` 接受为别名；
+  删掉什么都不做的 `ensureStyle()`；门禁修掉假绿的 Esc 判据（死选择器）并新增
+  悬停 / 单击开 / 点外部 / detach 五条红可证判据。
+- **ARCHITECTURE 不再断言"全部稳定可用"**：成熟度是逐组件事实，以
+  ai/components.json 为准。
+
 ## [0.27.10] - 2026-11-08
 
 > 两份独立的外部审计（AI 工具链 / CSS 与交付卫生 / 行为 JS / 主理人复核）

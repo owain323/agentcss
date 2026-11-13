@@ -129,6 +129,37 @@ var FOCUSABLE = [
 
 var lockCount = 0, savedScroll = 0;
 
+var sbwChanged = false, sbwSaved = '';
+
+function lockScroll() {
+if (lockCount === 0) {
+savedScroll = window.pageYOffset || 0;
+
+var sbw = window.innerWidth - document.documentElement.clientWidth;
+if (sbw > 0) {
+var cur = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+sbwSaved = document.body.style.paddingRight;
+document.body.style.paddingRight = (cur + sbw) + 'px';
+sbwChanged = true;
+}
+document.body.style.overflow = 'hidden';
+}
+lockCount++;
+}
+function unlockScroll() {
+lockCount = Math.max(0, lockCount - 1);
+if (lockCount === 0) {
+document.body.style.overflow = '';
+
+if (sbwChanged) {
+document.body.style.paddingRight = sbwSaved;
+sbwChanged = false;
+sbwSaved = '';
+}
+window.scrollTo(0, savedScroll);
+}
+}
+
 var bgRefs = [];
 
 function bgAcquire(node) {
@@ -160,12 +191,12 @@ return;
 }
 }
 
-function setBackgroundInert(on, bucket) {
+function setBackgroundInert(on, bucket, ownHost) {
 if (on) {
 var got = [];
 
 Array.prototype.forEach.call(document.body.children, function (n) {
-if (n.hasAttribute && n.hasAttribute('data-drawer-host')) return;
+if (n === ownHost) return;
 if (n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
 bgAcquire(n);
 got.push(n);
@@ -174,21 +205,6 @@ return got;
 }
 (bucket || []).forEach(function (n) { bgRelease(n); });
 return [];
-}
-
-function lockScroll() {
-if (lockCount === 0) {
-savedScroll = window.pageYOffset || 0;
-document.body.style.overflow = 'hidden';
-}
-lockCount++;
-}
-function unlockScroll() {
-lockCount = Math.max(0, lockCount - 1);
-if (lockCount === 0) {
-document.body.style.overflow = '';
-window.scrollTo(0, savedScroll);
-}
 }
 
 var PLACE_CLASS = {
@@ -294,7 +310,7 @@ d.appendChild(foot);
 host.appendChild(d);
 document.body.appendChild(host);
 
-bgNodes = setBackgroundInert(true);
+bgNodes = setBackgroundInert(true, null, host);
 lockScroll();
 
 var f = d.querySelectorAll(FOCUSABLE);
@@ -355,9 +371,15 @@ unlockScroll();
 var done = false;
 function remove() {
 if (done) return; done = true;
+d.removeEventListener('transitionend', onTe);
 if (host.parentNode) host.parentNode.removeChild(host);
 }
-d.addEventListener('transitionend', remove, { once: true });
+
+function onTe(e) {
+if (e && e.target !== d) return;
+remove();
+}
+d.addEventListener('transitionend', onTe);
 setTimeout(remove, 320);
 
 fr.restore();

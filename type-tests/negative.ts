@@ -8,7 +8,7 @@
  *   「全部通过」照样成立。
  *
  *   这里的每一条都对应一个**真实发生过的错误类型**（评审与自查发现）：
- *     ① select.destroy()            —— select 没有 destroy
+ *     ① dr.destroy()               —— date-range 没有 destroy（select 有）
  *     ② sel.value = ['a','b']       —— 单选不是数组
  *     ③ cb.tags()                    —— tags 是属性不是方法
  *     ④ dr.setPreset(from, to)      —— 参数是预设名不是日期
@@ -32,8 +32,10 @@ declare const cb: ReturnType<typeof Combobox.create>;
 declare const dr: ReturnType<typeof DateRange.create>;
 declare const tree: ReturnType<typeof Tree.create>;
 
-/* ① select 没有 destroy —— 早期类型让它通过，运行时 TypeError */
-sel.destroy();
+/* ① date-range 没有 destroy —— 2026-11 修正：旧反例写的是 sel.destroy()，
+   但 runtime 的 select **一直有** destroy，是旧类型漏了它，
+   等于把谎言固化成了判据。真正缺 destroy 的是 date-range。 */
+dr.destroy();
 
 /* ② 单选的值是标量，不是数组 */
 sel.value = ['a', 'b'];

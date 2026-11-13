@@ -560,7 +560,7 @@
       ],
       "files": {
         "css": "03-patterns/form-validation/form-validation.css",
-        "js": null,
+        "js": "03-patterns/form-validation/form-validation.js",
         "jsAlso": [],
         "demo": "03-patterns/form-validation/demo.html"
       },
@@ -598,7 +598,7 @@
         "field__error",
         "field__input"
       ],
-      "global": null,
+      "global": "FormValidation",
       "globalAlso": [],
       "behaviorRef": "API.md#form-validation"
     },
@@ -1862,11 +1862,13 @@
       },
       "aria": {
         "roles": [
+          "combobox",
           "option"
         ],
         "attrs": [
           "disabled",
           "expanded",
+          "haspopup",
           "hidden",
           "selected"
         ]

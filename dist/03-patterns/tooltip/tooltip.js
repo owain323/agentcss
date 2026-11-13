@@ -111,9 +111,16 @@ LABELS[k] = patch[k];
 }
 }
 
-function ensureStyle() {
-if (document.getElementById('tooltip-css')) return;
+var TOUCH_WINDOW_MS = 700;
+var lastTouchAt = 0;
+if (typeof document !== 'undefined' && document.addEventListener) {
+document.addEventListener('touchstart', function () {
+lastTouchAt = Date.now();
+}, true);
+}
 
+function recentTouch() {
+return (Date.now() - lastTouchAt) < TOUCH_WINDOW_MS;
 }
 
 function ensureLiveRegion() {
@@ -142,6 +149,8 @@ start: 'tooltip--inset-inline-start', end: 'tooltip--inset-inline-end',
 
 function resolve(el, place) {
 var p = place || 'bottom';
+if (p === 'inset-inline-start') p = 'start';
+else if (p === 'inset-inline-end') p = 'end';
 if (p === 'top' || p === 'bottom' || p === 'start' || p === 'end') return p;
 if (p !== 'left' && p !== 'right') return 'bottom';
 var rtl = getComputedStyle(el).direction === 'rtl';
@@ -150,10 +159,11 @@ return rtl ? 'start' : 'end';
 }
 
 function attach(el, text, place) {
+if (!el || !text) return;
+
+if (el.tooltipInstance) return;
 
 var fr = flFocusReturn({ fallback: el });
-if (!el || !text) return;
-ensureStyle();
 
 var pos = resolve(el, place);
 var id = 'tt' + (++uid);
@@ -165,7 +175,10 @@ tip.textContent = text;
 
 var live = ensureLiveRegion();
 
-function show() {
+var openBy = null;
+
+function show(reason) {
+openBy = reason || 'focus';
 
 fr.save();
 
@@ -196,32 +209,81 @@ live.textContent = text;
 }
 
 function hide() {
+openBy = null;
 tip.removeAttribute('data-state');
 live.textContent = '';
 }
 
-el.addEventListener('focus', show);
-el.addEventListener('blur', hide);
+function onFocus() { show('focus'); }
+function onBlur() { hide(); }
 
-el.addEventListener('click', function (e) {
+function onMouseEnter() {
+if (recentTouch()) return;
+if (openBy === 'hover') return;
+show('hover');
+}
+function onMouseLeave() {
+
+if (openBy === 'hover') hide();
+}
+
+function onClick(e) {
 e.stopPropagation();
-if (tip.getAttribute('data-state') === 'open') hide(); else show();
-});
+if (openBy === 'click') { hide(); return; }
+if (openBy) { openBy = 'click'; return; }
+show('click');
+}
+
+el.addEventListener('focus', onFocus);
+el.addEventListener('blur', onBlur);
+el.addEventListener('mouseenter', onMouseEnter);
+el.addEventListener('mouseleave', onMouseLeave);
+el.addEventListener('click', onClick);
 
 var dismiss = flDismissable({
 escOn: [el],
 inside: [el, tip],
-when: function () { return tip.getAttribute('data-state') === 'open'; },
+when: function () { return openBy !== null; },
 onDismiss: function (ev, reason) {
 hide();
-if (reason === 'esc') fr.restore();
+
+if (reason === 'esc' && fr.target()) fr.restore();
 }
 });
 
-var cur = el.getAttribute('aria-describedby');
-el.setAttribute('aria-describedby', cur ? (cur + ' ' + id) : id);
+var prevDescribed = el.getAttribute('aria-describedby');
+el.setAttribute('aria-describedby', prevDescribed ? (prevDescribed + ' ' + id) : id);
+var hadDataTooltip = el.hasAttribute('data-tooltip');
 el.setAttribute('data-tooltip', text);
+
+function destroy() {
+el.removeEventListener('focus', onFocus);
+el.removeEventListener('blur', onBlur);
+el.removeEventListener('mouseenter', onMouseEnter);
+el.removeEventListener('mouseleave', onMouseLeave);
+el.removeEventListener('click', onClick);
+dismiss.destroy();
+if (prevDescribed) el.setAttribute('aria-describedby', prevDescribed);
+else el.removeAttribute('aria-describedby');
+if (!hadDataTooltip) el.removeAttribute('data-tooltip');
+if (tip.parentNode) tip.parentNode.removeChild(tip);
+if (live.textContent === text) live.textContent = '';
+openBy = null;
 }
 
-global.Tooltip = { attach: attach, setLabels: setLabels };
+el.tooltipInstance = { el: el, tip: tip, text: text, destroy: destroy };
+}
+
+function detach(el) {
+if (!el || !el.tooltipInstance) return;
+var inst = el.tooltipInstance;
+if (inst && inst.destroy) inst.destroy();
+try {
+delete el.tooltipInstance;
+} catch (e) {
+el.tooltipInstance = null;
+}
+}
+
+global.Tooltip = { attach: attach, detach: detach, setLabels: setLabels };
 })(typeof window !== 'undefined' ? window : globalThis);

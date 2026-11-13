@@ -45,11 +45,57 @@
       "kind": "token",
       "name": "--measure",
       "removedIn": "0.7.4",
-      "replacement": ["--measure-page", "--measure-prose"],
+      "replacement": [
+        "--measure-page",
+        "--measure-prose"
+      ],
       "$why": "0.7.4 移除它的时候，这套流程还不存在。补登是为了让它**不从历史里消失**，不是为了让那次移除看起来走过流程 —— 那次就是没走。"
+    },
+    {
+      "kind": "api",
+      "name": "SelectOptions.options",
+      "removedIn": "0.27.11",
+      "replacement": null,
+      "$why": "类型层幻影字段：声明了但 runtime 从不读取（Select.create 的候选来自 DOM（[data-select-option]），opts.options 从未被读取）。本次全库类型-运行时对齐时移除。传了也从未生效，删除只影响 TS 编译期（不再放行无用键），运行时行为零变化。"
+    },
+    {
+      "kind": "api",
+      "name": "SelectOptions.disabled",
+      "removedIn": "0.27.11",
+      "replacement": null,
+      "$why": "类型层幻影字段：声明了但 runtime 从不读取（runtime 从不读 opt.disabled（禁用态走选项元素的 aria-disabled））。本次全库类型-运行时对齐时移除。传了也从未生效，删除只影响 TS 编译期（不再放行无用键），运行时行为零变化。"
+    },
+    {
+      "kind": "api",
+      "name": "DateRangeOptions.label",
+      "removedIn": "0.27.11",
+      "replacement": null,
+      "$why": "类型层幻影字段：声明了但 runtime 从不读取（runtime 从不读 opt.label（无障碍名走 DOM 与 labels））。本次全库类型-运行时对齐时移除。传了也从未生效，删除只影响 TS 编译期（不再放行无用键），运行时行为零变化。"
+    },
+    {
+      "kind": "api",
+      "name": "DateRangeOptions.editable",
+      "removedIn": "0.27.11",
+      "replacement": null,
+      "$why": "类型层幻影字段：声明了但 runtime 从不读取（runtime 从不读 opt.editable）。本次全库类型-运行时对齐时移除。传了也从未生效，删除只影响 TS 编译期（不再放行无用键），运行时行为零变化。"
+    },
+    {
+      "kind": "api",
+      "name": "DateRangeOptions.disabled",
+      "removedIn": "0.27.11",
+      "replacement": null,
+      "$why": "类型层幻影字段：声明了但 runtime 从不读取（runtime 从不读 opt.disabled）。本次全库类型-运行时对齐时移除。传了也从未生效，删除只影响 TS 编译期（不再放行无用键），运行时行为零变化。"
+    },
+    {
+      "kind": "api",
+      "name": "AccordionOptions.duration",
+      "removedIn": "0.27.11",
+      "replacement": null,
+      "$why": "类型层幻影字段：声明了但 runtime 从不读取（runtime 硬编码 90ms 写入 --acc-dur，从不读 opts.duration）。本次全库类型-运行时对齐时移除。传了也从未生效，删除只影响 TS 编译期（不再放行无用键），运行时行为零变化。"
     }
   ],
   "budget": {
-    "retroactive": 1
+    "retroactive": 7,
+    "$whyRetroactive7": "0.27.11 类型对齐一次性移除 6 个幻影 TS 字段（options/disabled/label/editable/duration），全部补登。棘轮按实际条数上调：每一条的 $why 都写明从未生效，属真值修复而非破坏性变更。"
   }
 }
