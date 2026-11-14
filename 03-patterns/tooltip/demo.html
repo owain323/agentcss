@@ -28,11 +28,12 @@
 <p class="note">
   ⛔ <strong>tooltip 不承载必要信息</strong> —— 触屏没有 hover，
   只放在 tooltip 里的内容等于不存在。
-  <br>✅ 键盘 focus 也会出 · <code>Esc</code> 能关 · 用
+  <br>✅ 悬停能出（attach 路径由 JS 驱动）· 键盘 focus 也会出 ·
+  <code>Esc</code> 能关 · 点外部能关 · 用
   <code>aria-describedby</code> 关联（不是 aria-label：那个是「名字」）。
 </p>
 
-<h2>1 · 键盘可达（Tab 聚焦即出）</h2>
+<h2>1 · 悬停 / 键盘可达（Tab 聚焦即出）</h2>
 <div class="row pad">
   <button class="btn" id="b1">悬停/聚焦我</button>
   <span class="btn btn--ghost" id="b2" tabindex="0">可聚焦的说明文字</span>
@@ -60,6 +61,22 @@
 <h2>4 · 正确示范：补充说明</h2>
 <div class="row pad">
   <button class="btn" id="good">导出 CSV</button>
+</div>
+
+<h2>5 · 触发规则试炼场（修过的行为，对着试）</h2>
+<p class="note">
+<p class="note">
+  真指针 / 触屏的<strong>第一次点击必是"开"</strong>，再点一下才是关
+  （focus / hover 刚弹出的那一下点击不再翻转关闭 —— 修前第一次点击
+  实际以"关"收场）。<strong>悬停开的</strong>移开就关；
+  <code>Esc</code> 与点外部也都能关；
+  click 开的会"钉住"，blur / Esc / 点外部任一都会收掉。
+  <br>hover / focus / click 是<strong>三份独立所有权</strong>：只要还有一份没释放，
+  气泡就不消失（焦点没移开、鼠标移出也仍在 —— WCAG 1.4.13 的 persistent）。
+</p>
+</p>
+<div class="row pad">
+  <button class="btn" id="b-click">点我两下试试</button>
 </div>
 
 
@@ -99,6 +116,8 @@
   Tooltip.attach(document.getElementById('bad'), '删除');
   /* ✅ 正例：提供了额外信息 */
   Tooltip.attach(document.getElementById('good'), '导出当前筛选结果，含表头；UTF-8 编码');
+  /* 触发规则试炼场：一次点击 = 开，两次 = 关（同元素重复 attach 是幂等的） */
+  Tooltip.attach(document.getElementById('b-click'), '第一次点击弹出我，再点一下收回');
 })();
 </script>
 </body>

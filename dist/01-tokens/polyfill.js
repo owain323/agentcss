@@ -32,9 +32,11 @@ rest = rest.slice(m[1].length);
 
 var cls = rest.match(/\.([\w-]+)/g);
 if (cls) {
+var cn = (typeof el.className === 'string') ? el.className
+: ((el.getAttribute && el.getAttribute('class')) || '');
 for (var i = 0; i < cls.length; i++) {
 var name = cls[i].slice(1);
-if (!(' ' + el.className + ' ').indexOf(' ' + name + ' ') > -1) return false;
+if ((' ' + cn + ' ').indexOf(' ' + name + ' ') === -1) return false;
 }
 }
 

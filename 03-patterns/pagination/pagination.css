@@ -82,10 +82,8 @@
               border-color var(--dur-fast) var(--ease-out);
 }
 
-.pagination__link:hover:not([aria-disabled="true"]):not([disabled]) {
-  background: var(--surface-sunken);
-}
-
+/* hover 态只写在下方 @media (hover: hover) and (pointer: fine) 里 ——
+   触屏"粘住"问题与本文件其余 hover 规则同一处理，不在这里裸写。 */
 .pagination__link:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);

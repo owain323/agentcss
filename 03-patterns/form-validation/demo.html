@@ -114,7 +114,7 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
   <h2 class="rule-bottom">二、完整表单：提交后出错误汇总</h2>
   <p class="small">什么都不填，直接点提交。焦点会移到汇总上，汇总里每条可点击跳转。</p>
 
-  <form class="form" id="f" novalidate>
+  <form class="form" id="f" novalidate data-validate-form>
     <div id="summary-slot"></div>
 
     <div class="form__row">
@@ -183,117 +183,27 @@ p.small { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.6
 
 </main>
 
+<script src="form-validation.js"></script>
+
+
+
 <script>
+
+// 正例表单的校验时机 / 错误汇总 / 焦点管理全部由正式行为层驱动：
+//   script 标签引入 form-validation.js + form[data-validate-form]
+// 此前这段逻辑手写在 demo 里（约 90 行），每个使用者都要抄一遍 ——
+// 2026-11 起随包发布，demo 只注册业务规则。
+
+// 业务规则属于页面：在这里注册，字段的 data-validate 指到它
+FormValidation.rule('money',
+  function (v) { return /^\d+(\.\d{1,2})?$/.test(v.trim()); },
+  '金额最多两位小数，例如 12.34');
+
 // ---------- 反例：oninput 立即报错 ----------
 var naive = document.getElementById('naive');
 naive.addEventListener('input', function () {
   document.getElementById('naive-err').textContent =
     this.value === '' ? '' : '最多两位小数';
-});
-
-// ---------- 正例：blur 首次校验，之后实时 ----------
-var RULES = {
-  required: {
-    test: function (v) { return v.trim().length > 0; },
-    msg: '请填写公司名称，2 到 40 个字'
-  },
-  money: {
-    test: function (v) { return /^\d+(\.\d{1,2})?$/.test(v.trim()); },
-    msg: '金额最多两位小数，例如 12.34'
-  },
-  optional: { test: function () { return true; }, msg: '' }
-};
-
-function checkField(field) {
-  var input = field.querySelector('.field__input');
-  var err = field.querySelector('.field__error');
-  var rule = RULES[field.dataset.validate];
-  var v = input.value;
-
-  if (rule.test(v)) {
-    field.removeAttribute('data-dirty');
-    input.removeAttribute('aria-invalid');
-    err.textContent = '';
-    return true;
-  }
-  field.setAttribute('data-dirty', '');
-  input.setAttribute('aria-invalid', 'true');
-  err.textContent = rule.msg;
-  return false;
-}
-
-var form = document.getElementById('f');
-var fields = Array.prototype.slice.call(form.querySelectorAll('.field'));
-
-fields.forEach(function (field) {
-  var input = field.querySelector('.field__input');
-  input.addEventListener('blur', function () { checkField(field); });
-  // 只有"脏"过的字段才实时校验 —— 未 blur 过的不打扰
-  input.addEventListener('input', function () {
-    if (field.hasAttribute('data-dirty')) checkField(field);
-  });
-});
-
-form.addEventListener('submit', function (e) {
-  e.preventDefault();
-  var bad = fields.filter(function (f) { return !checkField(f); });
-
-  if (bad.length) {
-    form.classList.add('form--has-summary');
-    document.getElementById('summary-slot').innerHTML =
-      '<div class="form__summary" role="alert" tabindex="-1" id="sum">' +
-      '<span class="form__summary-title">有 ' + bad.length + ' 处需要修正：</span>' +
-      /* 🔴 改成**一行**：反馈"错误多的时候提示太大，
-         应该收窄放一行"。原来的竖排三行（标题 / <ul> / 每项一行）会占掉半个屏幕，
-         而它承载的信息只有"有几处错"+"错在哪" —— 一行足够。
-         链接仍可点击跳转（键盘可达性不变）。 */
-      bad.map(function (f) {
-        return '<a class="form__summary-link" href="#' +
-          f.querySelector('.field__input').id + '">' +
-          f.dataset.name + '</a>';
-      }).join('') +
-      '</div>';
-    document.getElementById('sum').focus();   // 焦点必须移过来
-    document.getElementById('status').textContent = '';
-    return;
-  }
-
-  /* 🔴 补：提交**成功**时也必须清掉各字段的 data-dirty。
-     原来只有"重置"按钮清 —— 于是提交成功后，字段仍带着 data-dirty，
-     空的 .field__error 继续 display:flex。
-     以前 .field__error 没内容时看不出问题（空元素不显示任何东西），
-     加上错误图标后**空元素露出了一个圆点**，这个 bug 才显形。
-     这是"视觉改动揭露旧 bug"的典型案例。 */
-  form.classList.remove('form--has-summary');
-  fields.forEach(function (f) {
-    f.removeAttribute('data-dirty');
-    f.querySelector('.field__input').removeAttribute('aria-invalid');
-    f.querySelector('.field__error').textContent = '';
-  });
-  document.getElementById('summary-slot').innerHTML =
-    '<div class="form__notice" role="alert" tabindex="-1" id="ok">已提交。焦点已移到这条提示上 —— 留在提交按钮上的话，按 Enter 会重复提交。</main>';
-  document.getElementById('ok').focus();
-  document.getElementById('status').textContent = '提交成功';
-});
-
-form.addEventListener('reset', function () {
-  form.classList.remove('form--has-summary');
-  document.getElementById('summary-slot').innerHTML = '';
-  fields.forEach(function (f) {
-    f.removeAttribute('data-dirty');
-    f.querySelector('.field__input').removeAttribute('aria-invalid');
-    f.querySelector('.field__error').textContent = '';
-  });
-  document.getElementById('status').textContent = '';
-});
-
-// 汇总链接跳转后自动聚焦对应输入框（浏览器只滚动，不会聚焦）
-document.addEventListener('click', function (e) {
-  var a = e.target.closest('.form__summary-link');
-  if (!a) return;
-  e.preventDefault();
-  var t = document.querySelector(a.getAttribute('href'));
-  if (t) { t.focus(); t.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
 });
 </script>
 </body>

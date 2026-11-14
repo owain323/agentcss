@@ -23,7 +23,6 @@ const opts: SelectOption[] = [
 /* ---------------- Select：单选，值是标量 ---------------- */
 const sel = Select.create(root, {
   label: '口径',
-  options: opts,
   value: 'a',
   placeholder: '请选择',
   onChange: (value, text) => {
@@ -38,7 +37,11 @@ sel.open();
 sel.close();
 const cur: string | null = sel.value;
 sel.value = 'b';
-void cur;
+// ⭐ 多选值数组（可读写）+ destroy（document 级监听必须解绑）
+const many: string[] = sel.values;
+sel.values = many;
+sel.destroy();
+void cur; void many;
 
 /* ---------------- Combobox：多选，tags 是**属性** ---------------- */
 const cb = Combobox.create(root, {
@@ -61,9 +64,7 @@ void tags; void added;
 /* ---------------- DateRange：预设名 + 对象回调 ---------------- */
 const presets: PresetName[] = ['thisQ', 'lastQ', 'lastM', 'thisY', 'yoy'];
 const dr = DateRange.create(root, {
-  label: '区间',
   presets,
-  editable: true,
   onChange: (value, valid) => {
     // ⭐ 第一个参数是对象，第二个是布尔
     const from: string = value.from;
@@ -108,7 +109,14 @@ void node;
  * ========================================================================== */
 
 /* ---------------- Accordion：construct 形态 ---------------- */
-const acc = new Accordion(root, { duration: 240 });
+const acc = new Accordion(root, {
+  // ⭐ runtime 回调是 (trigger 元素, 是否展开)；duration 从不存在
+  onChange: (trigger, open) => {
+    const t: HTMLElement = trigger;
+    const o: boolean = open;
+    void t; void o;
+  },
+});
 const accItem = acc.items[0];
 acc.toggle(accItem);
 acc.set(accItem, true);
@@ -147,8 +155,15 @@ void drawerEl;
 
 /* ---------------- Tooltip / Popover ---------------- */
 Tooltip.attach(root, '说明', 'top');
-Popover.attach(root, {});
+const pv = Popover.attach(root, {});
+// ⭐ attach 返回句柄（之前是 void）；current 是句柄不是元素
+pv.toggle();
+const pvEl: HTMLElement = pv.el;
+pv.destroy();
+const pvCur = Popover.current;
+if (pvCur) pvCur.close();
 Popover.closeAll();
+void pvEl; void pvCur;
 
 /* ---------------- Toc / Reveal / FLIP ---------------- */
 Toc.init({ links: '.toc a' });

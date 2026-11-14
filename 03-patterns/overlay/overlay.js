@@ -293,6 +293,32 @@
      0 / 负数表示不限制（调用方自己负责）。 */
   var TOAST_LIMIT = 4;
 
+  /* 🔴 弹层内生成节点的 id 用自增序号，不用时间戳：
+     同一毫秒批量开两个 dialog（自动化测试、框架批量渲染都会撞上）
+     => aria-labelledby / aria-describedby 指到同一个 id，读屏全乱。 */
+  var dlgUid = 0;
+
+  /* 动作按钮 variant 白名单（与 drawer.js 同一张表、同一套兜底）：
+     未知值退成**裸 .btn**（不再退成 .btn--secondary —— 那会让"写错了"
+     看起来像一个正常的设计选择，两个组件也因此不一致，见 0.27.11）。
+     每个未知值只告警一次。 */
+  var BTN_VARIANT = {
+    primary: 'btn--primary', danger: 'btn--danger',
+    ghost: 'btn--ghost', secondary: 'btn--secondary',
+  };
+  var warnedVariant = {};
+  function btnClassOf(v) {
+    var cls = BTN_VARIANT[v];
+    if (!cls && v != null && v !== '' && !warnedVariant[v]) {
+      warnedVariant[v] = 1;
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('overlay：未知的动作按钮 variant "' + v +
+                     '"（退回无修饰的 .btn；可用值：primary/danger/ghost/secondary）');
+      }
+    }
+    return 'btn' + (cls ? ' ' + cls : '');
+  }
+
   function toast(opts) {
     opts = opts || {};
     var L = flLabels(DEFAULT_LABELS, opts && opts.labels);
@@ -506,7 +532,7 @@
     if (opts.title) {
       var h = document.createElement('h2');
       h.className = 'dialog__title';
-      h.id = 'dlg-title-' + Date.now();
+      h.id = 'dlg-title-' + (++dlgUid);
       h.textContent = opts.title;
       box.appendChild(h);
       box.setAttribute('aria-labelledby', h.id);
@@ -514,7 +540,7 @@
     if (opts.desc) {
       var p = document.createElement('p');
       p.className = 'dialog__desc';
-      p.id = 'dlg-desc-' + Date.now();
+      p.id = 'dlg-desc-' + (++dlgUid);
       p.textContent = opts.desc;
       box.appendChild(p);
       box.setAttribute('aria-describedby', p.id);
@@ -525,8 +551,7 @@
     (opts.actions || []).forEach(function (a) {
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'btn ' + (a.variant === 'danger' ? 'btn--danger'
-                    : a.variant === 'primary' ? 'btn--primary' : 'btn--secondary');
+      b.className = btnClassOf(a.variant);
       b.textContent = a.label;
       b.addEventListener('click', function () {
         if (a.onClick) a.onClick(close);

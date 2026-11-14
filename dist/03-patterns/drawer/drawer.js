@@ -127,7 +127,57 @@ var FOCUSABLE = [
 '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
+var drawerUid = 0;
+
+var BTN_VARIANT = {
+primary: 'btn--primary', danger: 'btn--danger',
+ghost: 'btn--ghost', secondary: 'btn--secondary',
+};
+
+var warnedVariant = {};
+function btnClassOf(v) {
+var cls = BTN_VARIANT[v];
+if (!cls && v != null && v !== '' && !warnedVariant[v]) {
+warnedVariant[v] = 1;
+if (typeof console !== 'undefined' && console.warn) {
+console.warn('drawer：未知的动作按钮 variant "' + v +
+'"（退回无修饰的 .btn；可用值：primary/danger/ghost/secondary）');
+}
+}
+return 'btn' + (cls ? ' ' + cls : '');
+}
 var lockCount = 0, savedScroll = 0;
+
+var sbwChanged = false, sbwSaved = '';
+
+function lockScroll() {
+if (lockCount === 0) {
+savedScroll = window.pageYOffset || 0;
+
+var sbw = window.innerWidth - document.documentElement.clientWidth;
+if (sbw > 0) {
+var cur = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+sbwSaved = document.body.style.paddingRight;
+document.body.style.paddingRight = (cur + sbw) + 'px';
+sbwChanged = true;
+}
+document.body.style.overflow = 'hidden';
+}
+lockCount++;
+}
+function unlockScroll() {
+lockCount = Math.max(0, lockCount - 1);
+if (lockCount === 0) {
+document.body.style.overflow = '';
+
+if (sbwChanged) {
+document.body.style.paddingRight = sbwSaved;
+sbwChanged = false;
+sbwSaved = '';
+}
+window.scrollTo(0, savedScroll);
+}
+}
 
 var bgRefs = [];
 
@@ -160,12 +210,12 @@ return;
 }
 }
 
-function setBackgroundInert(on, bucket) {
+function setBackgroundInert(on, bucket, ownHost) {
 if (on) {
 var got = [];
 
 Array.prototype.forEach.call(document.body.children, function (n) {
-if (n.hasAttribute && n.hasAttribute('data-drawer-host')) return;
+if (n === ownHost) return;
 if (n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
 bgAcquire(n);
 got.push(n);
@@ -174,21 +224,6 @@ return got;
 }
 (bucket || []).forEach(function (n) { bgRelease(n); });
 return [];
-}
-
-function lockScroll() {
-if (lockCount === 0) {
-savedScroll = window.pageYOffset || 0;
-document.body.style.overflow = 'hidden';
-}
-lockCount++;
-}
-function unlockScroll() {
-lockCount = Math.max(0, lockCount - 1);
-if (lockCount === 0) {
-document.body.style.overflow = '';
-window.scrollTo(0, savedScroll);
-}
 }
 
 var PLACE_CLASS = {
@@ -244,7 +279,8 @@ var d = document.createElement('aside');
 d.className = 'drawer ' + placeCls;
 d.setAttribute('role', 'dialog');
 d.setAttribute('aria-modal', 'true');
-if (!d.id) d.id = 'drawer-' + (new Date()).getTime();
+
+if (!d.id) d.id = 'drawer-' + (++drawerUid);
 if (opt.title) d.setAttribute('aria-labelledby', d.id + '-title');
 else d.setAttribute('aria-label', opt.label || L.dialog);
 d.tabIndex = -1;
@@ -280,7 +316,8 @@ foot.className = 'drawer__foot';
 opt.actions.forEach(function (a) {
 var b = document.createElement('button');
 b.type = 'button';
-b.className = 'btn' + (a.variant ? ' btn--' + a.variant : '');
+
+b.className = btnClassOf(a.variant);
 b.textContent = a.label;
 b.addEventListener('click', function () {
 if (a.onClick) a.onClick(close);
@@ -294,7 +331,7 @@ d.appendChild(foot);
 host.appendChild(d);
 document.body.appendChild(host);
 
-bgNodes = setBackgroundInert(true);
+bgNodes = setBackgroundInert(true, null, host);
 lockScroll();
 
 var f = d.querySelectorAll(FOCUSABLE);
@@ -355,9 +392,15 @@ unlockScroll();
 var done = false;
 function remove() {
 if (done) return; done = true;
+d.removeEventListener('transitionend', onTe);
 if (host.parentNode) host.parentNode.removeChild(host);
 }
-d.addEventListener('transitionend', remove, { once: true });
+
+function onTe(e) {
+if (e && e.target !== d) return;
+remove();
+}
+d.addEventListener('transitionend', onTe);
 setTimeout(remove, 320);
 
 fr.restore();

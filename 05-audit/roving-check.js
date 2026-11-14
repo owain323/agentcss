@@ -199,7 +199,7 @@ const NAMES = {
       ['rove 只管可移动项（⇒ 禁用项的 tabindex 漏掉）',
         /var l = all\(\) \|\| \[\];/, 'var l = movable() || [];'],
       ['去掉 Home / End',
-        /if \(homeEnd && k === 'Home'\)/, "if (false && k === 'Home')"],
+        /if \(homeEnd && \(k === 'Home' \|\| c === 36\)\)/, "if (false && (k === 'Home' || c === 36))"],
       ['忽略 tabindex:false（⇒ APG 菜单会多出 Tab 停靠点）',
         /if \(!roveTab\) return target;/, 'if (false) return target;'],
     ];

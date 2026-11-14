@@ -234,17 +234,40 @@ const REPO = path.resolve(__dirname, '..');
       },
 
       /* ⑦b 连打同一个字母 ⇒ 在匹配项之间**循环**（不是停住）
-         夹具里 Copy / Cut 都以 c 开头 ⇒ 连按两次 c 必须从 Copy 走到 Cut */
+         夹具里 Copy(0) / Cut(1) 都以 c 开头。
+         🔴 0.27.11 修正这条断言（原来写的是"两次 c 之后停在 Cut"）：
+            那个结果只有**锚点没同步**时才成立 ——
+              bug 版：首按 c 原地不动（last=-1 ⇒ 从表头找到自己），二按才到 Cut
+              修好版：首按 c 就到 Cut（从**当前项之后**开始找），二按绕回 Copy
+            两种实现的终态不同，但"终态 = Cut"这一句**恰好只能抓住 bug 版**，
+            等于把缺陷记成了契约。⇒ 改成逐步断言：必须"先走一格、再绕回来"，
+            既证明在循环，也证明第一下**真的动了**（后者才是 APG 要的 next）。 */
       '⑦b 连打同一字母循环': async (p) => {
         await p.evaluate(() => window.__ddSetup());
-        await p.keyboard.press('ArrowDown');
+        await p.keyboard.press('ArrowDown');          /* 打开并聚焦首项 Copy */
         await new Promise((r) => setTimeout(r, 200));
+        const start = await p.evaluate(() => (document.activeElement.textContent || '').trim());
+
         await p.keyboard.press('c');
+        await new Promise((r) => setTimeout(r, 200));
+        const once = await p.evaluate(() => (document.activeElement.textContent || '').trim());
+
         await p.keyboard.press('c');
         await new Promise((r) => setTimeout(r, 220));
-        const got = await p.evaluate(() => (document.activeElement.textContent || '').trim());
-        return { ok: got === 'Cut',
-                 note: got === 'Cut' ? 'c c ⇒ Copy → Cut ✅' : '🔴 连按 c 停在「' + got + '」' };
+        const twice = await p.evaluate(() => (document.activeElement.textContent || '').trim());
+
+        if (start !== 'Copy') {
+          return { ok: false, note: '🔴 打开后焦点不在 Copy（在「' + start + '」）⇒ 前提不成立' };
+        }
+        if (once !== 'Cut') {
+          return { ok: false,
+                   note: '🔴 第一下 c 没走到 Cut（停在「' + once + '」）'
+                         + '⇒ 要么原地踏步（锚点没同步），要么锚点跑偏' };
+        }
+        return { ok: twice === 'Copy',
+                 note: twice === 'Copy'
+                   ? 'c ⇒ Copy→Cut，再 c ⇒ 绕回 Copy ✅ 循环成立且第一下真的动了'
+                   : '🔴 第二下 c 停在「' + twice + '」（应绕回 Copy）' };
       },
 
       /* ⑦c 快速连打不同字母 ⇒ 前缀累积

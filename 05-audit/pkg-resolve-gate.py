@@ -59,9 +59,9 @@ const opts: SelectOption[] = [
   { value: 'b', label: '乙', disabled: true },
 ];
 
-/* Select 的公开面是 open/close/value —— 它**没有**公开的 destroy()，
-   所以这里不许调（调了就是探针自己错，不是类型错）。 */
-const opt: SelectOptions = { label: '口径', options: opts };
+/* Select 的公开面是 open/close/value/values/destroy（2026-11 与 runtime 对齐）。
+   候选来自 DOM，opts 不收 options 数组 —— 旧探针传 options 是幻影字段的用法。 */
+const opt: SelectOptions = { label: '口径' };
 const s = Select.create(el, opt);
 s.open();
 s.close();

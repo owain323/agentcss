@@ -365,6 +365,36 @@ function main() {
               return registeredDuringCreate.indexOf(f) >= 0;
             });
 
+            /* 🔴 2026-11 补：开着时销毁（外点份已进栈）⇒ destroy 必须把
+               这条记录**弹出共享栈**。
+               核拆成两份后（Esc 份 outside:false 不进栈、外点份随开关进出栈），
+               关闭态造实例没有栈记录可弹 ⇒ 「忘调 releaseOutside()」对
+               旧探针不可观测（beh-reverse 实测：判据 ③ 没牙）。
+               ⚠️ document click 监听是**全库共享一个**（核的 shared.bound
+               永不复位，设计如此且无泄漏——监听不持任何实例闭包），
+               所以量的是**栈深度**，不是监听个数。 */
+            var openDestroy = { armed: false, leak: true, before: null, after: null };
+            try {
+              var depthBefore = (window.__flDismiss &&
+                window.__flDismiss.stack.length) || 0;
+              var h2 = window.__mk({ options: [{ value: 'a', label: '甲' }] });
+              var inp2 = h2.root.querySelector('[data-combo-input]');
+              var list2 = h2.root.querySelector('[data-combo-list]');
+              window.__type(inp2, 'a');          /* 输入 ⇒ 列表开 ⇒ 外点份进栈 */
+              if (!list2.hidden) {
+                openDestroy.armed = true;
+                openDestroy.before = (window.__flDismiss &&
+                  window.__flDismiss.stack.length) || 0;
+                try { h2.cb.destroy(); } catch (e) {}
+                openDestroy.after = (window.__flDismiss &&
+                  window.__flDismiss.stack.length) || 0;
+                /* 武装过（+1）就必须弹干净（回到 depthBefore） */
+                openDestroy.leak = openDestroy.after !== depthBefore;
+              } else {
+                try { h2.cb.destroy(); } catch (e) {}
+              }
+            } catch (e) {}
+
             /* 现在才还原 remove */
             document.removeEventListener = origRem;
 
@@ -416,7 +446,8 @@ function main() {
               removedMine: removedMine.length,
               openedAfterDestroy: openedAfterDestroy,
               idempotent: idempotent,
-              secondDestroyRemoved: secondDestroyRemoved
+              secondDestroyRemoved: secondDestroyRemoved,
+              openDestroy: openDestroy
             };
           });
         })
@@ -442,6 +473,19 @@ function main() {
              ⇒ 改为核对真正要保证的事，且**与「共享一个还是每实例一个」无关**：
                造实例时有人注册过 document click（否则核根本没接上）
                && destroy 之后**一个都没留下**。 */
+          /* 🔴 2026-11 新增：开着时销毁（外点份在栈上）也必须弹干净 ——
+             核拆两份后，关闭态探针对「忘调 releaseOutside()」没牙，
+             这条才真正咬住那个泄漏。 */
+          pass(r.openDestroy && r.openDestroy.armed === true
+                 && r.openDestroy.leak === false,
+            '③ 开着时 destroy 必须把外点份的栈记录弹干净',
+            (r.openDestroy && r.openDestroy.armed)
+              ? (r.openDestroy.leak
+                  ? '🔴 栈泄漏：开层时 ' + r.openDestroy.before
+                    + ' 条，销毁后仍 ' + r.openDestroy.after + ' 条'
+                  : '已弹干净（' + r.openDestroy.before + ' → '
+                    + r.openDestroy.after + '）')
+              : '🔴 列表没能打开，探针没跑起来');
           pass(r.leftoverAfterDestroy === 0,
             '③ destroy() 后 document 上不残留 click 监听（共享/独享都要成立）',
             '相对造实例前的基线，destroy 后残留 ' +

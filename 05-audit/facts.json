@@ -15,7 +15,7 @@
       "recipe": 5
     },
     "total": 40,
-    "withBehaviorLayer": 21
+    "withBehaviorLayer": 22
   },
   "dependencies": {
     "dev": 7,
@@ -35,5 +35,5 @@
     "total": 12
   },
   "schemaVersion": 1,
-  "version": "0.27.10"
+  "version": "0.27.11"
 }

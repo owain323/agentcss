@@ -170,11 +170,15 @@ export interface SelectOption {
 export interface SelectOptions {
   /** 无障碍名（读屏会读它） */
   label: string;
-  options: SelectOption[];
+  /**
+   * 候选项**来自 DOM**（`[data-select-option]`），不在 opts 里传 ——
+   * 之前这里声明过 `options: SelectOption[]`（必填），runtime 从不读它，
+   * TS 强迫用户传一份没人消费的数据 ⇒ 已移除（2026-11 核对 select.js 全部
+   * `opt.*` 读取：label/value/placeholder/labels/name/multiple/onChange/onOpen）。
+   */
   /** 初始选中值 */
   value?: string;
   placeholder?: string;
-  disabled?: boolean;
   /** 读屏 / 占位文案覆盖（默认中文） */
   labels?: SelectLabels;
   /**
@@ -195,10 +199,12 @@ export interface SelectOptions {
 }
 
 /**
- * ⭐ 与 `select.js` 的实际返回逐项对齐。
- *   runtime 返回：`{ open, close, get value(), set value(v) }`
+ * ⭐ 与 `select.js` 的实际返回逐项对齐（2026-11 再核对 create() 的 return）：
+ *   runtime 返回：`{ open, close, get/set value, get/set values, destroy }`
  *   ⇒ 用 `value` 属性（getter/setter），**不是** getValue/setValue。
- *   ⇒ 没有 destroy()：卸载请直接移除节点（组件无全局监听）。
+ *   ⇒ **有 destroy()**：组件通过 dismissable 核挂了 **document 级**捕获监听，
+ *      还有 btn 上的 keydown / typeahead 缓冲 —— 卸载前必须调用，
+ *      否则监听随实例泄漏（之前这里写"没有 destroy / 无全局监听"，是错的）。
  */
 export interface Select {
   /** 展开下拉 */
@@ -207,6 +213,10 @@ export interface Select {
   close(): void;
   /** 当前值（可读写；写入会触发 onChange） */
   value: string | null;
+  /** 多选时的已选值数组（可读写；写入会触发 onChange） */
+  values: string[];
+  /** 解绑全部监听（含 document 级 dismissable）并收起下拉。**幂等**。 */
+  destroy(): void;
 }
 
 /* ============================================================================
@@ -287,15 +297,18 @@ export interface Combobox {
 export type PresetName = 'thisQ' | 'lastQ' | 'lastM' | 'thisY' | 'yoy';
 
 export interface DateRangeOptions {
-  label: string;
+  /**
+   * ⚠️ 之前这里声明过 `label`（必填）/ `editable` / `disabled` 三个字段 ——
+   *    runtime 一个都不读（核对 date-range.js 全部 `opt.*` 读取：
+   *    labels / min / max / onChange / presets）。无障碍名走 DOM
+   *    （`data-dr-*` / labels），不属于 opts ⇒ 三个幻影字段已移除。
+   */
   /**
    * 要显示哪些快捷区间（取值为预设名）。
-   * ⚠️ 传了但 DOM 里没有对应 `data-dr-preset` 按钮的，会被静默忽略。
+   * ⚠️ 只**渲染**这里列出的快捷项（没列的不进 DOM）；
+   *    宿主没写 `[data-dr-presets]` 容器时，一个都不渲染（也不报错）。
    */
   presets?: PresetName[];
-  /** 是否允许手动输入 */
-  editable?: boolean;
-  disabled?: boolean;
   /** 校验文案覆盖（默认中文） */
   labels?: DateRangeLabels;
   /**
@@ -405,8 +418,15 @@ export interface Tree {
 
 /** `new Accordion(root, opts)` —— construct 形态（注意是 `new`）。 */
 export interface AccordionOptions {
-  /** 展开/收起动画时长 ms；默认 240（源码里写进 `--acc-dur`） */
-  duration?: number;
+  /**
+   * 变更回调。runtime（accordion.js）：`opt.onChange(trigger, open)` ——
+   * 第一个参数是 `.accordion__trigger` 元素，第二个是展开与否。
+   *
+   * ⚠️ 之前这里声明过 `duration?: number`（注释称默认 240）——
+   *    runtime 从不读它：动画时长硬编码 90ms 写进 `--acc-dur`，
+   *    reduced-motion 下为 0。属于「声明了却没有」⇒ 已移除。
+   */
+  onChange?(trigger: HTMLElement, open: boolean): void;
 }
 
 export interface AccordionInstance {
@@ -471,8 +491,13 @@ export interface ToastOptions {
 export interface DialogAction {
   text: string;
   value?: string;
-  /** 视觉/语义变体（源码按 `actions` 的 `kind` 判定，未知值退回默认） */
-  kind?: 'primary' | 'danger' | 'ghost';
+  /**
+   * 视觉/语义变体，对应 button.css 真实存在的类（白名单）：
+   * primary / danger / ghost / secondary；未知值退回次要按钮。
+   * ⚠️ 之前这里声明成 `kind` —— runtime 与 demo 两处一致读的都是
+   *    `variant`（drawer.js / overlay.js），`kind` 是个传了没用的幻影名。
+   */
+  variant?: 'primary' | 'danger' | 'ghost' | 'secondary';
   onClick?(): void;
 }
 
@@ -493,8 +518,15 @@ export interface OverlayApi {
 }
 
 export interface TooltipApi {
-  /** 给元素挂一个提示。`place` 决定方向（源码默认值以 README 为准） */
+  /** 给元素挂一个提示。`place`：top / bottom / start / end（默认 bottom），
+   *  另接受 `inset-inline-start` / `inset-inline-end` 别名（映射 start/end）
+   *  与物理 `left` / `right`（按书写方向换算）。 */
   attach(el: HTMLElement, text: string, place?: string): void;
+  /**
+   * 摘掉 attach 挂上的监听、dismissable 记录与气泡节点
+   * （SPA 换页销毁前调用；未 attach 过则安全 no-op。幂等。）
+   */
+  detach(el: HTMLElement): void;
   /** 覆盖 live region 的读屏名（默认「组件提示」） */
   setLabels(patch: { region?: string }): void;
 }
@@ -512,11 +544,30 @@ export interface PopoverOptions {
   onClose?(): void;
 }
 
+/**
+ * `Popover.attach()` 的返回句柄（2026-11 与 popover.js:283 的 `api` 对齐）。
+ * 之前 attach 声明成 `void` ⇒ 编程关闭只能绕道 `Popover.current`。
+ */
+export interface PopoverHandle {
+  open(): void;
+  close(): void;
+  toggle(): void;
+  /** 解绑监听、移除浮层与锚点包裹。**幂等**。 */
+  destroy(): void;
+  /** 浮层根元素 */
+  readonly el: HTMLElement;
+}
+
 export interface PopoverApi {
-  attach(trigger: HTMLElement, opts?: PopoverOptions): void;
+  /** 返回句柄 —— 可编程 open/close/toggle/destroy */
+  attach(trigger: HTMLElement, opts?: PopoverOptions): PopoverHandle;
   closeAll(): void;
-  /** 当前打开的那个浮层的元素；没有则为 null（不是 unknown） */
-  readonly current: HTMLElement | null;
+  /**
+   * 当前打开的那个浮层的**句柄**（同 attach 返回值）；没有则为 null。
+   * ⚠️ 之前声明成 `HTMLElement | null` —— runtime 的 `current` 存的是
+   * api 对象（`current = api`），不是元素 ⇒ 已按实际形状修正。
+   */
+  readonly current: PopoverHandle | null;
   /** 模块级净化钩子：`Popover.setSanitizer(DOMPurify.sanitize)`；传 null 取消 */
   setSanitizer(fn: ((html: string) => string) | null): void;
 }
@@ -524,6 +575,30 @@ export interface PopoverApi {
 export interface TocApi {
   /** 绑定目录与正文的联动。参数形状见 `03-patterns/nav/README.md` */
   init(opts?: object): void;
+}
+
+/**
+ * form-validation 的行为层（2026-11 起正式发布，此前只活在 demo 里）。
+ * DOM 契约见 `03-patterns/form-validation/form-validation.js` 文件头。
+ */
+export interface FormValidationApi {
+  /** 绑定一个表单（同表单重复调用返回同一实例） */
+  init(form: HTMLFormElement,
+       opts?: { labels?: { summaryTitle?(n: number): string; success?: string } }): {
+    check(field: HTMLElement): boolean;
+    checkAll(): HTMLElement[];
+    clear(): void;
+    /**
+     * 摘掉本实例挂在 form 与每个字段上的监听（SPA 换页 / 表单被替换时调）。
+     * ⚠️ 0.27.11 才补上：此前监听是匿名函数直接挂的，**装得上、摘不下**，
+     * 与 select / combobox / drawer 的「对外有 destroy()」契约不一致。
+     */
+    destroy(): void;
+  };
+  /** 注册/覆盖一条校验规则（key 对应字段上的 `data-validate`） */
+  rule(name: string, test: (v: string) => boolean, msg?: string): boolean;
+  /** 覆盖汇总/成功文案（模块级） */
+  setLabels(patch: { summaryTitle?(n: number): string; success?: string }): void;
 }
 
 export interface RevealApi {
@@ -649,12 +724,18 @@ export interface ShellNavInstance {
 }
 
 export interface UploadInstance {
-  /** 收下一批文件（拖放入口，也是公开 API） */
-  add(incoming: FileList | File[], dirCount?: number): void;
+  /**
+   * 收下一批文件（拖放入口，也是公开 API）。
+   * 返回 `false` = 整批被拒绝（`_validate` 未通过）；`true` = 已受理。
+   * ⚠️ 之前声明成 `void` —— 调用方拿不到拒绝信号。
+   */
+  add(incoming: FileList | File[], dirCount?: number): boolean;
   render(): void;
   setState(state: string): void;
   setProgress(index: number, pct: number): void;
   removeAt(index: number): void;
+  /** 解绑全部监听（含 document 级）并清理生成的 DOM。 */
+  destroy(): void;
 }
 
 /* ============================================================================
@@ -683,7 +764,7 @@ export interface DrawerOpenOptions {
   /** 逐次净化钩子（优先于模块级 `Drawer.setSanitizer`） */
   sanitize?(html: string): string;
   labels?: DrawerLabels;
-  actions?: Array<{ text: string; kind?: 'primary' | 'danger' | 'ghost'; onClick?(): void }>;
+  actions?: Array<{ text: string; variant?: 'primary' | 'danger' | 'ghost' | 'secondary'; onClick?(): void }>;
 }
 
 export interface UploadOptions {
@@ -716,6 +797,7 @@ export interface FrontendLibGlobal {
   Overlay: OverlayApi;
   Tooltip: TooltipApi;
   Popover: PopoverApi;
+  FormValidation: FormValidationApi;
   Toc: TocApi;
   Reveal: RevealApi;
   FLIP: FlipApi;
@@ -761,6 +843,7 @@ export declare const Drawer: FrontendLibGlobal['Drawer'];
 export declare const Overlay: OverlayApi;
 export declare const Tooltip: TooltipApi;
 export declare const Popover: PopoverApi;
+export declare const FormValidation: FormValidationApi;
 export declare const Toc: TocApi;
 export declare const Reveal: RevealApi;
 export declare const FLIP: FlipApi;

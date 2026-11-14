@@ -150,7 +150,63 @@
     '[tabindex]:not([tabindex="-1"])',
   ].join(',');
 
+  var drawerUid = 0;   /* 抽屉元素 id 自增 */
+
+  /* 动作按钮的 variant 白名单 —— 只允许 button.css 里真实存在的类 */
+  var BTN_VARIANT = {
+    primary: 'btn--primary', danger: 'btn--danger',
+    ghost: 'btn--ghost', secondary: 'btn--secondary',
+  };
+  /* 未知 variant 的兜底必须与 overlay 一致（原先裸 .btn vs .btn--secondary）。
+     统一退成裸 .btn（与 toast 的"认不得就不加修饰"一致），每个未知值告警一次
+     —— 光退回不吭声等于把作者的笔误吃进肚子里。 */
+  var warnedVariant = {};
+  function btnClassOf(v) {
+    var cls = BTN_VARIANT[v];
+    if (!cls && v != null && v !== '' && !warnedVariant[v]) {
+      warnedVariant[v] = 1;
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('drawer：未知的动作按钮 variant "' + v +
+                     '"（退回无修饰的 .btn；可用值：primary/danger/ghost/secondary）');
+      }
+    }
+    return 'btn' + (cls ? ' ' + cls : '');
+  }
   var lockCount = 0, savedScroll = 0;
+  /* 滚动条宽度补偿：只记录自己真的改过的（unlock 只回写这些，见 unlockScroll） */
+  var sbwChanged = false, sbwSaved = '';
+
+  function lockScroll() {
+    if (lockCount === 0) {
+      savedScroll = window.pageYOffset || 0;
+      /* ⭐ 先量，再锁 —— 锁上之后滚动条就没了，量出来是 0
+         （与 overlay.js:86 同一判断）。不补偿的话，Windows 桌面（常驻滚动条）
+         开抽屉的瞬间整页横移一次；overlay 有这段，drawer 一直没同步。 */
+      var sbw = window.innerWidth - document.documentElement.clientWidth;
+      if (sbw > 0) {
+        var cur = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+        sbwSaved = document.body.style.paddingRight;
+        document.body.style.paddingRight = (cur + sbw) + 'px';
+        sbwChanged = true;
+      }
+      document.body.style.overflow = 'hidden';
+    }
+    lockCount++;
+  }
+  function unlockScroll() {
+    lockCount = Math.max(0, lockCount - 1);
+    if (lockCount === 0) {
+      document.body.style.overflow = '';
+      /* 🔴 只恢复**自己真的改过**的 padding —— 宿主原有的内联值不许动
+         （与 overlay.js unlockScroll 同一判断）。 */
+      if (sbwChanged) {
+        document.body.style.paddingRight = sbwSaved;
+        sbwChanged = false;
+        sbwSaved = '';
+      }
+      window.scrollTo(0, savedScroll);
+    }
+  }
   /* 背景隔离的引用计数栈（E: 嵌套 early-release）。
      🔴 原来只有一个 `inerts` 数组：
           setBackgroundInert(true) 在 inerts 非空时**早退**（第二次打开不记录）
@@ -197,15 +253,20 @@
    * @param {boolean} on
    * @param {Array} bucket 关闭时传打开时返回的那个数组 ——
    *        不能重新扫 body：期间可能新增了别人的节点，释放不该碰到它们。
+   * @param {Element} ownHost 本次打开的抽屉容器 —— 排除谓词只认它。
    * @returns {Array} on=true 时返回本次 acquire 的节点列表
    */
-  function setBackgroundInert(on, bucket) {
+  function setBackgroundInert(on, bucket, ownHost) {
     if (on) {
       var got = [];
-      /* ⚠️ 只把 body 的**直接子元素**（除抽屉容器）设 inert。
-         抽屉本身也在 body 下 ⇒ 必须排除，否则刚打开就 inert 了。 */
+      /* ⚠️ 只把 body 的**直接子元素**设 inert，且只跳过**自己这一层**的容器
+         （抽屉本身也在 body 下，不排除自己就是刚打开就 inert）。
+         🔴 之前这里排除的是**所有** `data-drawer-host` —— 双抽屉嵌套时，
+         后开的那个会把先开的抽屉整个漏掉：两层同时暴露给读屏、背景都能点。
+         overlay.js:638 修过的同一类 bug（"只跳过自己这层 backdrop"），
+         drawer 没同步。 */
       Array.prototype.forEach.call(document.body.children, function (n) {
-        if (n.hasAttribute && n.hasAttribute('data-drawer-host')) return;
+        if (n === ownHost) return;
         if (n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
         bgAcquire(n);
         got.push(n);
@@ -214,21 +275,6 @@
     }
     (bucket || []).forEach(function (n) { bgRelease(n); });
     return [];
-  }
-
-  function lockScroll() {
-    if (lockCount === 0) {
-      savedScroll = window.pageYOffset || 0;
-      document.body.style.overflow = 'hidden';
-    }
-    lockCount++;
-  }
-  function unlockScroll() {
-    lockCount = Math.max(0, lockCount - 1);
-    if (lockCount === 0) {
-      document.body.style.overflow = '';
-      window.scrollTo(0, savedScroll);
-    }
   }
 
   /* 方位 ⇒ 类名。两个理由都用完整字面量，不拼 `'drawer--' + place`：
@@ -306,7 +352,9 @@
     d.className = 'drawer ' + placeCls;
     d.setAttribute('role', 'dialog');
     d.setAttribute('aria-modal', 'true');
-    if (!d.id) d.id = 'drawer-' + (new Date()).getTime();
+    /* 🔴 id 用模块级自增：同一毫秒开两个抽屉，时间戳撞车
+       => aria-labelledby 指错对象（同 overlay.js dlgUid）。 */
+    if (!d.id) d.id = 'drawer-' + (++drawerUid);
     if (opt.title) d.setAttribute('aria-labelledby', d.id + '-title');
     else d.setAttribute('aria-label', opt.label || L.dialog);
     d.tabIndex = -1;              /* 焦点陷阱的兜底落点 */
@@ -345,7 +393,10 @@
       opt.actions.forEach(function (a) {
         var b = document.createElement('button');
         b.type = 'button';
-        b.className = 'btn' + (a.variant ? ' btn--' + a.variant : '');
+        /* 🔴 variant 走白名单：拼 `' btn--' + a.variant` 会把任何字符串都
+           拼成类名（'tp' => .btn--tp，无 CSS 命中、门禁也认不出谁在用）。
+           同 overlay.js 的 TOAST_VARIANT：未知值退回默认按钮。 */
+        b.className = btnClassOf(a.variant);
         b.textContent = a.label;
         b.addEventListener('click', function () {
           if (a.onClick) a.onClick(close);
@@ -359,7 +410,7 @@
     host.appendChild(d);
     document.body.appendChild(host);
 
-    bgNodes = setBackgroundInert(true);
+    bgNodes = setBackgroundInert(true, null, host);
     lockScroll();
     /* 初始焦点：优先指定项，其次第一个**真的能聚焦**的元素，最后容器本身。
        ------------------------------------------------------------------
@@ -443,9 +494,16 @@
       var done = false;
       function remove() {
         if (done) return; done = true;
+        d.removeEventListener('transitionend', onTe);
         if (host.parentNode) host.parentNode.removeChild(host);
       }
-      d.addEventListener('transitionend', remove, { once: true });
+      /* 🔴 只认抽屉自己的 transitionend —— 子元素（按钮 hover 过渡等）冒泡上来的
+         事件会提前触发 remove，抽屉淡出被截断（{once:true} 还会把监听一次耗光）。 */
+      function onTe(e) {
+        if (e && e.target !== d) return;
+        remove();
+      }
+      d.addEventListener('transitionend', onTe);
       setTimeout(remove, 320);
       /* ⭐ ③ 焦点归位：回到打开抽屉的那个元素（核里已处理
          "元素被移除 / 不可聚焦"两种降级，都不抛错）。 */

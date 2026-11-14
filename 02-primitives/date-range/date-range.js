@@ -183,19 +183,25 @@
       return Math.round((b - a) / 86400000) + 1;
     }
 
+    /* 🔴 最近一次校验结果：valid 的**唯一真值来源**（0.x 修）。
+       以前 `valid` 返回 `!errBox || errBox.hidden` —— 标记里没写错误槽时
+       恒为 true ⇒ 校验失败照样报 valid，对外说谎。 */
+    var lastValid = true;
     function validate() {
       var f = from.value, t = to.value;
-      if (!f && !t) { setError(''); paintSummary(''); return true; }
-      if (f && !t) { setError(L.requiredEnd); return false; }
-      if (!f && t) { setError(L.requiredStart); return false; }
+      if (!f && !t) { setError(''); paintSummary(''); lastValid = true; return true; }
+      if (f && !t) { setError(L.requiredEnd); lastValid = false; return false; }
+      if (!f && t) { setError(L.requiredStart); lastValid = false; return false; }
       if (f > t) {
         setError(L.order(f, t));
+        lastValid = false;
         return false;
       }
-      if (opt.min && f < opt.min) { setError(L.min(opt.min)); return false; }
-      if (opt.max && t > opt.max) { setError(L.max(opt.max)); return false; }
+      if (opt.min && f < opt.min) { setError(L.min(opt.min)); lastValid = false; return false; }
+      if (opt.max && t > opt.max) { setError(L.max(opt.max)); lastValid = false; return false; }
       setError('');
       paintSummary(f + ' → ' + t + '（' + days(f, t) + ' 天）');
+      lastValid = true;
       return true;
     }
 
@@ -211,7 +217,16 @@
       summary.appendChild(b);
     }
 
+    /* 🔴 去重（0.x 修）：原生 date 输入一次选择/一次按键会**连发**
+       input 和 change，两条监听都调 emit ⇒ fl-change / onChange
+       每次动作响两下。这里按"值没变就不发"去重 —— 记录最近一次
+       发出的 from|to，no-op 直接跳过（按实例记账，不跨实例共享）。
+       校验/UI 由 validate() 驱动，值没变 ⇒ 校验结论也不变，跳过无损。 */
+    var lastEmitted = null;
     function emit() {
+      var cur = from.value + '|' + to.value;
+      if (cur === lastEmitted) return;
+      lastEmitted = cur;
       var ok = validate();
       flEmit(root, 'fl-change',
              { value: { from: from.value, to: to.value }, valid: ok });
@@ -222,25 +237,35 @@
 
     /* ---------- 快捷区间 ---------- */
     function bindPresets() {
-      var now = new Date();
-      var q = quarterOf(now);
+      /* 🔴 「现在」必须在**使用时**取（0.x 修）：以前 create() 时拍一张
+         new Date() 存进闭包 —— 页面长驻（财务后台挂过夜）之后再点
+         「本季度/上月」，算的还是**昨天/上个季度**的区间。 */
       var presets = [
-        { key: 'thisQ',  label: '本季度', range: function () { return quarterRange(q.y, q.q); } },
+        { key: 'thisQ',  label: '本季度',
+          range: function () {
+            var q = quarterOf(new Date());
+            return quarterRange(q.y, q.q);
+          } },
         { key: 'lastQ',  label: '上季度',
-          range: function () { return q.q === 0 ? quarterRange(q.y - 1, 3) : quarterRange(q.y, q.q - 1); } },
+          range: function () {
+            var q = quarterOf(new Date());
+            return q.q === 0 ? quarterRange(q.y - 1, 3) : quarterRange(q.y, q.q - 1);
+          } },
         { key: 'lastM',  label: '上月',
           range: function () {
+            var now = new Date();
             var m = new Date(now.getFullYear(), now.getMonth() - 1, 1);
             return { from: iso(m), to: iso(new Date(m.getFullYear(), m.getMonth() + 1, 0)) };
           } },
         { key: 'thisY',  label: '今年',
           range: function () {
-            return { from: iso(new Date(now.getFullYear(), 0, 1)),
-                     to: iso(new Date(now.getFullYear(), 11, 31)) };
+            var y = new Date().getFullYear();
+            return { from: iso(new Date(y, 0, 1)),
+                     to: iso(new Date(y, 11, 31)) };
           } },
         { key: 'yoy',    label: '去年同期',
           range: function () {
-            var y = now.getFullYear() - 1;
+            var y = new Date().getFullYear() - 1;
             return { from: iso(new Date(y, 0, 1)), to: iso(new Date(y, 11, 31)) };
           } },
       ];
@@ -317,7 +342,9 @@
     return {
       get from() { return from.value; },
       get to() { return to.value; },
-      get valid() { return !errBox || errBox.hidden; },
+      /* 🔴 0.x 修：以前 `!errBox || errBox.hidden` —— 没写错误槽时恒 true，
+         校验失败也报 valid。改为读最近一次校验结果（见 validate）。 */
+      get valid() { return lastValid; },
       set: setRange,
       setPreset: function (key) {
         var b = root.querySelector('[data-dr-preset="' + key + '"]');

@@ -201,6 +201,9 @@
       if (current && current !== api) current.close();
       fr.save();
       box.setAttribute('data-open', 'true');
+      /* 🔴 触发器上的 aria-expanded 必须跟着走（0.x 修）：
+         以前只在 attach 时写过一次 'false' ⇒ 打开后读屏仍念"已折叠"。 */
+      trigger.setAttribute('aria-expanded', 'true');
       /* 🔴 关闭态必须用 **inert**，不能用 pointer-events ——
        *   实测踩坑：`pointer-events:none` **拦不住 Tab**
        *   （Tab 走的是 tabindex/focusability，不是命中测试）
@@ -223,6 +226,9 @@
     function close() {
       if (box.getAttribute('data-open') !== 'true') return;
       box.setAttribute('data-open', 'false');
+      /* 🔴 与 open() 对应：Esc / 点外部都经 dismissable 核的 onDismiss 走到这里，
+         三条关闭路径一起收口（0.x 修：读屏必须听到"已折叠"） */
+      trigger.setAttribute('aria-expanded', 'false');
       /* ⭐ 见 open() 的说明：必须 inert，不能只靠 pointer-events */
       box.setAttribute('inert', '');
       /* ⭐ 焦点归还 —— 否则键盘用户要从页面开头重新 Tab。 */

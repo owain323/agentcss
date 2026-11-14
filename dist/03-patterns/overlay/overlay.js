@@ -174,6 +174,25 @@ return out;
 
 var TOAST_LIMIT = 4;
 
+var dlgUid = 0;
+
+var BTN_VARIANT = {
+primary: 'btn--primary', danger: 'btn--danger',
+ghost: 'btn--ghost', secondary: 'btn--secondary',
+};
+var warnedVariant = {};
+function btnClassOf(v) {
+var cls = BTN_VARIANT[v];
+if (!cls && v != null && v !== '' && !warnedVariant[v]) {
+warnedVariant[v] = 1;
+if (typeof console !== 'undefined' && console.warn) {
+console.warn('overlay：未知的动作按钮 variant "' + v +
+'"（退回无修饰的 .btn；可用值：primary/danger/ghost/secondary）');
+}
+}
+return 'btn' + (cls ? ' ' + cls : '');
+}
+
 function toast(opts) {
 opts = opts || {};
 var L = flLabels(DEFAULT_LABELS, opts && opts.labels);
@@ -364,7 +383,7 @@ box.setAttribute('tabindex', '-1');
 if (opts.title) {
 var h = document.createElement('h2');
 h.className = 'dialog__title';
-h.id = 'dlg-title-' + Date.now();
+h.id = 'dlg-title-' + (++dlgUid);
 h.textContent = opts.title;
 box.appendChild(h);
 box.setAttribute('aria-labelledby', h.id);
@@ -372,7 +391,7 @@ box.setAttribute('aria-labelledby', h.id);
 if (opts.desc) {
 var p = document.createElement('p');
 p.className = 'dialog__desc';
-p.id = 'dlg-desc-' + Date.now();
+p.id = 'dlg-desc-' + (++dlgUid);
 p.textContent = opts.desc;
 box.appendChild(p);
 box.setAttribute('aria-describedby', p.id);
@@ -383,8 +402,7 @@ act.className = 'dialog__actions';
 (opts.actions || []).forEach(function (a) {
 var b = document.createElement('button');
 b.type = 'button';
-b.className = 'btn ' + (a.variant === 'danger' ? 'btn--danger'
-: a.variant === 'primary' ? 'btn--primary' : 'btn--secondary');
+b.className = btnClassOf(a.variant);
 b.textContent = a.label;
 b.addEventListener('click', function () {
 if (a.onClick) a.onClick(close);

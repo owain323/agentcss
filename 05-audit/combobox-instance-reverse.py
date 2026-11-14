@@ -76,9 +76,12 @@ MUTANTS = [
     # 🔴 0.8.8 改：收编 dismissable 核之后，组件不再自己摘 document 监听
     #    （改由核的 destroy() 负责）。原变异串已不存在 ⇒ 这条反向控制失效。
     #⇒ 改为变异「不调 dismiss.destroy()」—— 那才是现在的等价漏洞。
-    ('destroy 不调微行为核的 destroy（栈泄漏）',
-     "      dismiss.destroy();",
-     "      /* RC: 忘了调 dismiss.destroy() */",
+    # 🔴 2026-11 二次更新：0.x 起核拆成两份（Esc 常驻份 + 外部点击份），
+    #    组件 destroy 里调的是 releaseOutside()/releaseEsc()（它们各自调核的
+    #    destroy）。忘调任一份就是现在的等价栈泄漏 —— 变异两行一起拿掉。
+    ('close() 忘了出栈外点份（栈泄漏：close 是唯一咽喉，destroy 依赖它）',
+     "      releaseOutside();",
+     "      /* RC: 忘了调两份核的 destroy */",
      '③'),
     # ⚠️ 这条变异体 0.8.8 被**主动移除**，两次尝试都抓不到，原因写在这里：
     #   去掉组件的 destroyed 守卫后，二次 destroy 观测不到任何差异 ——

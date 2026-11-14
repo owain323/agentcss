@@ -113,3 +113,88 @@ test('quarterRange(): 季度号越界必须**抛错**，不能静默算错', () 
   assert.throws(() => DRAPI.quarterRange(2026, -1), /0-3/);
   assert.throws(() => DRAPI.quarterRange(2026, 1.5), /0-3/);
 });
+
+/* ============================================================================
+ * polyfill.js 的 closest 补丁
+ * ==========================================================================
+ * 🔴 为什么必须在**无 closest 的假环境**里跑：
+ *    polyfill 只在 `!Element.prototype.closest` 时才安装 —— 现代 Node /
+ *    浏览器都有原生 closest，直接测等于测了个寂寞。而本库的目标环境正是
+ *    "没有 closest 的老 WebView"。所以这里手工搭一个：
+ *      · Element 的原型上**没有** closest（补丁装上后才有）
+ *      · 元素是手工对象，只带 closest 需要的最小字段
+ *        （tagName / className / id / getAttribute / parentElement / nodeType）
+ * ========================================================================== */
+function loadPolyfill() {
+  const code = fs.readFileSync(path.join(ROOT, '01-tokens/polyfill.js'), 'utf8');
+  const sandbox = {};
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  sandbox.console = console;
+  /* 老 WebView 假设：原型上没有 closest */
+  function FakeElement() {}
+  sandbox.Element = FakeElement;
+  vm.createContext(sandbox);
+  vm.runInContext(code, sandbox, { filename: '01-tokens/polyfill.js' });
+  return sandbox;
+}
+
+/** closest 补丁需要的最小元素（**没有**任何真 DOM API，符合目标环境的贫瘠） */
+function fakeEl(tag, opts) {
+  const o = opts || {};
+  return {
+    tagName: String(tag).toUpperCase(),
+    nodeType: 1,
+    className: o.className || '',
+    id: o.id || '',
+    parentElement: null,
+    attrs: Object.assign({}, o.attrs),
+    getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
+  };
+}
+
+test('polyfill · 无原生 closest 的环境里补丁被安装', () => {
+  const S = loadPolyfill();
+  assert.equal(typeof S.Element.prototype.closest, 'function',
+    'FakeElement 原型没有 closest，polyfill 必须把它补上');
+});
+
+/* 🔴 P0：原实现 `!(' ' + cn + ' ').indexOf(...)` 是 `(!x) > -1`，
+      优先级错了 ⇒ 类分支**永远返回 false** ⇒ 老 WebView 上凡是按类
+      匹配的路径全部静默失效（本地有原生 closest，测不出来）。 */
+test('polyfill · 类选择器真的能命中（优先级 bug 曾让它永远 miss）', () => {
+  const S = loadPolyfill();
+  const closest = S.Element.prototype.closest;
+  const a = fakeEl('li', { className: 'opt pick' });
+  const ul = fakeEl('ul', {});
+  a.parentElement = ul;
+
+  assert.equal(closest.call(a, '.pick'), a, '.pick 必须命中自己');
+  assert.equal(closest.call(a, '.opt'), a, '多类中命中一个即可');
+  assert.equal(closest.call(a, '.nope'), null, '不存在的类必须 miss');
+  assert.equal(closest.call(a, 'li.pick'), a, 'tag + class 复合也必须命中');
+  assert.equal(closest.call(a, 'ul.pick'), null, 'tag 不匹配必须 miss');
+});
+
+test('polyfill · class + attr 复合选择器各分支都参与判定', () => {
+  const S = loadPolyfill();
+  const closest = S.Element.prototype.closest;
+  const a = fakeEl('li', { className: 'opt', attrs: { 'data-value': 'x' } });
+  a.parentElement = fakeEl('ul', {});
+  assert.equal(closest.call(a, 'li.opt[data-value="x"]'), a);
+  assert.equal(closest.call(a, 'li.opt[data-value="y"]'), null);
+  assert.equal(closest.call(a, 'li.opt[data-missing]'), null);
+});
+
+/* 🔴 SVG 的 className 是 SVGAnimatedString **对象**，不是字符串：
+      拼进字符串会变成 "[object SVGAnimatedString]" ⇒ 永不匹配。
+      必须退回 getAttribute('class')。 */
+test('polyfill · SVG 元素（className 是对象）按 class 属性匹配', () => {
+  const S = loadPolyfill();
+  const closest = S.Element.prototype.closest;
+  const svg = fakeEl('svg', { attrs: { class: 'ic ic-big' } });
+  svg.className = { baseVal: 'ic ic-big', animVal: 'ic ic-big' };  /* 模拟 */
+  assert.equal(closest.call(svg, '.ic-big'), svg,
+    'className 不是字符串时必须退回 getAttribute("class")');
+  assert.equal(closest.call(svg, '.nope'), null);
+});

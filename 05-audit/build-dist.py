@@ -41,8 +41,10 @@ import os
 import gzip
 import json
 import hashlib
+import platform
 import re
 import sys
+import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST = os.path.join(ROOT, 'dist')
@@ -339,12 +341,23 @@ def build():
         entries.append(item)
 
     manifest = {
-        'schemaVersion': '1.0.0',
+        'schemaVersion': '1.0.1',
         'generator': '05-audit/build-dist.py',
+        # 🔴 压缩器指纹（1.0.1 加）：gzip 长度**不是字节的属性，是"字节 + 压缩器"的属性**。
+        #   实测同一份 dismissable.js：Python 3.13 的 zlib 1.3.1 → 3383 B，
+        #   Python 3.14 的 zlib-ng → 3384 B。差 1 字节不影响任何事，
+        #   但 manifest 里的数字是**被比对**的 ⇒ 换台机器/换个解释器就红。
+        #   ⇒ 这里把产出这批数字的工具链写下来，让"为什么对不上"有据可查；
+        #     而比对的判据本身只认**与实现无关**的字段（见 MANIFEST_VOLATILE）。
+        'toolchain': {
+            'python': platform.python_version(),
+            'zlib': zlib.ZLIB_RUNTIME_VERSION,
+        },
         'policy': [
             'dist/ 是源码的导出物，整目录可删重建；真值永远是 01-tokens ~ 04-recipes 下的源文件',
             'JS 只去注释不压缩；CSS 产出 stripped + minified 两份',
             'manifesto 里的 sourceSha256 变了而 dist 没重建 ⇒ dist-parity/dist-fresh 门禁会红',
+            'gzip 长度随压缩器实现漂移（±若干字节）⇒ 它只是报表值，不进逐字节判据',
         ],
         'totals': {
             'sourceFiles': len(entries),
@@ -464,7 +477,41 @@ def expected_outputs():
         _DRY = None
 
 
-def diff_content(want):
+# manifest 里**随压缩器实现漂移**的字段（schema 1.0.1）。
+# 实测：同一份 `01-tokens/behavior/dismissable.js`，
+#   Python 3.13 · zlib 1.3.1   → gzip 3383 B
+#   Python 3.14 · zlib-ng      → gzip 3384 B
+# 差 1 字节不影响任何使用方，但它**在 manifest 里且被逐字节比对** ⇒
+# 换台机器/换个解释器就红。而 gzip 是 f(字节) 的纯函数，
+# 「字节新不新」已经由 sourceSha256 + 产物字节两条判据覆盖了；
+# 再拿它当判据，测出来的只是"压缩器换了"，代价却是训练人"重建一下让它绿"
+# —— 那正好会掩盖真正的 dist 过期。⇒ 降级为报表值（见 diff_content）。
+MANIFEST_VOLATILE = ('sourceGzip', 'gzip', 'distGzip', 'toolchain')
+
+
+def _manifest_semantic(text):
+    """把 manifest 拆成「可比内容」与「gzip 报表值」两份。
+
+    可比内容 = 去掉 MANIFEST_VOLATILE 之后的整棵 JSON 树
+    （sourceSha256 / sourceBytes / outputs.path / outputs.bytes / schemaVersion … 一个不少）。
+    """
+    d = json.loads(text)
+    d.pop('toolchain', None)
+    gz = {}
+    for e in d.get('files', []):
+        src = e.get('source')
+        if 'sourceGzip' in e:
+            gz[src + ' :: source'] = e.pop('sourceGzip')
+        for o in e.get('outputs', []):
+            if 'gzip' in o:
+                gz[o.get('path') + ' :: output'] = o.pop('gzip')
+    tot = d.get('totals') or {}
+    if 'distGzip' in tot:
+        gz['totals.distGzip'] = tot.pop('distGzip')
+    return d, gz
+
+
+def diff_content(want, notes=None):
     """把 `want` 与磁盘上的同名文件**逐字节**比。返回问题列表。
 
     🔴 与 `check_freshness()` 的分工（2026-11 之前这里是个洞）：
@@ -474,6 +521,11 @@ def diff_content(want):
        `dist/01-tokens/tokens.css` 里加注释、再把 `--sp-4` 的值改掉 ——
        只有前者时 `--check` 打印 OK。这也是为什么必须有一条比内容。
     ⚠️ 缺失的文件不在这里报（`check_freshness` 已经报过，重复报会淹没真问题）。
+
+    🔴 manifest 是**唯一**的例外（schema 1.0.1，见 MANIFEST_VOLATILE）：
+       它的 gzip 数字随压缩器实现漂移，逐字节比会变成"换台机器就红"。
+       这里改成**语义比**：去掉那些随实现漂移的字段后必须完全相同，
+       漂移值本身走 notes 当报表打印。
     """
     bad = []
     for rel in sorted(want):
@@ -484,6 +536,24 @@ def diff_content(want):
         exp = want[rel].encode('utf-8')
         if have == exp:
             continue
+        if rel == 'dist/manifest.json':
+            try:
+                a, gz_have = _manifest_semantic(have.decode('utf-8'))
+                b, gz_exp = _manifest_semantic(exp.decode('utf-8'))
+            except Exception:
+                a = b = None
+            if a is not None and a == b:
+                if notes is not None:
+                    drift = [k for k in sorted(set(gz_have) | set(gz_exp))
+                             if gz_have.get(k) != gz_exp.get(k)]
+                    if drift:
+                        k0 = drift[0]
+                        notes.append(
+                            'manifest 的 gzip 数字有 %d 处与磁盘不一致（不算失败）：'
+                            '如 %s 磁盘 %s / 本机 %s —— 压缩器实现差异，'
+                            '字节本身由 sha256 判'
+                            % (len(drift), k0, gz_have.get(k0), gz_exp.get(k0)))
+                continue
         i, n = 0, min(len(have), len(exp))
         while i < n and have[i] == exp[i]:
             i += 1
@@ -634,6 +704,41 @@ def selftest():
         else:
             print('  [OK]   手改 dist ⇒ 新鲜度不动、内容判据抓到；'
                   '真值同步后不再红（判的确实是字节）')
+
+    # ⑦ 🔴 manifest 的 gzip 数字**不许**当判据（schema 1.0.1）
+    #    背景：同一份字节，zlib 1.3.1 给 3383 B、zlib-ng 给 3384 B（实测）。
+    #    而 manifest 是逐字节比的 ⇒ 换解释器/换机器就红，且红的方向是错的：
+    #    它喊"dist 旧了"，真相只是压缩器不同 ⇒ 人会去重建，顺手把**真的**过期抹平。
+    #    这条自检钉两头（缺一头都会出事）：
+    #      · 只改 gzip 数字 ⇒ 必须**仍然绿**（否则又绑回实现）
+    #      · 再改一个非 gzip 字段 ⇒ 必须**立刻红**（否则豁免把整个 manifest 放水）
+    #    ⚠️ 比对真值取**改动前的 manifest 原文**，不重跑 build()：
+    #       selftest-all 是 6 路并发，别的门禁会临时改源码，
+    #       重跑 build 会让这条自检撞上别人的窗口而假红（⑥ 已经踩过）。
+    pristine = io.open(MANIFEST, encoding='utf-8').read()
+    try:
+        d = json.loads(pristine)
+        d['files'][0]['sourceGzip'] = d['files'][0].get('sourceGzip', 0) + 1
+        if 'distGzip' in d.get('totals', {}):
+            d['totals']['distGzip'] += 1
+        io.open(MANIFEST, 'w', encoding='utf-8', newline='').write(
+            json.dumps(d, ensure_ascii=False, indent=2) + '\n')
+        drift_only = diff_content({'dist/manifest.json': pristine})
+
+        d['files'][0]['sourceBytes'] = d['files'][0].get('sourceBytes', 0) + 1
+        io.open(MANIFEST, 'w', encoding='utf-8', newline='').write(
+            json.dumps(d, ensure_ascii=False, indent=2) + '\n')
+        real_change = diff_content({'dist/manifest.json': pristine})
+    finally:
+        io.open(MANIFEST, 'w', encoding='utf-8', newline='').write(pristine)
+    if drift_only:
+        print('  [FAIL] 只改了 gzip 数字就报不一致 ⇒ 判据还是绑在压缩器实现上')
+        ok = False
+    elif not real_change:
+        print('  [FAIL] 非 gzip 字段改了却仍然绿 ⇒ 这条豁免把整个 manifest 放水了')
+        ok = False
+    else:
+        print('  [OK]   gzip 数字漂移不算失败；非 gzip 字段一改就红（豁免的边界清楚）')
     return 0 if ok else 1
 
 
@@ -652,7 +757,10 @@ def main():
         n_out = sum(len(e['outputs']) for e in man['files'])
         # 第二段：产物字节 == 生成器现算字节（不写盘，见 `_DRY`）
         want = expected_outputs()
-        diff = diff_content(want)
+        notes = []
+        diff = diff_content(want, notes)
+        for n in notes:
+            print('  [INFO] ' + n)
         if diff:
             print('  [FAIL] dist 里的产物不是这份生成器的输出：')
             for b in diff[:20]:

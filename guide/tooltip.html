@@ -54,39 +54,44 @@
 <tbody>
 <tr><td><code>el</code></td><td>Element</td><td>触发元素</td></tr>
 <tr><td><code>text</code></td><td>string</td><td>纯文本（用 <code>textContent</code> 写入，<strong>天然免疫注入</strong>）</td></tr>
-<tr><td><code>place</code></td><td><code>top</code>（默认）/ <code>bottom</code> / <code>inset-inline-start</code> / <code>inset-inline-end</code></td><td>方位</td></tr>
+<tr><td><code>place</code></td><td><code>bottom</code>（默认）/ <code>top</code> / <code>start</code> / <code>end</code> / <code>left</code> / <code>right</code>；<code>inset-inline-start</code> / <code>inset-inline-end</code> 也接受，分别映射到 <code>start</code> / <code>end</code></td><td>方位</td></tr>
 </tbody>
 </table></div>
-<p><code>place</code> 原样拼进类名（<code>.tooltip--</code> + <code>place</code>），所以四个方位对应的就是这四个类：</p>
+<p><code>start</code> / <code>end</code> 是<strong>内联轴</strong>方位（随书写方向镜像）；<code>left</code> / <code>right</code> 是<strong>物理</strong>方位（RTL 下仍是物理左 / 右，不镜像）。</p>
+<p>类名说的是<strong>气泡的位置</strong>，小三角一律指向锚点：</p>
 <div class="table" tabindex="0" role="region" aria-label="结构（JS 生成，不要手写）（可横向滚动）"><table>
 <thead><tr>
-<th>类</th><th>出现位置</th>
+<th>类</th><th>气泡在哪</th><th>小三角</th>
 </tr></thead>
 <tbody>
-<tr><td><code>.tooltip--top</code></td><td>在触发元素<strong>下方</strong>，箭头朝上（默认）</td></tr>
-<tr><td><code>.tooltip--bottom</code></td><td>在触发元素<strong>上方</strong>，箭头朝下</td></tr>
-<tr><td><code>.tooltip--inset-inline-start</code></td><td>在触发元素<strong>右侧</strong>，箭头朝左。用逻辑属性，RTL 下自动镜像到左边</td></tr>
-<tr><td><code>.tooltip--inset-inline-end</code></td><td>在触发元素<strong>左侧</strong>，箭头朝右。同样随书写方向镜像</td></tr>
+<tr><td><code>.tooltip--top</code></td><td>锚点<strong>上方</strong></td><td>气泡底缘，尖朝下</td></tr>
+<tr><td><code>.tooltip--bottom</code></td><td>锚点<strong>下方</strong></td><td>气泡顶缘，尖朝上</td></tr>
+<tr><td><code>.tooltip--inset-inline-start</code></td><td>锚点<strong>内联起点侧</strong>（LTR 在左 / RTL 在右）</td><td>靠锚点一侧，尖朝锚点</td></tr>
+<tr><td><code>.tooltip--inset-inline-end</code></td><td>锚点<strong>内联终点侧</strong>（LTR 在右 / RTL 在左）</td><td>靠锚点一侧，尖朝锚点</td></tr>
 </tbody>
 </table></div>
-<p>⚠️ 方位名容易读反：<code>--top</code> 指的是<strong>箭头朝上</strong>，所以气泡在下方。换成&quot;气泡在哪边&quot;去想会写错。</p>
-<p>公开 API 只有 <code>Tooltip.attach()</code>，<strong>没有</strong> <code>show</code> / <code>hide</code> —— 显隐由 hover / focus / click 自动驱动。</p>
+<p>⚠️ <code>--top</code> / <code>--bottom</code> 指的是<strong>气泡在哪</strong>，不是箭头朝哪。（旧文档把这条写反过 —— 以为&quot;<code>--top</code> 箭头朝上所以气泡在下方&quot;，对着 CSS 量过：<code>--top</code> 的小三角在气泡底缘、尖朝下，气泡在锚点上方。）</p>
+<p>公开 API 是 <code>Tooltip.attach()</code> / <code>Tooltip.detach(el)</code> / <code>Tooltip.setLabels()</code>， <strong>没有</strong> <code>show</code> / <code>hide</code> —— 显隐由 hover / focus / click 自动驱动。 <code>attach</code> 对同一元素幂等（重复调用不会双注册）；SPA 换页销毁元素前要 <code>detach</code>，否则 dismissable 栈只增不减。</p>
 <h2 id="s4">🔴 用 <code>aria-describedby</code>，不是 <code>aria-label</code><a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
 <p>tooltip 与触发元素的关系是<strong>描述</strong>，不是<strong>命名</strong>。 <code>aria-label</code> 会<strong>覆盖</strong>元素本来的可访问名——按钮上的文字会被抹掉。</p>
 <pre class="code" tabindex="0"><code class="language-js">el.setAttribute('aria-describedby', cur ? (cur + ' ' + id) : id);</code></pre>
 <p>⚠️ 已有 <code>aria-describedby</code> 时是<strong>追加空格</strong>，不是覆盖 —— 可能同时有多个描述。</p>
 <p><code>role=&quot;tooltip&quot;</code> + <code>aria-live=&quot;polite&quot;</code>：内容变化时读屏会念出来。</p>
-<h2 id="s5">键盘与触屏<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
-<div class="table" tabindex="0" role="region" aria-label="键盘与触屏（可横向滚动）"><table>
+<h2 id="s5">触发矩阵（attach() 路径）<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
+<div class="table" tabindex="0" role="region" aria-label="触发矩阵（attach() 路径）（可横向滚动）"><table>
 <thead><tr>
 <th>输入</th><th>行为</th>
 </tr></thead>
 <tbody>
-<tr><td>键盘 <code>focus</code></td><td>出（<strong>键盘必须可达</strong>，只做 hover 等于对键盘用户不存在）</td></tr>
+<tr><td>悬停（可悬停设备）</td><td>出；移开就关</td></tr>
+<tr><td>键盘 <code>focus</code></td><td>出（<strong>键盘必须可达</strong>，只做 hover 等于对键盘用户不存在）；<code>blur</code> 关</td></tr>
+<tr><td><code>click</code></td><td><strong>只翻转&quot;click 自己开的&quot;</strong>：focus/hover 刚弹出的那一下点击<strong>不</strong>翻转 —— 真指针 / 触屏的第一次点击必是&quot;开&quot;，click 开的再点一下才是关</td></tr>
 <tr><td><code>Esc</code></td><td>关（WCAG 1.4.13 Content on Hover or Focus）</td></tr>
-<tr><td>触屏 <code>click</code></td><td>切换开/关</td></tr>
+<tr><td>点外部</td><td>关</td></tr>
 </tbody>
 </table></div>
+<p>⭐ 这些来源是<strong>三份独立的所有权</strong>，不是&quot;谁最后来谁说了算&quot;： hover / focus / click 各持一份，任一持有就显示，<strong>全部释放</strong>才收。所以「click 钉住后鼠标进出一次」和「焦点还在、鼠标移出」都不会把气泡弄没 —— 后者是 WCAG 1.4.13 的 persistent 要求。<code>blur</code> 释放 focus 与 click 两份，指针仍停在锚点上时 hover 那份继续持有。</p>
+<p>触屏没有 hover：点按合成的 mouse 事件被 touchstart 后 700ms 的抑制窗挡住，触屏只走 click / focus。手写兄弟结构的纯 CSS 路径（见 tooltip.css）仍只有 hover / focus-visible 驱动，没有 JS 保护。</p>
 <h2 id="s6">🔴 定位前必须先入 DOM<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
 <p>游离元素的 <code>getBoundingClientRect()</code> <strong>全是 0</strong>。</p>
 <p>实测踩过：<code>top</code> 方位的气泡与锚点完全重叠 —— 原因就是先量尺寸、后插进 DOM。正确顺序是<strong>先挂上去、藏起来量，量完再显示</strong>。</p>
@@ -101,26 +106,26 @@
 <tbody>
 <tr><td><code>prefers-color-scheme: dark</code></td><td>已适配</td></tr>
 <tr><td><code>prefers-reduced-motion: reduce</code></td><td>已关闭动效</td></tr>
-<tr><td>无 <code>(hover: hover) and (pointer: fine)</code></td><td>只保留点击触发</td></tr>
+<tr><td>触屏（无 hover）</td><td>只走 click / focus（JS 端有触屏抑制窗，不靠 CSS hover）</td></tr>
 </tbody>
 </table></div>
-<h2 id="s9">成熟度：beta（两条行为债，如实列出）<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
-<p>契约里标的是 <code>beta</code>，两条债都记在这儿，<strong>别当stable 用</strong>：</p>
-<div class="table" tabindex="0" role="region" aria-label="成熟度：beta（两条行为债，如实列出）（可横向滚动）"><table>
+<h2 id="s9">成熟度与行为债（如实列出）<a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
+<p>成熟度以 <code>ai/components.json</code> 的 tooltip 条目为准（生成器按门禁与行为债现状算，这里不重复写死 —— 写死就会漂）。0.8.6 收编统一行为层后，原先两条&quot;手写债&quot;（<code>dismissable:manual</code> / <code>focus-return:manual</code>）<strong>已经还清</strong>： Esc / 点外部 / 焦点归位都走 dismissable + focus-return 核， <code>Tooltip.detach()</code> 也补上了销毁路径。还剩这些限制，如实列出：</p>
+<div class="table" tabindex="0" role="region" aria-label="成熟度与行为债（如实列出）（可横向滚动）"><table>
 <thead><tr>
-<th>债</th><th>含义</th><th>现在能做什么</th>
+<th>限制</th><th>含义</th><th>现在的行为</th>
 </tr></thead>
 <tbody>
-<tr><td><code>dismissable:manual</code></td><td>关闭逻辑是手写的，不是统一机制</td><td>点击/<code>Esc</code> 能关，但<strong>点击外部空白不关</strong></td></tr>
-<tr><td><code>focus-return:manual</code></td><td>焦点归位是手写的</td><td>关闭后焦点<strong>不一定</strong>回到触发元素</td></tr>
+<tr><td><code>position:no-flip</code></td><td>定位不做视口避让</td><td>靠视口边缘时气泡会被裁掉一角，不自动翻转</td></tr>
+<tr><td><code>position:no-reposition</code></td><td>打开后不跟随滚动 / 改尺寸重算</td><td>滚动页面时气泡留在原坐标，与锚点脱开</td></tr>
+<tr><td><code>css-sibling:manual</code></td><td>手写兄弟结构是纯 CSS 路径，没有 JS</td><td>只有 hover / focus-visible 驱动，Esc / 点外部关不掉 —— 要完整行为请用 <code>Tooltip.attach()</code></td></tr>
 </tbody>
 </table></div>
-<p>要接统一行为层，得先清这两条债。</p>
 <h2 id="s10">反例<a class="anchor" href="#s10" aria-label="本节直链">#</a></h2>
 <ul><li>❌ <strong>把必须知道的信息只放在 tooltip 里</strong> —— 触屏没有 hover，键盘用户也未必停留。判据很硬：tooltip 的文字<strong>不能</strong>与触发元素的可见文字/<code>aria-label</code> 重复 —— 一旦重复，说明它承载了本该可见的信息</li><li>❌ <strong>只做 hover、不做 focus</strong> —— 键盘用户永远看不到（WCAG 1.4.13 要求 focus 也能出）</li><li>❌ <strong>Esc 关不掉</strong> —— WCAG 1.4.13 的硬性要求：hover/focus 出现的内容必须可以关掉</li><li>❌ <strong>用 <code>display: none</code> 隐藏气泡</strong> —— 读屏读不到；淡入用透明度</li><li>❌ <strong><code>role=&quot;tooltip&quot;</code> 不给 <code>aria-label</code></strong> —— 光靠内容拿不到可访问名，读屏只会念&quot;提示&quot;（0.8.9 补的）</li><li>❌ <strong>触屏只靠 hover 触发</strong> —— 触屏上 hover 会&quot;粘住&quot;不褪；触屏必须走 JS 的 click / focus</li></ul>
 <hr>
 <h2 id="s11">门禁<a class="anchor" href="#s11" aria-label="本节直链">#</a></h2>
-<p><code>05-audit/tooltip-check.js</code>（契约 <code>gates</code> 里登记的唯一一道）—— 覆盖 <code>aria-describedby</code> 关联、<code>Esc</code> 关闭、触屏点击三条。</p>
+<p><code>05-audit/tooltip-check.js</code>（契约 <code>gates</code> 里登记的唯一一道）—— 覆盖 <code>aria-describedby</code> 关联、<code>Esc</code> 关闭、键盘 Tab 触发，以及悬停弹出 / 一次点击打开（不双翻转）/ 点外部关闭 / <code>detach</code> 清理 <code>__flDismiss</code> 栈四条行为判据。</p>
     </article>
     <nav class="g-pager" aria-label="上一页 / 下一页">
       <a class="g-pager__link g-pager__link--prev" href="tabs.html"><span>上一页</span>tabs · 标签页</a>
@@ -129,11 +134,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">🔴 一条铁律：tooltip 不承载必要信息</a></li><li><a href="#s3">结构（JS 生成，不要手写）</a></li><li><a href="#s4">🔴 用 aria-describedby，不是 aria-label</a></li><li><a href="#s5">键盘与触屏</a></li><li><a href="#s6">🔴 定位前必须先入 DOM</a></li><li><a href="#s7">显隐靠 data-state，别写 display</a></li><li><a href="#s8">降级</a></li><li><a href="#s9">成熟度：beta（两条行为债，如实列出）</a></li><li><a href="#s10">反例</a></li><li><a href="#s11">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">🔴 一条铁律：tooltip 不承载必要信息</a></li><li><a href="#s3">结构（JS 生成，不要手写）</a></li><li><a href="#s4">🔴 用 aria-describedby，不是 aria-label</a></li><li><a href="#s5">触发矩阵（attach() 路径）</a></li><li><a href="#s6">🔴 定位前必须先入 DOM</a></li><li><a href="#s7">显隐靠 data-state，别写 display</a></li><li><a href="#s8">降级</a></li><li><a href="#s9">成熟度与行为债（如实列出）</a></li><li><a href="#s10">反例</a></li><li><a href="#s11">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.27.10 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.27.11 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

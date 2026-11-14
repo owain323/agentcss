@@ -85,10 +85,11 @@ import { Accordion, Tabs, Select } from 'agentcss/esm';
 | `Tabs` | ✅ | **construct** | 实例方法在原型上：`select` `focusables` `enabled` `rove` `bind`（方向键游走已并入 roving 核） |
 | `Upload` | ✅ | **construct** | 实例方法在原型上：`add` `removeAt` `setProgress` `render` `destroy`（`new Upload(root, { maxSize, maxFiles })`；自动初始化时读 `data-max-size` / `data-max-files`）|
 | `ShellNav` | ✅ | **construct** | 实例方法在原型上：`open` `close` `destroy`（`new ShellNav(root, { label, place })`）。本层只做接线，抽屉的行为由 drawer.js 提供 |
-| `Tooltip` | ✅ | attach | `attach` |
+| `Tooltip` | ✅ | attach | `attach` `detach` `setLabels` |
 | `Popover` | ✅ | attach | `attach` `closeAll` `current` |
 | `Overlay` | ✅ | direct | `dialog` `toast` |
 | `Drawer` | ✅ | direct | `open` |
+| `FormValidation` | ✅ | direct | `init` `rule` `setLabels`（校验时机/错误汇总的行为层，2026-11 起正式发布）|
 | `Toc` | ✅ | direct | `init` |
 | `Nav` | ✅ | attach | `attach`（抽屉行为层；实例方法在原型上：`open` `close` `isOpen` `destroy`）|
 | `Reveal` | ✅ | direct | `enable` `disable` `replay`（入场动效；默认不接管，见 `03-patterns/reveal/README.md`）|
@@ -101,12 +102,14 @@ import { Accordion, Tabs, Select } from 'agentcss/esm';
 | `Theme` | ✅ | direct | `get` `isDark` `set` `toggle` `cycle`（在 `01-tokens/theme-toggle.js`）|
 
 ```js
-// create 形态
-const select = window.Select.create(root, { label: '城市', options: [...] });
+// create 形态（候选项来自 DOM，opts 不收 options 数组 —— 那是类型层的幻影字段，已除名）
+const select = window.Select.create(root, { label: '城市' });
 select.value = 'shanghai';
 
-// construct 形态（注意是 new）
-const acc = new window.Accordion(root, { duration: 240 });
+// construct 形态（注意是 new；动画时长是组件内部决定值，opts 只有 onChange）
+const acc = new window.Accordion(root, {
+  onChange: (trigger, open) => { /* trigger 是 .accordion__trigger */ },
+});
 acc.toggle(acc.itemOf(root.querySelector('.accordion__trigger')));
 
 // direct 形态
@@ -150,6 +153,7 @@ window.ScientificPlot.render(el, {
 | `ModelViewer` | 是 | 扫 `[data-mv]`（模型加载后自动 `update()`） |
 | `ScientificPlot` | 否 | 必须 `ScientificPlot.render(el, opts)` |
 | `Upload` | 是 | 扫 `[data-upload]`，实例挂在 `el.uploadInstance`（幂等；缺 `.upload__input` 时 console.warn 后跳过该元素） |
+| `FormValidation` | 是 | 扫 `[data-validate-form]`，实例挂在 `form.fvInstance`（幂等；规则用 `FormValidation.rule()` 注册，内置 required/optional） |
 | `ShellNav` | 是 | 扫 `[data-shell-nav]`（值 = 抽屉标题），实例挂在 `el.shellNavInstance`。幂等；缺 `Drawer` 或缺 `.shell__side` 时 console.warn 后跳过 —— **不注入按钮**，不留一个点不动的按钮 |
 <!-- autoinit-table:end -->
 

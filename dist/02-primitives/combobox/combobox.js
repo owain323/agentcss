@@ -147,9 +147,14 @@ var list = root.querySelector('[data-combo-list]');
 var tagBox = root.querySelector('[data-combo-tags]');
 if (!input || !list) throw new Error('Combobox: 缺少 [data-combo-input] 或 [data-combo-list]');
 
-var dismiss = flDismissable({
+var escDismiss = null;
+var outDismiss = null;
+function dismissEsc() {
+if (escDismiss) return;
+escDismiss = flDismissable({
 escOn: [input],
 inside: [root],
+outside: false,
 when: function () { return true; },
 onDismiss: function (ev, reason) {
 if (reason === 'outside') { close(); return true; }
@@ -159,6 +164,26 @@ if (input.value) { input.value = ''; paintList(); return true; }
 return false;
 }
 });
+}
+function releaseEsc() {
+if (!escDismiss) return;
+escDismiss.destroy();
+escDismiss = null;
+}
+function armOutside() {
+if (outDismiss) return;
+outDismiss = flDismissable({
+escOn: [],
+inside: [root],
+onDismiss: function (ev, reason) { close(); return true; },
+});
+}
+function releaseOutside() {
+if (!outDismiss) return;
+outDismiss.destroy();
+outDismiss = null;
+}
+dismissEsc();
 if (!list.id) list.id = 'combo-list-' + (++uid);
 
 var seq = ++uid;
@@ -209,6 +234,10 @@ return String(s).replace(/[&<>"]/g, function (c) {
     function paintList() {
       var q = input.value.trim();
       shown = filter(q).slice(0, 50);
+      /* 🔴 重绘即「游标作废」：以前只清 activeIdx、不清 aria-activedescendant
+         ⇒ 过滤后它还指着已销毁的 option id，读屏念的是一个不存在的项。 */
+      activeIdx = -1;
+      input.removeAttribute('aria-activedescendant');
       if (!shown.length) {
         /* @html-sink escaped — 插值只有 q，且过了 esc() */
         list.innerHTML = '<li class="combo__empty" role="presentation">' +
@@ -235,7 +264,6 @@ return String(s).replace(/[&<>"]/g, function (c) {
                (o.disabled ? ' aria-disabled="true"' : '') + '>' +
                '<span class="combo__opt-text">' + label + '</span></li>';
       }).join('');
-      activeIdx = -1;
     }
 
     /* ---------- 标签 ---------- */
@@ -315,12 +343,17 @@ return String(s).replace(/[&<>"]/g, function (c) {
       paintList();
       list.hidden = false;
       input.setAttribute('aria-expanded', 'true');
+      /* 列表开着才进「点外部要关」的仲裁（0.x：关着时不许截胡别的浮层） */
+      armOutside();
     }
     function close() {
       list.hidden = true;
       input.setAttribute('aria-expanded', 'false');
       activeIdx = -1;
       input.removeAttribute('aria-activedescendant');
+      /* 关了就出栈、摘 document 监听：所有关闭路径（Esc 一级 / 点外部 /
+         选满自动关）都走这里 ⇒ 记录不会残留（见 armOutside 的说明）。 */
+      releaseOutside();
     }
     function commitActive() {
       if (activeIdx < 0) return false;
@@ -335,9 +368,24 @@ return String(s).replace(/[&<>"]/g, function (c) {
       return ok;
     }
 
+    /* ---------- 输入法合成（IME）守卫 ----------
+       🔴 本库的目标读者就是中文用户 + 老 WebView：拼音合成期间，keydown
+       会把**还没上屏的字母**当"真实按键"上报（部分内核整段只报
+       keyCode=229，不给 isComposing）。不拦住的后果：
+         · Enter 把当前高亮项（或半截拼音）提交成标签并清空输入
+         · ↑↓ 在候选间乱跳、Backspace 删掉刚敲好的标签
+       ⇒ compositionstart/end 维护标志；keydown 再兜一层 e.isComposing 与
+         keyCode===229（合成收尾的那次 Enter，标志可能已复位但 229 还在）。
+       只拦**按键语义**；input 事件照常 —— 合成中的建议列表必须照常刷新。 */
+    var composing = false;
+    function onCompositionStart() { composing = true; }
+    function onCompositionEnd() { composing = false; }
+
     /* ---------- 键盘（焦点常驻 input）----------
        ⭐ 具名函数：`destroy()` 要按同一个引用摘除，匿名的摘不掉。 */
     function onKeydown(e) {
+      /* 合成中 ⇒ 本组件的一切按键语义让路（理由见上） */
+      if (composing || e.isComposing || e.keyCode === 229) return;
       var k = e.key;
 
       /* ↑↓ 在建议间移动 */
@@ -410,6 +458,8 @@ return String(s).replace(/[&<>"]/g, function (c) {
       input.focus();
     }
     input.addEventListener('keydown', onKeydown);
+    input.addEventListener('compositionstart', onCompositionStart);
+    input.addEventListener('compositionend', onCompositionEnd);
     input.addEventListener('input', onInput);
     input.addEventListener('focus', onFocus);
     input.addEventListener('click', onClick);
@@ -437,6 +487,8 @@ return String(s).replace(/[&<>"]/g, function (c) {
       if (destroyed) return;
       destroyed = true;
       input.removeEventListener('keydown', onKeydown);
+      input.removeEventListener('compositionstart', onCompositionStart);
+      input.removeEventListener('compositionend', onCompositionEnd);
       input.removeEventListener('input', onInput);
       input.removeEventListener('focus', onFocus);
       input.removeEventListener('click', onClick);
@@ -448,9 +500,14 @@ return String(s).replace(/[&<>"]/g, function (c) {
          却漏了这里的手动摘除 ⇒ `destroy()` 一调就抛
          「onDocClick is not defined」⇒ 实例销毁路径直接崩。
       ⇒ 正确做法是调**核的** destroy()，它自己会摘 document 监听
-         并且把自己从共享栈里移除。 */
-      dismiss.destroy();
+         并且把自己从共享栈里移除。
+         0.x 起核拆成两份（见 create 顶部的说明）：Esc 常驻份与
+         外部点击份都要摘。外部点击份由 close() 统一出栈（它是唯一咽喉 ——
+         所有关闭路径都走它），destroy 里再调一次是冗余双保险，
+         双保险会让「close() 忘了出栈」这类回归永远测不到
+         （beh-reverse 实测：删一份另一份兜住，突变永远抓不到）。 */
       close();
+      releaseEsc();
     }
 
     paintTags();

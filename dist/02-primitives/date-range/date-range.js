@@ -153,19 +153,22 @@ var a = new Date(fromS + 'T00:00:00'), b = new Date(toS + 'T00:00:00');
 return Math.round((b - a) / 86400000) + 1;
 }
 
+var lastValid = true;
 function validate() {
 var f = from.value, t = to.value;
-if (!f && !t) { setError(''); paintSummary(''); return true; }
-if (f && !t) { setError(L.requiredEnd); return false; }
-if (!f && t) { setError(L.requiredStart); return false; }
+if (!f && !t) { setError(''); paintSummary(''); lastValid = true; return true; }
+if (f && !t) { setError(L.requiredEnd); lastValid = false; return false; }
+if (!f && t) { setError(L.requiredStart); lastValid = false; return false; }
 if (f > t) {
 setError(L.order(f, t));
+lastValid = false;
 return false;
 }
-if (opt.min && f < opt.min) { setError(L.min(opt.min)); return false; }
-if (opt.max && t > opt.max) { setError(L.max(opt.max)); return false; }
+if (opt.min && f < opt.min) { setError(L.min(opt.min)); lastValid = false; return false; }
+if (opt.max && t > opt.max) { setError(L.max(opt.max)); lastValid = false; return false; }
 setError('');
 paintSummary(f + ' → ' + t + '（' + days(f, t) + ' 天）');
+lastValid = true;
 return true;
 }
 
@@ -180,7 +183,11 @@ b.textContent = s;
 summary.appendChild(b);
 }
 
+var lastEmitted = null;
 function emit() {
+var cur = from.value + '|' + to.value;
+if (cur === lastEmitted) return;
+lastEmitted = cur;
 var ok = validate();
 flEmit(root, 'fl-change',
 { value: { from: from.value, to: to.value }, valid: ok });
@@ -190,25 +197,33 @@ opt.onChange({ from: from.value, to: to.value, valid: ok }, ok);
 }
 
 function bindPresets() {
-var now = new Date();
-var q = quarterOf(now);
+
 var presets = [
-{ key: 'thisQ',  label: '本季度', range: function () { return quarterRange(q.y, q.q); } },
+{ key: 'thisQ',  label: '本季度',
+range: function () {
+var q = quarterOf(new Date());
+return quarterRange(q.y, q.q);
+} },
 { key: 'lastQ',  label: '上季度',
-range: function () { return q.q === 0 ? quarterRange(q.y - 1, 3) : quarterRange(q.y, q.q - 1); } },
+range: function () {
+var q = quarterOf(new Date());
+return q.q === 0 ? quarterRange(q.y - 1, 3) : quarterRange(q.y, q.q - 1);
+} },
 { key: 'lastM',  label: '上月',
 range: function () {
+var now = new Date();
 var m = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 return { from: iso(m), to: iso(new Date(m.getFullYear(), m.getMonth() + 1, 0)) };
 } },
 { key: 'thisY',  label: '今年',
 range: function () {
-return { from: iso(new Date(now.getFullYear(), 0, 1)),
-to: iso(new Date(now.getFullYear(), 11, 31)) };
+var y = new Date().getFullYear();
+return { from: iso(new Date(y, 0, 1)),
+to: iso(new Date(y, 11, 31)) };
 } },
 { key: 'yoy',    label: '去年同期',
 range: function () {
-var y = now.getFullYear() - 1;
+var y = new Date().getFullYear() - 1;
 return { from: iso(new Date(y, 0, 1)), to: iso(new Date(y, 11, 31)) };
 } },
 ];
@@ -280,7 +295,8 @@ validate();
 return {
 get from() { return from.value; },
 get to() { return to.value; },
-get valid() { return !errBox || errBox.hidden; },
+
+get valid() { return lastValid; },
 set: setRange,
 setPreset: function (key) {
 var b = root.querySelector('[data-dr-preset="' + key + '"]');

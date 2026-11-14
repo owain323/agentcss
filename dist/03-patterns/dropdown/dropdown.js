@@ -1,6 +1,8 @@
 (function (global) {
 'use strict';
 
+var ddUid = 0;
+
 var flEmit = function (el, name, detail) {
 if (!el || !el.dispatchEvent) return null;
 var type = name.indexOf('fl-') === 0 ? name : 'fl-' + name;
@@ -69,18 +71,19 @@ if (!l.length) return;
 var i = indexOfNode(e.target);
 if (i < 0) return;
 var k = e.key;
+var c = e.keyCode;
 var next = -1;
 var reason = 'step';
 
 if (axis === 'y') {
-if (k === 'ArrowDown') next = step(i, 1);
-else if (k === 'ArrowUp') next = step(i, -1);
+if (k === 'ArrowDown' || c === 40) next = step(i, 1);
+else if (k === 'ArrowUp' || c === 38) next = step(i, -1);
 } else {
-if (k === 'ArrowRight') next = step(i, 1);
-else if (k === 'ArrowLeft') next = step(i, -1);
+if (k === 'ArrowRight' || c === 39) next = step(i, 1);
+else if (k === 'ArrowLeft' || c === 37) next = step(i, -1);
 }
-if (homeEnd && k === 'Home') { next = 0; reason = 'home'; }
-else if (homeEnd && k === 'End') { next = l.length - 1; reason = 'end'; }
+if (homeEnd && (k === 'Home' || c === 36)) { next = 0; reason = 'home'; }
+else if (homeEnd && (k === 'End' || c === 35)) { next = l.length - 1; reason = 'end'; }
 
 if (next < 0 || next >= l.length) return;
 
@@ -254,6 +257,12 @@ return {
 type: type,
 clear: clear,
 buffer: function () { return buf; },
+
+setLast: function (i) {
+if (typeof i === 'number' && i >= -1 && i < (items() || []).length) {
+last = i;
+}
+},
 destroy: function () { stop(); },
 };
 };
@@ -380,6 +389,8 @@ list.forEach(function (x) { x.removeAttribute('data-state'); });
 list[i].setAttribute('data-state', 'active');
 list[i].focus();
 active = i;
+
+if (typeahead) typeahead.setLast(i);
 }
 
 function current() {
@@ -405,7 +416,7 @@ usable: function (el) { return el.getAttribute('aria-disabled') !== 'true'; },
 onHit: function (i) { focusAt(i); },
 });
 
-if (!menu.id) menu.id = 'dd-menu-' + (new Date()).getTime();
+if (!menu.id) menu.id = 'dd-menu-' + (++ddUid);
 btn.setAttribute('aria-haspopup', 'true');
 btn.setAttribute('aria-expanded', 'false');
 btn.setAttribute('aria-controls', menu.id);

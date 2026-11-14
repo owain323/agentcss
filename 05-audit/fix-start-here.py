@@ -346,6 +346,9 @@ def build_table(rows, comps):
         #      而判据是对的：它数的是"这层为了实现契约动了多少东西"，
         #      不是"这层是不是必须存在"。两个问题不等价，我当初混了。）
         'app-shell': 'shell-nav.js',
+        # 🔴 2026-11：form-validation.js 从 demo 内联脚本升为正式行为层。
+        #    没有它 data-dirty 永远不会被加，CSS 的错误行永远不亮（纯 CSS 等于半成品）。
+        'form-validation': 'form-validation.js',
     }
     # 🔴 一个组件可以有多个 JS（0.11.2）：nav = nav.js（行为层，必需）+ toc.js（目录增强，可选）。
     #    ⇒ 登记值允许写成 ((文件, 理由), …) —— 混合写法见 _decl()。

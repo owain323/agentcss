@@ -111,9 +111,16 @@ LABELS[k] = patch[k];
 }
 }
 
-function ensureStyle() {
-if (document.getElementById('tooltip-css')) return;
+var TOUCH_WINDOW_MS = 700;
+var lastTouchAt = 0;
+if (typeof document !== 'undefined' && document.addEventListener) {
+document.addEventListener('touchstart', function () {
+lastTouchAt = Date.now();
+}, true);
+}
 
+function recentTouch() {
+return (Date.now() - lastTouchAt) < TOUCH_WINDOW_MS;
 }
 
 function ensureLiveRegion() {
@@ -142,6 +149,8 @@ start: 'tooltip--inset-inline-start', end: 'tooltip--inset-inline-end',
 
 function resolve(el, place) {
 var p = place || 'bottom';
+if (p === 'inset-inline-start') p = 'start';
+else if (p === 'inset-inline-end') p = 'end';
 if (p === 'top' || p === 'bottom' || p === 'start' || p === 'end') return p;
 if (p !== 'left' && p !== 'right') return 'bottom';
 var rtl = getComputedStyle(el).direction === 'rtl';
@@ -150,10 +159,15 @@ return rtl ? 'start' : 'end';
 }
 
 function attach(el, text, place) {
+if (!el || !text) return;
+
+if (el.tooltipInstance) {
+
+el.tooltipInstance.reensureLive();
+return;
+}
 
 var fr = flFocusReturn({ fallback: el });
-if (!el || !text) return;
-ensureStyle();
 
 var pos = resolve(el, place);
 var id = 'tt' + (++uid);
@@ -164,6 +178,13 @@ tip.setAttribute('role', 'tooltip');
 tip.textContent = text;
 
 var live = ensureLiveRegion();
+
+function reensureLive() { live = ensureLiveRegion(); }
+
+var owned = { hover: false, focus: false, click: false };
+var open = false;
+
+function holding() { return owned.hover || owned.focus || owned.click; }
 
 function show() {
 
@@ -196,32 +217,99 @@ live.textContent = text;
 }
 
 function hide() {
+open = false;
+owned.hover = owned.focus = owned.click = false;
 tip.removeAttribute('data-state');
 live.textContent = '';
 }
 
-el.addEventListener('focus', show);
-el.addEventListener('blur', hide);
+function acquire(reason) {
+owned[reason] = true;
+if (open) return;
+open = true;
+show();
+}
 
-el.addEventListener('click', function (e) {
+function release(reason) {
+owned[reason] = false;
+if (open && !holding()) hide();
+}
+
+function onFocus() { acquire('focus'); }
+
+function onBlur() {
+release('focus');
+release('click');
+}
+
+function onMouseEnter() {
+if (recentTouch()) return;
+acquire('hover');
+}
+function onMouseLeave() {
+
+release('hover');
+}
+
+function onClick(e) {
 e.stopPropagation();
-if (tip.getAttribute('data-state') === 'open') hide(); else show();
-});
+if (owned.click) { hide(); return; }
+owned.click = true;
+if (open) return;
+acquire('click');
+}
+
+el.addEventListener('focus', onFocus);
+el.addEventListener('blur', onBlur);
+el.addEventListener('mouseenter', onMouseEnter);
+el.addEventListener('mouseleave', onMouseLeave);
+el.addEventListener('click', onClick);
 
 var dismiss = flDismissable({
 escOn: [el],
 inside: [el, tip],
-when: function () { return tip.getAttribute('data-state') === 'open'; },
+when: function () { return open; },
 onDismiss: function (ev, reason) {
 hide();
-if (reason === 'esc') fr.restore();
+
+if (reason === 'esc' && fr.target()) fr.restore();
 }
 });
 
-var cur = el.getAttribute('aria-describedby');
-el.setAttribute('aria-describedby', cur ? (cur + ' ' + id) : id);
+var prevDescribed = el.getAttribute('aria-describedby');
+el.setAttribute('aria-describedby', prevDescribed ? (prevDescribed + ' ' + id) : id);
+var hadDataTooltip = el.hasAttribute('data-tooltip');
 el.setAttribute('data-tooltip', text);
+
+function destroy() {
+el.removeEventListener('focus', onFocus);
+el.removeEventListener('blur', onBlur);
+el.removeEventListener('mouseenter', onMouseEnter);
+el.removeEventListener('mouseleave', onMouseLeave);
+el.removeEventListener('click', onClick);
+dismiss.destroy();
+if (prevDescribed) el.setAttribute('aria-describedby', prevDescribed);
+else el.removeAttribute('aria-describedby');
+if (!hadDataTooltip) el.removeAttribute('data-tooltip');
+if (tip.parentNode) tip.parentNode.removeChild(tip);
+if (live.textContent === text) live.textContent = '';
+open = false;
+owned.hover = owned.focus = owned.click = false;
 }
 
-global.Tooltip = { attach: attach, setLabels: setLabels };
+el.tooltipInstance = { el: el, tip: tip, text: text, destroy: destroy, reensureLive: reensureLive };
+}
+
+function detach(el) {
+if (!el || !el.tooltipInstance) return;
+var inst = el.tooltipInstance;
+if (inst && inst.destroy) inst.destroy();
+try {
+delete el.tooltipInstance;
+} catch (e) {
+el.tooltipInstance = null;
+}
+}
+
+global.Tooltip = { attach: attach, detach: detach, setLabels: setLabels };
 })(typeof window !== 'undefined' ? window : globalThis);

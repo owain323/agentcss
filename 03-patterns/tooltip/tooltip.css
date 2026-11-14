@@ -82,7 +82,12 @@
 }
 
 /* ---------- 悬停显示：只对真能悬停的设备 ----------
-   🔴 触屏上 hover 会"粘住" ⇒ 触屏靠 JS 的 click/focus 触发。 */
+   🔴 触屏上 hover 会"粘住" ⇒ 触屏靠 JS 的 click/focus 触发。
+   注意有**两条**悬停路径，各管各的：
+   · 这里（相邻兄弟）：只服务**手写结构**的旧用法（气泡写在触发元素旁边）；
+   · attach() 的气泡挂在 body 上，永远不是兄弟 ⇒ 它的 hover/focus/click
+     由 tooltip.js 的事件驱动（mouseenter 进 touch 抑制窗，触屏只走 click/focus）。
+   这条规则对 attach() 生成的结构**不生效**，别在这儿找它的 hover。 */
 @media (hover: hover) and (pointer: fine) {
   [data-tooltip]:hover + .tooltip,
   [data-tooltip]:focus-visible + .tooltip { opacity: 1; visibility: visible; }

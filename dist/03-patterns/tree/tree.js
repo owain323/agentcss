@@ -69,18 +69,19 @@ if (!l.length) return;
 var i = indexOfNode(e.target);
 if (i < 0) return;
 var k = e.key;
+var c = e.keyCode;
 var next = -1;
 var reason = 'step';
 
 if (axis === 'y') {
-if (k === 'ArrowDown') next = step(i, 1);
-else if (k === 'ArrowUp') next = step(i, -1);
+if (k === 'ArrowDown' || c === 40) next = step(i, 1);
+else if (k === 'ArrowUp' || c === 38) next = step(i, -1);
 } else {
-if (k === 'ArrowRight') next = step(i, 1);
-else if (k === 'ArrowLeft') next = step(i, -1);
+if (k === 'ArrowRight' || c === 39) next = step(i, 1);
+else if (k === 'ArrowLeft' || c === 37) next = step(i, -1);
 }
-if (homeEnd && k === 'Home') { next = 0; reason = 'home'; }
-else if (homeEnd && k === 'End') { next = l.length - 1; reason = 'end'; }
+if (homeEnd && (k === 'Home' || c === 36)) { next = 0; reason = 'home'; }
+else if (homeEnd && (k === 'End' || c === 35)) { next = l.length - 1; reason = 'end'; }
 
 if (next < 0 || next >= l.length) return;
 
@@ -159,6 +160,12 @@ return {
 type: type,
 clear: clear,
 buffer: function () { return buf; },
+
+setLast: function (i) {
+if (typeof i === 'number' && i >= -1 && i < (items() || []).length) {
+last = i;
+}
+},
 destroy: function () { stop(); },
 };
 };
@@ -216,10 +223,15 @@ return out;
 var L = flLabels(DEFAULT_LABELS, opt && opt.labels);
 
 opt = opt || {};
-root.classList.add('tree');
-if (!root.getAttribute('role')) root.setAttribute('role', 'tree');
+
+var origHTML = root.innerHTML;
+var applied = { cls: false, role: false, label: false };
+root.classList.add('tree'); applied.cls = true;
+if (!root.getAttribute('role')) {
+root.setAttribute('role', 'tree'); applied.role = true;
+}
 if (!root.getAttribute('aria-label') && !root.getAttribute('aria-labelledby')) {
-root.setAttribute('aria-label', opt.label || L.tree);
+root.setAttribute('aria-label', opt.label || L.tree); applied.label = true;
 }
 
 var items = [];
@@ -230,6 +242,8 @@ li.className = (li.className ? li.className + ' ' : '') + 'tree__item';
 li.setAttribute('role', 'treeitem');
 var kids = li.querySelector(':scope > ul');
 if (kids) {
+
+if (!kids.getAttribute('role')) kids.setAttribute('role', 'group');
 li.setAttribute('aria-expanded', kids.hidden ? 'false' : 'true');
 }
 var node = li.querySelector(':scope > .tree__node') || li.firstElementChild;
@@ -287,17 +301,23 @@ it.li.setAttribute('aria-expanded', open ? 'true' : 'false');
 it.ul.hidden = !open;
 }
 
-root.addEventListener('focusin', function (e) {
+function onRootFocusin(e) {
 
 var node = closest(e.target, '.tree__node');
 if (!node) return;
 var list = visible();
 for (var i = 0; i < list.length; i++) {
-if (list[i].node === node) { cur = i; break; }
-}
-});
+if (list[i].node === node) {
+cur = i;
 
-root.addEventListener('keydown', function (e) {
+typeahead.setLast(i);
+break;
+}
+}
+}
+root.addEventListener('focusin', onRootFocusin);
+
+function onRootKeydown(e) {
 var k = e.key;
 var it = current();
 if (!it) return;
@@ -351,7 +371,8 @@ k !== ' ') {
 e.preventDefault();
 typeahead.type(k);
 }
-});
+}
+root.addEventListener('keydown', onRootKeydown);
 
 function select(it) {
 items.forEach(function (x) { x.node.setAttribute('aria-selected', 'false'); });
@@ -362,7 +383,7 @@ item: it });
 if (opt.onSelect) opt.onSelect(it);
 }
 
-root.addEventListener('click', function (e) {
+function onRootClick(e) {
 
 var node = closest(e.target, '.tree__node');
 if (!node || !root.contains(node)) return;
@@ -379,7 +400,8 @@ setExpanded(it, it.li.getAttribute('aria-expanded') !== 'true');
 select(it);
 }
 }
-});
+}
+root.addEventListener('click', onRootClick);
 
 var firstVisible = visible()[0];
 if (firstVisible) roving.rove(firstVisible.node);
@@ -387,7 +409,18 @@ if (firstVisible) roving.rove(firstVisible.node);
 return {
 focusAt: focusAt,
 get selected() { return current(); },
-destroy: function () { roving.destroy(); typeahead.destroy(); root.innerHTML = ''; },
+destroy: function () {
+roving.destroy();
+typeahead.destroy();
+root.removeEventListener('focusin', onRootFocusin);
+root.removeEventListener('keydown', onRootKeydown);
+root.removeEventListener('click', onRootClick);
+
+root.innerHTML = origHTML;
+if (applied.cls) root.classList.remove('tree');
+if (applied.role) root.removeAttribute('role');
+if (applied.label) root.removeAttribute('aria-label');
+},
 };
 }
 

@@ -15,6 +15,8 @@
 (function (global) {
   'use strict';
 
+
+  var ddUid = 0;   /* 菜单 id 自增（同毫秒双开不撞车） */
   /* ==== BEHAVIOR INJECT BEGIN: emit ==== */
   var flEmit = function (el, name, detail) {
     if (!el || !el.dispatchEvent) return null;
@@ -88,18 +90,23 @@
       var i = indexOfNode(e.target);
       if (i < 0) return;
       var k = e.key;
+      var c = e.keyCode;
       var next = -1;
       var reason = 'step';
 
+      /* 🔴 双轨判定：老 WebView 不给 e.key（只有 keyCode），只认 e.key 的
+         话方向键在那些机器上全部失灵 —— 同 dismissable 核认 keyCode 27 的
+         原则。映射：→39 ←37 ↓40 ↑38 Home36 End35。
+         e.key 在时两轨指向同一键，不会误判。 */
       if (axis === 'y') {
-        if (k === 'ArrowDown') next = step(i, 1);
-        else if (k === 'ArrowUp') next = step(i, -1);
+        if (k === 'ArrowDown' || c === 40) next = step(i, 1);
+        else if (k === 'ArrowUp' || c === 38) next = step(i, -1);
       } else {
-        if (k === 'ArrowRight') next = step(i, 1);
-        else if (k === 'ArrowLeft') next = step(i, -1);
+        if (k === 'ArrowRight' || c === 39) next = step(i, 1);
+        else if (k === 'ArrowLeft' || c === 37) next = step(i, -1);
       }
-      if (homeEnd && k === 'Home') { next = 0; reason = 'home'; }
-      else if (homeEnd && k === 'End') { next = l.length - 1; reason = 'end'; }
+      if (homeEnd && (k === 'Home' || c === 36)) { next = 0; reason = 'home'; }
+      else if (homeEnd && (k === 'End' || c === 35)) { next = l.length - 1; reason = 'end'; }
 
       if (next < 0 || next >= l.length) return;
       /* ③ 只拦事件，不替组件决定移动后做什么 */
@@ -284,6 +291,14 @@
       type: type,
       clear: clear,
       buffer: function () { return buf; },
+      /* 🔴 锚点同步口（APG typeahead：搜索从"当前聚焦项之后"开始）。
+         没有它，焦点被方向键/点击挪走后，锚点仍停在上一次命中项
+         => 打字会绕回旧位置，不符合 APG Tree View 的键盘契约。 */
+      setLast: function (i) {
+        if (typeof i === 'number' && i >= -1 && i < (items() || []).length) {
+          last = i;
+        }
+      },
       destroy: function () { stop(); },
     };
   };
@@ -435,6 +450,13 @@
       list[i].setAttribute('data-state', 'active');
       list[i].focus();
       active = i;
+      /* 🔴 锚点同步（APG：typeahead 从**当前项之后**开始找，绕一圈覆盖全部）。
+         focusAt 是"焦点落在第几项"的唯一咽喉：打开、↑↓、Home/End 全走这里，
+         所以锚点只在这里同步一次就够。
+         此前没接这个口 ⇒ 方向键挪走焦点后，打字仍从**上一次命中项**往后找，
+         表现为"明明看着在 D 上，打 d 却跳到别处"。
+         `typeahead` 在本函数之后才赋值（open() 可能在赋值前被调用）⇒ 判存在。 */
+      if (typeahead) typeahead.setLast(i);
     }
 
     function current() {
@@ -476,7 +498,7 @@
     /* 🔴 修：原来先 `setAttribute('aria-controls', menu.id || '')`
        **再**给 menu.id ⇒ aria-controls 永远拿到空串。
        ⇒ 顺序必须反过来：**先确保有 id，再引用**。 */
-    if (!menu.id) menu.id = 'dd-menu-' + (new Date()).getTime();
+    if (!menu.id) menu.id = 'dd-menu-' + (++ddUid);
     btn.setAttribute('aria-haspopup', 'true');
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-controls', menu.id);

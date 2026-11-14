@@ -43,6 +43,11 @@
 .toast {
   pointer-events: auto;      /* 🔴 撤销区域上的 none，否则按钮点不动 */
 
+  /* 🔴 必须是定位元素：__timer 是 position:absolute，没有这条时它相对
+     .toast-region（position:fixed）定位 ⇒ 所有 toast 的进度条都叠在
+     区域左下角，而不是各自条内（2026-11 发现并修复）。 */
+  position: relative;
+
   display: flex;
   align-items: flex-start;
   gap: var(--sp-3);

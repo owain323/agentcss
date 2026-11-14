@@ -164,6 +164,8 @@ if (current && current !== api) current.close();
 fr.save();
 box.setAttribute('data-open', 'true');
 
+trigger.setAttribute('aria-expanded', 'true');
+
 box.removeAttribute('inert');
 
 var f = focusableIn(box);
@@ -179,6 +181,8 @@ if (opts.onOpen) opts.onOpen();
 function close() {
 if (box.getAttribute('data-open') !== 'true') return;
 box.setAttribute('data-open', 'false');
+
+trigger.setAttribute('aria-expanded', 'false');
 
 box.setAttribute('inert', '');
 
