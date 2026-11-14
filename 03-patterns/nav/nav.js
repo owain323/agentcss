@@ -216,8 +216,10 @@
     /* 🔴 列表要能被脚本聚焦：open() 的兜底焦点落在 list 上（没有可聚焦项时），
        但页面写的 <ul> 天生不可聚焦 ⇒ focus() 静默无效（0.19.0 在 drawer 修过
        同一类"找到节点 ≠ 聚焦成功"）。tabindex="-1" 只开启编程聚焦，
-       不进 Tab 序，对使用者的标记零影响。 */
-    if (this.list && !this.list.hasAttribute('tabindex')) {
+       不进 Tab 序，对使用者的标记零影响。
+       ⚠️ 只对**有抽屉**（有 toggle）的实例加（0.27.11）：静态导航没有 open()
+          —— 没有谁会去 focus 它，凭空往作者的 DOM 上写一个属性属于越界。 */
+    if (this.toggle && this.list && !this.list.hasAttribute('tabindex')) {
       this.list.setAttribute('tabindex', '-1');
     }
 

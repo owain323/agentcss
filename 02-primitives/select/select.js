@@ -312,6 +312,24 @@
     });
     if (!list.id) list.id = 'select-list-' + (++uid);
 
+    /* 可访问名 = 「字段名 + 当前值」，两个都要念。
+       上一版为过 axe 写了 `aria-label = 当前值` ⇒ 把 <label for> 的字段名挤掉了
+       （朗读实测 `button "投资主体"` → `combobox "A 股主板"`）。
+       改回 APG 的 `aria-labelledby="标签id 值id"`；作者已有 labelledby 就接在后面。 */
+    var labelEl = null;
+    try {
+      if (btn.labels && btn.labels.length) labelEl = btn.labels[0];
+    } catch (e) { labelEl = null; }
+    if (!labelEl && btn.id) {
+      var esc = String(btn.id).replace(/(["\\])/g, '\\$1');
+      try {
+        labelEl = root.querySelector('label[for="' + esc + '"]') ||
+                  document.querySelector('label[for="' + esc + '"]');
+      } catch (e2) { labelEl = null; }
+    }
+    if (labelEl && !labelEl.id) labelEl.id = 'select-label-' + (++uid);
+    var authoredLabelledby = btn.getAttribute('aria-labelledby');
+
     var options = [].slice.call(list.querySelectorAll('[role="option"]'));
     var isMulti = !!opt.multiple;
     /* 🔴 真多值：以前多选也只有一个 `selected` 字符串，而 aria-multiselectable
@@ -457,11 +475,23 @@
         vEl.textContent = label;
         vEl.classList.toggle('select__value--placeholder', empty);
       }
-      /* 🔴 role="combobox" 在 ARIA 1.2 里不支持 name-from-content ——
-         可见文字（.select__value）读屏**不作数**，可访问名必须由作者提供。
-         ⇒ aria-label 跟随 paint 的当前值（与可见文字同串，无覆盖冲突）。
-         没有 A2 补 role 之前 axe 不查这条；补了 role 才暴露出来。 */
-      btn.setAttribute('aria-label', label);
+      /* role="combobox" 在 ARIA 1.2 里 name-from-author（可见文字不算数），
+         但"有名字"不等于"只念当前值"：字段名与当前值是两件事。
+         有 label ⇒ labelledby 挂「字段名 + 值」；没有才退回 aria-label。 */
+      if (vEl && (labelEl || authoredLabelledby)) {
+        if (!vEl.id) vEl.id = 'select-value-' + (++uid);
+        btn.setAttribute('aria-labelledby',
+          (authoredLabelledby || labelEl.id) + ' ' + vEl.id);
+        /* 语言优先级：aria-labelledby > aria-label。留着旧的 aria-label
+           只会让下一个人读到两套名字，不知道哪套生效 ⇒ 清掉。 */
+        btn.removeAttribute('aria-label');
+      } else if (labelEl) {
+        /* 没有 .select__value 可挂（作者自绘结构）：退化成文字拼接 */
+        var fn = (labelEl.textContent || '').replace(/\s+/g, ' ').trim();
+        btn.setAttribute('aria-label', fn ? fn + ' ' + label : label);
+      } else {
+        btn.setAttribute('aria-label', label);
+      }
       /* 多选标签会被 CSS 截断：title 里留全量，鼠标悬停能看全 */
       if (empty) btn.removeAttribute('title');
       else btn.setAttribute('title', label);
@@ -523,6 +553,12 @@
       if (options[idx].scrollIntoView) {
         options[idx].scrollIntoView({ block: 'nearest' });
       }
+      /* 🔴 锚点同步（APG：typeahead 从**当前项之后**开始找）——
+         此前只有 tree 调了 setLast，select/dropdown 没调：
+         方向键/点选把游标挪走后，锚点仍停在上一次命中项，
+         再打字会绕回旧位置（实测表现为"乱跳"）。
+         `typeahead` 在下面才赋值，初始化早期可能还没建 ⇒ 先判存在。 */
+      if (typeahead) typeahead.setLast(idx);
     }
 
     /** 当前游标所在项在 options 里的索引（没打开时用选中项）*/

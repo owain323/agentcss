@@ -181,10 +181,12 @@ var live = ensureLiveRegion();
 
 function reensureLive() { live = ensureLiveRegion(); }
 
-var openBy = null;
+var owned = { hover: false, focus: false, click: false };
+var open = false;
 
-function show(reason) {
-openBy = reason || 'focus';
+function holding() { return owned.hover || owned.focus || owned.click; }
+
+function show() {
 
 fr.save();
 
@@ -215,29 +217,46 @@ live.textContent = text;
 }
 
 function hide() {
-openBy = null;
+open = false;
+owned.hover = owned.focus = owned.click = false;
 tip.removeAttribute('data-state');
 live.textContent = '';
 }
 
-function onFocus() { show('focus'); }
-function onBlur() { hide(); }
+function acquire(reason) {
+owned[reason] = true;
+if (open) return;
+open = true;
+show();
+}
+
+function release(reason) {
+owned[reason] = false;
+if (open && !holding()) hide();
+}
+
+function onFocus() { acquire('focus'); }
+
+function onBlur() {
+release('focus');
+release('click');
+}
 
 function onMouseEnter() {
 if (recentTouch()) return;
-if (openBy === 'hover') return;
-show('hover');
+acquire('hover');
 }
 function onMouseLeave() {
 
-if (openBy === 'hover') hide();
+release('hover');
 }
 
 function onClick(e) {
 e.stopPropagation();
-if (openBy === 'click') { hide(); return; }
-if (openBy) { openBy = 'click'; return; }
-show('click');
+if (owned.click) { hide(); return; }
+owned.click = true;
+if (open) return;
+acquire('click');
 }
 
 el.addEventListener('focus', onFocus);
@@ -249,7 +268,7 @@ el.addEventListener('click', onClick);
 var dismiss = flDismissable({
 escOn: [el],
 inside: [el, tip],
-when: function () { return openBy !== null; },
+when: function () { return open; },
 onDismiss: function (ev, reason) {
 hide();
 
@@ -274,7 +293,8 @@ else el.removeAttribute('aria-describedby');
 if (!hadDataTooltip) el.removeAttribute('data-tooltip');
 if (tip.parentNode) tip.parentNode.removeChild(tip);
 if (live.textContent === text) live.textContent = '';
-openBy = null;
+open = false;
+owned.hover = owned.focus = owned.click = false;
 }
 
 el.tooltipInstance = { el: el, tip: tip, text: text, destroy: destroy, reensureLive: reensureLive };

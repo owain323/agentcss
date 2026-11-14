@@ -54,6 +54,9 @@
     optional: { test: function () { return true; }, msg: '' },
   };
 
+  /* 未登记规则的告警去重表（每个名字只吵一次，见 checkField） */
+  var warnedUnknown = {};
+
   function rule(name, test, msg) {
     if (!name || typeof test !== 'function') return false;
     RULES[name] = { test: test, msg: msg || '' };
@@ -79,8 +82,20 @@
     if (!input || !err) return true;
     var key = field.getAttribute('data-validate');
     var r = RULES[key];
-    /* 未登记规则的字段视为通过 —— CSS 不显示它的错误行，不该静默挡提交 */
-    if (!r) { clearField(field, input, err); return true; }
+    /* 未登记规则仍视为通过（不挡提交），但**不静默**：
+       `data-validate="emial"` 这种笔误以前完全无声（字段永远绿、提交永远过）。
+       每个名字只告警一次，避免每敲一个字刷一条。 */
+    if (!r) {
+      if (key && !warnedUnknown[key]) {
+        warnedUnknown[key] = true;
+        if (typeof console !== 'undefined' && console.warn) {
+          console.warn('FormValidation：未登记的规则名 "' + key +
+                       '"（该字段被当作始终通过；可用 FormValidation.rule() 登记）');
+        }
+      }
+      clearField(field, input, err);
+      return true;
+    }
     if (r.test(input.value)) { clearField(field, input, err); return true; }
     field.setAttribute('data-dirty', '');
     input.setAttribute('aria-invalid', 'true');
@@ -143,9 +158,17 @@
     this.slot = form.querySelector('[data-summary-slot]') ||
                 form.querySelector('#summary-slot');
     this.fields = toArray(form.querySelectorAll('.field'));
+    /* 监听登记簿：destroy() 靠它原样摘除（匿名函数直接挂 = 装得上、摘不下） */
+    this._bound = [];
     this.bind();
     form.fvInstance = this;
   }
+
+  /* 挂一条监听并登记；摘的时候用同一组 (el, type, fn) 引用 */
+  FormValidation.prototype._on = function (el, type, fn) {
+    el.addEventListener(type, fn);
+    this._bound.push([el, type, fn]);
+  };
 
   FormValidation.prototype.check = function (field) {
     return checkField(field);
@@ -177,14 +200,14 @@
     this.fields.forEach(function (field) {
       var input = field.querySelector('.field__input');
       if (!input) return;
-      input.addEventListener('blur', function () { self.check(field); });
+      self._on(input, 'blur', function () { self.check(field); });
       /* 只有"脏"过的字段才实时校验 —— 未 blur 过的不打扰（CSS 头部时机 b） */
-      input.addEventListener('input', function () {
+      self._on(input, 'input', function () {
         if (field.hasAttribute('data-dirty')) self.check(field);
       });
     });
 
-    form.addEventListener('submit', function (e) {
+    this._on(form, 'submit', function (e) {
       /* 🔴 无条件拦截默认提交（demo 原脚本也是首行拦截）：拦截后才有机会
          显示汇总/成功提示 —— 只在失败分支拦的话，成功分支页面直接导航走，
          提示闪现即逝（MODE=full 的 clicktest 实测抓到）。要真提交，
@@ -219,19 +242,33 @@
       }
     });
 
-    form.addEventListener('reset', function () {
+    this._on(form, 'reset', function () {
       self.clear();
     });
 
     /* 汇总链接跳转后聚焦对应输入框（浏览器只滚动，不会聚焦）。
        挂在 form 上而不是 document —— 多表单同页互不干扰。 */
-    form.addEventListener('click', function (e) {
+    this._on(form, 'click', function (e) {
       var a = closest(e.target, '.form__summary-link');
       if (!a || !form.contains(a)) return;
       if (e.preventDefault) e.preventDefault();
       var t = document.querySelector(a.getAttribute('href'));
       if (t && t.focus) t.focus();
     });
+  };
+
+  /* 摘干净：SPA 换页 / 表单被替换时调，否则旧 DOM 上的监听一直挂着。
+     只摘本实例挂的，不碰别家的（与 select / combobox 的 destroy 同语义）。 */
+  FormValidation.prototype.destroy = function () {
+    var form = this.form;
+    this._bound.forEach(function (b) { b[0].removeEventListener(b[1], b[2]); });
+    this._bound = [];
+    if (form) {
+      clearSummary(form, this.slot);
+      if (form.fvInstance === this) {
+        try { delete form.fvInstance; } catch (e) { form.fvInstance = null; }
+      }
+    }
   };
 
   global.FormValidation = {

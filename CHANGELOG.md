@@ -18,6 +18,8 @@
 
 ## [Unreleased]
 
+## [0.27.11] - 2026-11-14
+
 > 来源：一次独立评审（行为 JS 实测 + 工具链审读 + 真浏览器复现）。
 > 每一条都有能红的判据：单测（unit/behavior-cores 新增 13 条）、组件门禁
 > （tooltip-check 新增 5 条并修活 1 条假绿）、突变自检（roving 正则跟上双轨判定）。
@@ -134,6 +136,71 @@
 - **三个突变夹具跟上代码形状**：roving 的 Home/End（双轨判定）、combobox 的
   destroy（拆核后形状）、proper-noun 白名单（DialogAction/FormValidation/
   FakeElement 均技术词）。a11y-ax 两处朗读漂移核实为预期修复后更新。
+
+### Fixed — 合并前复核轮（0.27.11）
+
+> 交付前由合并方独立复核：逐条读 diff + 真浏览器复现 + 跨解释器复跑两档门禁。
+> 三条是**行为缺陷**，两条是**判据自身的缺陷**（它们把缺陷记成了契约），
+> 其余是契约/文档与实现不一致。
+
+- **tooltip 的所有权必须是集合，不是单值**：`openBy` 只有一个位置，
+  hover 一进来就把 click / focus 那份顶掉。真鼠标实测两个必然错的序列：
+  ① click 钉住 → 鼠标移入再移出 ⇒ 钉子丢了（气泡自己关掉）；
+  ② focus 还在 → 鼠标移入再移出 ⇒ 气泡消失，而焦点从未移开
+  （违反 WCAG 1.4.13「焦点未移开应持续可见」）。
+  改为 `{hover, focus, click}` 三份独立所有权：任一持有即显示、全部释放才收；
+  blur 收掉 focus 与 click（与 demo 第 5 节的措辞一致），指针仍在时 hover 继续持有。
+  tooltip-check 新增判据「钉住与聚焦不被 hover 顶掉」，反向突变（release 改回
+  "任一释放即关"）当场变红。
+- **select 的可访问名把字段名挤掉了**：上一版为过 axe 直接写 `aria-label = 当前值`
+  ⇒ 朗读从 `button "投资主体"` 变成 `combobox "A 股主板"`，读屏只听得懂"选了什么"、
+  听不懂"这是哪一项"。改为 APG 的写法 `aria-labelledby="字段名id 值id"`
+  （作者已写 aria-labelledby 的接在后面；没有 label 才退回 aria-label）。
+  朗读快照变为 `combobox "投资主体 A 股主板"`。
+- **`dist-fresh` 绑在压缩器实现上**：同一份字节，zlib 1.3.1 给 3383 B、
+  zlib-ng 给 3384 B，而 manifest 的 gzip 数字是**逐字节比对**的 ⇒
+  换个解释器就红，且红的方向是错的（喊"dist 旧了"，真相只是压缩器不同），
+  会训练人"重建一下让它绿"，顺手把真过期也抹平。manifest schema 升到 1.0.1：
+  gzip 数字降级为报表值（`[INFO]` 打印），可比内容（sourceSha256 / bytes / 路径）
+  一个字段不少；新增 `toolchain`（python + zlib 版本）做溯源。
+  自检加一条"只改 gzip 必须仍绿、改非 gzip 字段必须立刻红"。
+  实测 3.13 与 3.14 两个解释器跑 `--check` 现在都是绿的。
+- **typeahead 的锚点只接了 1/3**：`setLast` 的口在核里、tree 接了，
+  **select / dropdown 没接** ⇒ 游标被 ↑↓ 挪走后，打字仍从"上一次命中项"往后找。
+  select 在 `setActive`、dropdown 在 `focusAt`（各自唯一的游标咽喉）同步锚点。
+  select-check 新增判据「锚点跟着游标走」（现场造 Apple/Banana/Apricot 三项表：
+  锚点对了落在 Apricot，没同步会绕回 Apple —— demo 的选项集测不出这条）。
+  ⚠️ dropdown 的 ⑦b 原断言"连按两次 c 停在 Cut"**记录的正是缺陷行为**
+  （bug 版首按原地不动、二按才到 Cut），已改为逐步断言：第一下必须到 Cut、
+  第二下绕回 Copy。核的 `clear()` 不重置 last 属文件头 ④b 的既定设计，未动。
+- **form-validation 补 `destroy()`**：监听原先是匿名函数直接挂的，装得上、摘不下
+  （SPA 换页后旧 DOM 不释放），与 select / combobox / drawer 的契约不一致。
+  改为登记式挂载，destroy 逐条摘除并解除 `form.fvInstance` 绑定；新增判据
+  「destroy 前拦、后不拦，字段 blur 也不再留痕」（突变验证有牙）。
+  另外 `data-validate` 写错名字（如 `"emial"`）以前**完全无声**：字段永远绿、
+  提交永远过。行为不变（仍不挡提交），但每个未登记的名字 `console.warn` 一次。
+- **未知 variant 的兜底两个组件不一致**：drawer 退成裸 `.btn`、overlay 退成
+  `.btn--secondary` —— 同一张白名单、同一句注释，外观却不同。统一退成裸 `.btn`
+  （与 toast 的"认不得就不加修饰"一致），并对每个未知值告警一次。
+- **nav 静态导航不再被注入 `tabindex="-1"`**：那段属性只为"抽屉没有可聚焦项时的
+  兜底焦点"服务；没有 toggle 的静态导航没有 open()，凭空改作者的 DOM 属于越界。
+- **契约文件与类型声明的格式/笔误**：`ai/behaviors.json` 8 处缩进断裂
+  （4 处顶格、4 处多缩进，JSON 合法但格式坏）、`ai/deprecations.json` 补末尾换行；
+  `types/index.d.ts` 的 `data-dr_preset` → `data-dr-preset`（运行时是连字符），
+  并改正它旁边那句误导性说明（presets 是"只渲染列出的项"，不是"DOM 里没有就忽略"）；
+  `FormValidationApi.init()` 的返回类型补上 `destroy()`。
+
+---
+
+> **两处基线重录，边界都写清楚**：
+> · `size-baseline`：变的**只有本轮改过的那 7 个文件**（其余 65 个数字一字未动），
+>   gzip 合计 366,949 → 369,684 B（+0.75%；总预算 ±5%，绝对 +16 KB）。
+>   其中 3 个文件单文件涨幅超 5%，是因为它们本身只有 3.8–10.6 KB
+>   （5% ≈ 190–530 B），而脚本里另有"单文件涨 1 KB 才拦"的绝对门槛 ——
+>   两条判据对小文件互相矛盾，按后者（绝对增量）重录。
+> · 视觉基线：109 张（47 浅 / 47 暗 / 15 RTL）。**只改代码那一轮 PNG 零变化**；
+>   改 tooltip demo 文案那一轮变了 2 张（高 +107px，就是新增的两行字）；
+>   版本号进文档站后再录一次，PNG 仍为同一组。
 
 ## [0.27.10] - 2026-11-08
 

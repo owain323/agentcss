@@ -450,6 +450,13 @@
       list[i].setAttribute('data-state', 'active');
       list[i].focus();
       active = i;
+      /* 🔴 锚点同步（APG：typeahead 从**当前项之后**开始找，绕一圈覆盖全部）。
+         focusAt 是"焦点落在第几项"的唯一咽喉：打开、↑↓、Home/End 全走这里，
+         所以锚点只在这里同步一次就够。
+         此前没接这个口 ⇒ 方向键挪走焦点后，打字仍从**上一次命中项**往后找，
+         表现为"明明看着在 D 上，打 d 却跳到别处"。
+         `typeahead` 在本函数之后才赋值（open() 可能在赋值前被调用）⇒ 判存在。 */
+      if (typeahead) typeahead.setLast(i);
     }
 
     function current() {

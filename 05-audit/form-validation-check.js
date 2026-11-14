@@ -116,6 +116,59 @@ const REPO = path.resolve(__dirname, '..');
                        (onlyColor.length ? '🔴 ' + onlyColor.length + ' 条只改颜色'
                                          : '都配合了边框/背景') };
       },
+
+      /* ⭐ 对外有 destroy() 且真的摘干净（与 select / combobox / drawer 同一契约）
+         🔴 0.27.11 加：此前本组件**没有** destroy —— 监听全用匿名函数挂上去，
+            装得上、摘不下。SPA 换页 / 表单被替换时，旧 DOM 不释放。
+         ⚠️ 判据必须看"摘掉之后的行为"，不能只看"有没有这个函数"：
+            函数存在但摘不干净（比如只清了一半监听）也算过，那就成了假绿。
+            ⇒ 先证明没摘之前 submit 会被拦，再 destroy，再证明**不再被拦**。 */
+      '对外有 destroy() 且真的摘干净': async (p) => {
+        const r = await p.evaluate(() => {
+          const host = document.createElement('div');
+          host.innerHTML =
+            '<form id="fv-destroy-probe">' +
+            '<div class="field" data-validate="required" data-name="测试字段">' +
+            '<label class="field__label" for="fv-dp-i">测试</label>' +
+            '<input class="field__input" id="fv-dp-i">' +
+            '<p class="field__error"></p></div>' +
+            '<div data-summary-slot></div>' +
+            '<button type="submit">提交</button></form>';
+          const form = host.firstChild;
+          document.body.appendChild(form);
+          if (!window.FormValidation) return { err: 'FormValidation 未加载' };
+
+          const inst = window.FormValidation.init(form);
+          const fire = () => {
+            const ev = new window.Event('submit', { bubbles: true, cancelable: true });
+            form.dispatchEvent(ev);
+            return ev.defaultPrevented;
+          };
+
+          const before = fire();                   /* 空必填 ⇒ 应被拦下 */
+          const hadFn = typeof inst.destroy === 'function';
+          if (hadFn) inst.destroy();
+          const after = fire();                    /* 摘干净后 ⇒ 不该再被拦 */
+
+          /* 顺带验字段监听：blur 不再写 data-dirty。
+             ⚠️ 必须**先清掉**上一段 submit 留下的标记 —— 否则读到的是残留，
+                整条判据会永远红（第一次跑就是这么红的）。 */
+          const field = form.querySelector('.field');
+          const input = form.querySelector('.field__input');
+          field.removeAttribute('data-dirty');
+          input.focus(); input.blur();
+          const dirty = field.hasAttribute('data-dirty');
+
+          form.remove();
+          return { before, after, hadFn, dirty };
+        });
+        if (r.err) return { ok: false, note: '🔴 ' + r.err };
+        if (!r.hadFn) return { ok: false, note: '🔴 实例上没有 destroy()' };
+        if (!r.before) return { ok: false, note: '🔴 探针前提不成立：destroy 前 submit 就没被拦' };
+        if (r.after) return { ok: false, note: '🔴 destroy 之后 submit 仍被拦 ⇒ form 上的监听没摘' };
+        if (r.dirty) return { ok: false, note: '🔴 destroy 之后字段 blur 仍写 data-dirty ⇒ 字段监听没摘' };
+        return { ok: true, note: 'destroy 前拦、后不拦；字段 blur 也不再留痕 ✅' };
+      },
     },
   });
   process.exit(kit.report(r));

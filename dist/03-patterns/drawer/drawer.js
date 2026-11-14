@@ -133,6 +133,19 @@ var BTN_VARIANT = {
 primary: 'btn--primary', danger: 'btn--danger',
 ghost: 'btn--ghost', secondary: 'btn--secondary',
 };
+
+var warnedVariant = {};
+function btnClassOf(v) {
+var cls = BTN_VARIANT[v];
+if (!cls && v != null && v !== '' && !warnedVariant[v]) {
+warnedVariant[v] = 1;
+if (typeof console !== 'undefined' && console.warn) {
+console.warn('drawer：未知的动作按钮 variant "' + v +
+'"（退回无修饰的 .btn；可用值：primary/danger/ghost/secondary）');
+}
+}
+return 'btn' + (cls ? ' ' + cls : '');
+}
 var lockCount = 0, savedScroll = 0;
 
 var sbwChanged = false, sbwSaved = '';
@@ -304,7 +317,7 @@ opt.actions.forEach(function (a) {
 var b = document.createElement('button');
 b.type = 'button';
 
-b.className = 'btn' + (BTN_VARIANT[a.variant] ? ' ' + BTN_VARIANT[a.variant] : '');
+b.className = btnClassOf(a.variant);
 b.textContent = a.label;
 b.addEventListener('click', function () {
 if (a.onClick) a.onClick(close);

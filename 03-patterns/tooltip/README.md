@@ -75,6 +75,12 @@ el.setAttribute('aria-describedby', cur ? (cur + ' ' + id) : id);
 | `Esc` | 关（WCAG 1.4.13 Content on Hover or Focus）|
 | 点外部 | 关 |
 
+⭐ 这些来源是**三份独立的所有权**，不是"谁最后来谁说了算"：
+hover / focus / click 各持一份，任一持有就显示，**全部释放**才收。
+所以「click 钉住后鼠标进出一次」和「焦点还在、鼠标移出」都不会把气泡弄没 ——
+后者是 WCAG 1.4.13 的 persistent 要求。`blur` 释放 focus 与 click 两份，
+指针仍停在锚点上时 hover 那份继续持有。
+
 触屏没有 hover：点按合成的 mouse 事件被 touchstart 后 700ms 的抑制窗挡住，
 触屏只走 click / focus。手写兄弟结构的纯 CSS 路径（见 tooltip.css）
 仍只有 hover / focus-visible 驱动，没有 JS 保护。

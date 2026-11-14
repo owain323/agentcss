@@ -256,326 +256,421 @@ close(reason === 'esc');
 });
 if (!list.id) list.id = 'select-list-' + (++uid);
 
-var options = [].slice.call(list.querySelectorAll('[role="option"]'));
-var isMulti = !!opt.multiple;
-
-var values = [];
-var activeIdx = -1;
-var destroyed = false;
-
-function valueOfOpt(o) { return o ? o.getAttribute('data-value') : null; }
-function hasValue(v) { return v != null && values.indexOf(String(v)) >= 0; }
-function seed(v) {
-if (v == null) return;
-var arr = Object.prototype.toString.call(v) === '[object Array]' ? v : [v];
-var next = [];
-for (var i = 0; i < arr.length; i++) {
-var s = arr[i] == null ? '' : String(arr[i]);
-if (s && next.indexOf(s) < 0) next.push(s);
-}
-values = isMulti ? next : next.slice(0, 1);
-}
-seed(opt.value);
-
-list.setAttribute('role', 'listbox');
-if (isMulti) list.setAttribute('aria-multiselectable', 'true');
-list.setAttribute('aria-label', opt.label || L.option);
-
-btn.setAttribute('role', 'combobox');
-btn.setAttribute('aria-haspopup', 'listbox');
-btn.setAttribute('aria-expanded', 'false');
-btn.setAttribute('aria-controls', list.id);
-
-options.forEach(function (o, i) {
-o.setAttribute('role', 'option');
-if (!o.id) o.id = list.id + '-o' + i;
-o.setAttribute('aria-selected', 'false');
-if (o.hasAttribute('disabled') || o.getAttribute('aria-disabled') === 'true') {
-o.setAttribute('aria-disabled', 'true');
-}
-o.setAttribute('tabindex', '-1');
-if (o.className.indexOf('select__opt') < 0) {
-o.className = (o.className ? o.className + ' ' : '') + 'select__opt';
-}
-});
-
-function enabled() {
-return options.filter(function (o) { return o.getAttribute('aria-disabled') !== 'true'; });
-}
-
-var typeahead = flTypeahead({
-items: function () { return options; },
-textOf: optMatchText,
-usable: function (o) { return o.getAttribute('aria-disabled') !== 'true'; },
-onHit: function (i) { setActive(i, 1); },
-});
-
-function selectedIdx() {
-for (var i = 0; i < options.length; i++) {
-if (hasValue(valueOfOpt(options[i]))) return i;
-}
-return -1;
-}
-function valueText() {
-var texts = [];
-for (var i = 0; i < options.length; i++) {
-if (hasValue(valueOfOpt(options[i]))) texts.push(optText(options[i]));
-}
-return texts.length ? texts.join('、') : (opt.placeholder || L.placeholder);
-}
-
-function optText(o) {
-if (!o) return '';
-var t = o.querySelector('.select__opt-text');
-return ((t || o).textContent || '').replace(/✓/g, '').trim();
-}
-
-function optMatchText(o) {
-return optText(o).replace(/\s/g, '');
-}
-
-function value() {
-return isMulti ? values.slice() : (values.length ? values[0] : null);
-}
-
-function syncHidden() {
-var all = [].slice.call(root.querySelectorAll('input[type="hidden"]'));
-var mine = [];
-var author = [];
-all.forEach(function (i) {
-if (i.getAttribute('data-select-value') === '1') mine.push(i);
-else author.push(i);
-});
-var name = opt.name || root.getAttribute('data-name') ||
-(author[0] && author[0].name) || (mine[0] && mine[0].name) ||
-root.id || '';
-var slots = author.concat(mine);
-var want = values.slice();
-for (var i = 0; i < want.length; i++) {
-var inp = slots[i];
-if (!inp) {
-inp = document.createElement('input');
-inp.type = 'hidden';
-inp.setAttribute('data-select-value', '1');
-root.appendChild(inp);
-slots.push(inp);
-}
-if (name) inp.name = name;
-else inp.removeAttribute('name');
-inp.value = want[i];
-}
-for (var j = want.length; j < slots.length; j++) {
-var extra = slots[j];
-if (extra.getAttribute('data-select-value') === '1') {
-if (extra.parentNode) extra.parentNode.removeChild(extra);
-} else {
-extra.value = '';
-}
-}
-}
-
-function paint(silent) {
-var label = valueText();
-var empty = selectedIdx() < 0;
-var vEl = btn.querySelector('.select__value');
-if (vEl) {
-vEl.textContent = label;
-vEl.classList.toggle('select__value--placeholder', empty);
-}
-
-btn.setAttribute('aria-label', label);
-
-if (empty) btn.removeAttribute('title');
-else btn.setAttribute('title', label);
-options.forEach(function (o) {
-var on = hasValue(valueOfOpt(o));
-o.setAttribute('aria-selected', on ? 'true' : 'false');
-var ck = o.querySelector('.select__check');
-if (ck) ck.textContent = on ? '✓' : '';
-});
-syncHidden();
-if (silent) return;
-flEmit(root, 'fl-change', { value: value(), values: values.slice(), text: label });
-if (opt.onChange) opt.onChange(value(), label);
-
-var ev = null;
-if (typeof window.Event === 'function') {
-try { ev = new window.Event('change', { bubbles: true }); } catch (e) { ev = null; }
-}
-if (!ev) {
+var labelEl = null;
 try {
-ev = document.createEvent('Event');
-ev.initEvent('change', true, false);
-} catch (e2) { ev = null; }
-}
-if (ev) root.dispatchEvent(ev);
-}
+if (btn.labels && btn.labels.length) labelEl = btn.labels[0];
+} catch (e) { labelEl = null; }
+if (!labelEl && btn.id) {
+var esc = String(btn.id).replace(/(["\\])/g, '\\$1');
+      try {
+        labelEl = root.querySelector('label[for="' + esc + '"]') ||
+                  document.querySelector('label[for="' + esc + '"]');
+      } catch (e2) { labelEl = null; }
+    }
+    if (labelEl && !labelEl.id) labelEl.id = 'select-label-' + (++uid);
+    var authoredLabelledby = btn.getAttribute('aria-labelledby');
 
-function setActive(i, dir) {
-if (!options.length) return;
-dir = dir || 1;
+    var options = [].slice.call(list.querySelectorAll('[role="option"]'));
+    var isMulti = !!opt.multiple;
+    /* 🔴 真多值：以前多选也只有一个 `selected` 字符串，而 aria-multiselectable
+       照样写 "true" —— ARIA 在**谎报**能力。现在统一用数组存值，
+       单选只是"长度 0 或 1"的特例，两条路径共用同一份状态。 */
+    var values = [];
+    var activeIdx = -1;
+    var destroyed = false;
 
-var n = options.length;
-var idx = ((i % n) + n) % n;
-for (var k = 0; k < n; k++) {
-if (options[idx].getAttribute('aria-disabled') !== 'true') break;
-idx = ((idx + dir) % n + n) % n;
-}
-activeIdx = idx;
-options.forEach(function (o) { o.removeAttribute('data-state'); });
-options[idx].setAttribute('data-state', 'active');
+    function valueOfOpt(o) { return o ? o.getAttribute('data-value') : null; }
+    function hasValue(v) { return v != null && values.indexOf(String(v)) >= 0; }
+    function seed(v) {
+      if (v == null) return;
+      var arr = Object.prototype.toString.call(v) === '[object Array]' ? v : [v];
+      var next = [];
+      for (var i = 0; i < arr.length; i++) {
+        var s = arr[i] == null ? '' : String(arr[i]);
+        if (s && next.indexOf(s) < 0) next.push(s);
+      }
+      values = isMulti ? next : next.slice(0, 1);
+    }
+    seed(opt.value);
 
-btn.setAttribute('aria-activedescendant', options[idx].id);
-if (options[idx].scrollIntoView) {
-options[idx].scrollIntoView({ block: 'nearest' });
-}
-}
+    list.setAttribute('role', 'listbox');
+    if (isMulti) list.setAttribute('aria-multiselectable', 'true');
+    list.setAttribute('aria-label', opt.label || L.option);
+    /* 🔴 APG Select-Only Combobox：aria-activedescendant 只被**复合部件**
+       （combobox 等）支持 —— 裸 button 上读屏直接忽略（见文件头）。
+       axe 的 aria-allowed-role 允许 button 承担 combobox 角色。 */
+    btn.setAttribute('role', 'combobox');
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-controls', list.id);
 
-function activeIndex() {
-if (activeIdx >= 0) return activeIdx;
-var i = selectedIdx();
-if (i >= 0) return i;
-var e2 = enabled();
-return e2.length ? options.indexOf(e2[0]) : 0;
-}
+    /* 保证每个 option 都有 id（aria-activedescendant 需要） */
+    options.forEach(function (o, i) {
+      o.setAttribute('role', 'option');
+      if (!o.id) o.id = list.id + '-o' + i;
+      o.setAttribute('aria-selected', 'false');
+      if (o.hasAttribute('disabled') || o.getAttribute('aria-disabled') === 'true') {
+        o.setAttribute('aria-disabled', 'true');
+      }
+      o.setAttribute('tabindex', '-1');   /* 焦点在按钮上，选项不占 Tab */
+      if (o.className.indexOf('select__opt') < 0) {
+        o.className = (o.className ? o.className + ' ' : '') + 'select__opt';
+      }
+    });
 
-function open() {
+    function enabled() {
+      return options.filter(function (o) { return o.getAttribute('aria-disabled') !== 'true'; });
+    }
+    /* 类型搜索（连续打字定位）走 typeahead 核（01-tokens/behavior/typeahead.js）。
+       ⭐ 之前这里只实现了"累积前缀"，**没有连打同一字符时循环** ⇒
+         连按两次同一个字母，游标不动（用户以为卡了）。
+       ⭐ 而 tree 里那一份只实现了循环、没有累积 —— 两份各缺一半。
+       ⇒ 核一次把两半都补齐（APG 的 typeahead 约定），两处共用一份规则。 */
+    var typeahead = flTypeahead({
+      items: function () { return options; },
+      textOf: optMatchText,
+      usable: function (o) { return o.getAttribute('aria-disabled') !== 'true'; },
+      onHit: function (i) { setActive(i, 1); },
+    });
 
-fr.save();
-list.hidden = false;
-btn.setAttribute('aria-expanded', 'true');
+    function selectedIdx() {
+      for (var i = 0; i < options.length; i++) {
+        if (hasValue(valueOfOpt(options[i]))) return i;
+      }
+      return -1;
+    }
+    function valueText() {
+      var texts = [];
+      for (var i = 0; i < options.length; i++) {
+        if (hasValue(valueOfOpt(options[i]))) texts.push(optText(options[i]));
+      }
+      return texts.length ? texts.join('、') : (opt.placeholder || L.placeholder);
+    }
+    /* ⚠️ 空列表也会被调用（初始化 / 清空后重绘）：必须能接住 undefined，
+       老实现直接 o.querySelector 会抛 "Cannot read properties of undefined"。 */
+    /* 展示文案（按钮 label / title / fl-change 的 text）：
+       🔴 只去掉 ✓ 与首尾空白，**保留词中空格** —— 0.x 修。
+       以前 `[✓\s]` 连内部空格一起删："A 股主板" 变 "A股主板"、
+       "Fund 基金" 变 "Fund基金"，显示的就是错的。 */
+    function optText(o) {
+      if (!o) return '';
+      var t = o.querySelector('.select__opt-text');
+      return ((t || o).textContent || '').replace(/✓/g, '').trim();
+    }
+    /* 匹配文案（typeahead 专用）：空格对"打字定位"是噪音 —— 键盘路径里
+       Space 被拦作"选中"，永远进不了缓冲，所以按旧的"全去空白"口径匹配，
+       使 "Fund 基金" 用 "fund基" 连打也能命中（保持 0.x 之前的手感）。 */
+    function optMatchText(o) {
+      return optText(o).replace(/\s/g, '');
+    }
 
-btn.focus();
+    /** 对外值：单选给字符串（无值 null），多选给数组副本 */
+    function value() {
+      return isMulti ? values.slice() : (values.length ? values[0] : null);
+    }
 
-setActive(activeIndex());
-flEmit(root, 'fl-open', null);
-if (opt.onOpen) opt.onOpen();
-}
-function close(restoreFocus) {
-list.hidden = true;
-btn.setAttribute('aria-expanded', 'false');
-btn.removeAttribute('aria-activedescendant');
-options.forEach(function (o) { o.removeAttribute('data-state'); });
-activeIdx = -1;
-typeahead.clear();
+    /* 表单承接：作者写了几个 hidden 就复用几个，不够的自动补同 name 的兄弟节点。
+       多选必须"一个值一个 input"，否则提交出去只有最后一个 —— 那是假多选。 */
+    function syncHidden() {
+      var all = [].slice.call(root.querySelectorAll('input[type="hidden"]'));
+      var mine = [];
+      var author = [];
+      all.forEach(function (i) {
+        if (i.getAttribute('data-select-value') === '1') mine.push(i);
+        else author.push(i);
+      });
+      var name = opt.name || root.getAttribute('data-name') ||
+                 (author[0] && author[0].name) || (mine[0] && mine[0].name) ||
+                 root.id || '';   /* 兜底用根元素 id：没有 name 的话多选压根提交不出去 */
+      var slots = author.concat(mine);
+      var want = values.slice();
+      for (var i = 0; i < want.length; i++) {
+        var inp = slots[i];
+        if (!inp) {
+          inp = document.createElement('input');
+          inp.type = 'hidden';
+          inp.setAttribute('data-select-value', '1');
+          root.appendChild(inp);
+          slots.push(inp);
+        }
+        if (name) inp.name = name;
+        else inp.removeAttribute('name');
+        inp.value = want[i];
+      }
+      for (var j = want.length; j < slots.length; j++) {
+        var extra = slots[j];
+        if (extra.getAttribute('data-select-value') === '1') {
+          if (extra.parentNode) extra.parentNode.removeChild(extra);
+        } else {
+          extra.value = '';        /* 作者自己的 input 留着，只是清空 */
+        }
+      }
+    }
 
-if (restoreFocus !== false) fr.restore();
-flEmit(root, 'fl-close', null);
-if (opt.onClose) opt.onClose();
-}
-function commit(i) {
-var o = options[i];
-if (!o || o.getAttribute('aria-disabled') === 'true') return;
-var v = valueOfOpt(o);
-if (isMulti) {
+    function paint(silent) {
+      var label = valueText();
+      var empty = selectedIdx() < 0;
+      var vEl = btn.querySelector('.select__value');
+      if (vEl) {
+        vEl.textContent = label;
+        vEl.classList.toggle('select__value--placeholder', empty);
+      }
+      /* role="combobox" 在 ARIA 1.2 里 name-from-author（可见文字不算数），
+         但"有名字"不等于"只念当前值"：字段名与当前值是两件事。
+         有 label ⇒ labelledby 挂「字段名 + 值」；没有才退回 aria-label。 */
+      if (vEl && (labelEl || authoredLabelledby)) {
+        if (!vEl.id) vEl.id = 'select-value-' + (++uid);
+        btn.setAttribute('aria-labelledby',
+          (authoredLabelledby || labelEl.id) + ' ' + vEl.id);
+        /* 语言优先级：aria-labelledby > aria-label。留着旧的 aria-label
+           只会让下一个人读到两套名字，不知道哪套生效 ⇒ 清掉。 */
+        btn.removeAttribute('aria-label');
+      } else if (labelEl) {
+        /* 没有 .select__value 可挂（作者自绘结构）：退化成文字拼接 */
+        var fn = (labelEl.textContent || '').replace(/\s+/g, ' ').trim();
+        btn.setAttribute('aria-label', fn ? fn + ' ' + label : label);
+      } else {
+        btn.setAttribute('aria-label', label);
+      }
+      /* 多选标签会被 CSS 截断：title 里留全量，鼠标悬停能看全 */
+      if (empty) btn.removeAttribute('title');
+      else btn.setAttribute('title', label);
+      options.forEach(function (o) {
+        var on = hasValue(valueOfOpt(o));
+        o.setAttribute('aria-selected', on ? 'true' : 'false');
+        var ck = o.querySelector('.select__check');
+        if (ck) ck.textContent = on ? '✓' : '';
+      });
+      syncHidden();
+      if (silent) return;
+      flEmit(root, 'fl-change', { value: value(), values: values.slice(), text: label });
+      if (opt.onChange) opt.onChange(value(), label);
+      /* 🔴 原生 change：宿主表单 / 框架（React 受控、form.reset 监听）认的是这个，
+         只发 fl-change 等于"只有本库自己知道值变了"。 */
+      var ev = null;
+      if (typeof window.Event === 'function') {
+        try { ev = new window.Event('change', { bubbles: true }); } catch (e) { ev = null; }
+      }
+      if (!ev) {
+        try {
+          ev = document.createEvent('Event');
+          ev.initEvent('change', true, false);
+        } catch (e2) { ev = null; }
+      }
+      if (ev) root.dispatchEvent(ev);
+    }
 
-var k = values.indexOf(v);
-if (k >= 0) values.splice(k, 1);
-else values.push(v);
-paint();
-return;
-}
-values = [v];
-paint();
-close(true);
-}
+    /**
+     * 🔴 修一个**索引错位导致 ↑↓ 卡死**的 bug。
+     *
+     * 原来：`setActive(i)` 里的 i 被调用方按 **enabled() 过滤后数组**的索引传，
+     *      而函数内部又当成 **options 原数组**的索引用
+     *      ⇒ 两者含义不同；末项之后算出越界，被 Math.min 夹回末项
+     *      ⇒ **连按 ↓ 永远停在最后一项**。
+     * ⚠️ 症状极具欺骗性：前几项能正常走，最后一项之后就"卡住"了。
+     *
+     * ⭐ 正解：**对外统一用 options 的索引**，
+     *      跳过 disabled 的逻辑放在函数内部做（步进 + 环绕）。
+     *
+     * @param {number} i  options 数组里的索引（可越界，会自动环绕）
+     * @param {number} [dir=1] 步进方向（-1 用于 ↑）
+     */
+    function setActive(i, dir) {
+      if (!options.length) return;
+      dir = dir || 1;
+      /* 从 i 开始按 dir 找第一个未禁用的（最多转一圈）*/
+      var n = options.length;
+      var idx = ((i % n) + n) % n;
+      for (var k = 0; k < n; k++) {
+        if (options[idx].getAttribute('aria-disabled') !== 'true') break;
+        idx = ((idx + dir) % n + n) % n;
+      }
+      activeIdx = idx;
+      options.forEach(function (o) { o.removeAttribute('data-state'); });
+      options[idx].setAttribute('data-state', 'active');
+      /* ⭐ aria-activedescendant：焦点始终在按钮上，靠它告诉读屏"当前在第几项" */
+      btn.setAttribute('aria-activedescendant', options[idx].id);
+      if (options[idx].scrollIntoView) {
+        options[idx].scrollIntoView({ block: 'nearest' });
+      }
+      /* 🔴 锚点同步（APG：typeahead 从**当前项之后**开始找）——
+         此前只有 tree 调了 setLast，select/dropdown 没调：
+         方向键/点选把游标挪走后，锚点仍停在上一次命中项，
+         再打字会绕回旧位置（实测表现为"乱跳"）。
+         `typeahead` 在下面才赋值，初始化早期可能还没建 ⇒ 先判存在。 */
+      if (typeahead) typeahead.setLast(idx);
+    }
 
-function onBtnKey(e) {
-if (destroyed) return;
-var k = e.key;
-var c = e.keyCode;
-var opened = !list.hidden;
+    /** 当前游标所在项在 options 里的索引（没打开时用选中项）*/
+    function activeIndex() {
+      if (activeIdx >= 0) return activeIdx;
+      var i = selectedIdx();
+      if (i >= 0) return i;
+      var e2 = enabled();
+      return e2.length ? options.indexOf(e2[0]) : 0;
+    }
 
-var isDown = k === 'ArrowDown' || c === 40;
-var isUp = k === 'ArrowUp' || c === 38;
-var isEnter = k === 'Enter' || c === 13;
-var isSpace = k === ' ' || k === 'Spacebar' || c === 32;
-var isHome = k === 'Home' || c === 36;
-var isEnd = k === 'End' || c === 35;
+    function open() {
+      /* 打开这一刻先记焦点，close() 才能还回去（要在改焦点之前做）。 */
+      fr.save();
+      list.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      /* 🔴 修：必须**先把焦点放到按钮上**。
+         本组件用 aria-activedescendant 模式（焦点常驻按钮，靠它告知读屏
+         "当前在第几项"）⇒ 焦点必须始终在按钮，事件也必须由按钮处理。
+         原来只设了 aria-activedescendant 就 open()
+         ⇒ 用鼠标点开时焦点可能停在 body
+         ⇒ 挂在 list 上的 keydown（Esc / 类型搜索）**收不到事件**。
+         ⚠️ 症状：鼠标能选、↑↓ 能走、Esc 与字母键完全无效。 */
+      btn.focus();
+      /* ① 焦点落在**选中项**（没有选中则落在第一个未禁用的项）*/
+      setActive(activeIndex());
+      flEmit(root, 'fl-open', null);
+      if (opt.onOpen) opt.onOpen();
+    }
+    function close(restoreFocus) {
+      list.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      btn.removeAttribute('aria-activedescendant');
+      options.forEach(function (o) { o.removeAttribute('data-state'); });
+      activeIdx = -1;
+      typeahead.clear();   /* 关闭即清空缓冲：下次打开不该接着上次的半个词 */
+      /* ③ Esc 关闭时焦点**还给按钮**（不是选中项）*/
+      if (restoreFocus !== false) fr.restore();
+      flEmit(root, 'fl-close', null);
+      if (opt.onClose) opt.onClose();
+    }
+    function commit(i) {
+      var o = options[i];
+      if (!o || o.getAttribute('aria-disabled') === 'true') return;
+      var v = valueOfOpt(o);
+      if (isMulti) {
+        /* 多选：再点一次取消；不关闭列表（APG 多选 listbox 语义） */
+        var k = values.indexOf(v);
+        if (k >= 0) values.splice(k, 1);
+        else values.push(v);
+        paint();
+        return;
+      }
+      values = [v];
+      paint();
+      close(true);                                /* 选中并关闭 + 归位 */
+    }
 
-if (isDown || isUp || isEnter || isSpace) {
-e.preventDefault();
-if (!opened) {
-open();
+    /* ---------- 键盘（APG Select）----------
+       🔴 只允许**一个** keydown 处理器。
+       以前这里挂了两个：一个是 ↑↓/Enter，一个是 onListKey（↑↓/Home/End/Enter/字符）。
+       同一事件两个监听器都跑 ⇒ 按一次 ↓ 走两格、多选 Enter 选上又取消、
+       关闭态 Enter 打开后立刻被第二个处理器提交关闭。
+       ⚠️ 而旧契约只断言"序列变了"，所以这个 bug 从门禁底下过去了。 */
+    function onBtnKey(e) {
+      if (destroyed) return;
+      var k = e.key;
+      var c = e.keyCode;
+      var opened = !list.hidden;
+      /* 🔴 双轨判定：老 WebView 不给 e.key（只有 keyCode），只认 e.key 的话
+         ↑↓/Home/End 在那些机器上全部失灵 —— 与 Space 的 'Spacebar' 兜底、
+         dismissable 核的 keyCode 27 同一原则。映射：↓40 ↑38 Home36 End35
+         Enter13 Space32 Tab9（Esc 由核按 27 接管）。 */
+      var isDown = k === 'ArrowDown' || c === 40;
+      var isUp = k === 'ArrowUp' || c === 38;
+      var isEnter = k === 'Enter' || c === 13;
+      var isSpace = k === ' ' || k === 'Spacebar' || c === 32;
+      var isHome = k === 'Home' || c === 36;
+      var isEnd = k === 'End' || c === 35;
 
-if (isUp && options.length) setActive(options.length - 1, -1);
-return;
-}
-if (isDown) { setActive(activeIndex() + 1, 1); return; }
-if (isUp) { setActive(activeIndex() - 1, -1); return; }
-if (activeIdx >= 0) commit(activeIdx);
-return;
-}
-if (isHome || isEnd) {
-e.preventDefault();
-if (!opened) open();
-if (options.length) setActive(isHome ? 0 : options.length - 1, isHome ? 1 : -1);
-return;
-}
-if (k === 'Tab' || c === 9) { if (opened) close(false); return; }
+      if (isDown || isUp || isEnter || isSpace) {
+        e.preventDefault();
+        if (!opened) {
+          open();
+          /* APG：↑ 打开时游标落**末项**，↓ 打开落选中项 */
+          if (isUp && options.length) setActive(options.length - 1, -1);
+          return;
+        }
+        if (isDown) { setActive(activeIndex() + 1, 1); return; }
+        if (isUp) { setActive(activeIndex() - 1, -1); return; }
+        if (activeIdx >= 0) commit(activeIdx);     /* 多选：切一次、不关闭 */
+        return;
+      }
+      if (isHome || isEnd) {
+        e.preventDefault();
+        if (!opened) open();
+        if (options.length) setActive(isHome ? 0 : options.length - 1, isHome ? 1 : -1);
+        return;
+      }
+      if (k === 'Tab' || c === 9) { if (opened) close(false); return; }
 
-if (k && k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-if (!opened) open();
-e.preventDefault();
-typeahead.type(k);
-}
+      /* 单个可打印字符 = 类型搜索（Enter/Space/Tab 各有语义，不能算打字） */
+      if (k && k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (!opened) open();                       /* 关闭态打字：先开再定位 */
+        e.preventDefault();
+        typeahead.type(k);
+      }
+      /* Esc 由 dismissable 核接管（挂在 btn 上、且 stopPropagation）：
+         只关最内层，组件里不再写第二份。 */
+    }
+    btn.addEventListener('keydown', onBtnKey);
 
-}
-btn.addEventListener('keydown', onBtnKey);
+    /* ---------- 点击 ---------- */
+    function onBtnClick() {
+      if (destroyed) return;
+      if (list.hidden) open(); else close();
+    }
+    function onListClick(e) {
+      if (destroyed) return;
+      /* 同 combobox：helper 自带原生/兜底判断，不要在外面用原生 API 当门。 */
+      var o = closest(e.target, '[role="option"]');
+      if (!o) return;
+      commit(options.indexOf(o));
+    }
+    btn.addEventListener('click', onBtnClick);
+    list.addEventListener('click', onListClick);
 
-function onBtnClick() {
-if (destroyed) return;
-if (list.hidden) open(); else close();
-}
-function onListClick(e) {
-if (destroyed) return;
+    /* 🔴 表单 reset：hidden input 会被浏览器清空，而组件内部状态不会跟着变
+       ⇒ 重置后 UI 还显示旧值，提交却是空的。监听 form 的 reset，
+       等浏览器把 DOM 重置完（下一个宏任务）再把状态改回初始值。 */
+    var initialValues = values.slice();
+    var form = closest(root, 'form');   /* 用模块内兜底，别直接调 Element.closest（老 WebView 没有） */
+    function onFormReset() {
+      setTimeout(function () {
+        if (destroyed) return;
+        values = initialValues.slice();
+        paint();
+      }, 0);
+    }
+    if (form) form.addEventListener('reset', onFormReset);
+    /* 点外部关闭已由 dismissable 核接管（document 捕获阶段判定）。 */
 
-var o = closest(e.target, '[role="option"]');
-if (!o) return;
-commit(options.indexOf(o));
-}
-btn.addEventListener('click', onBtnClick);
-list.addEventListener('click', onListClick);
+    /* 初始化重绘不派发 change：原生 select 也不会在挂载时发一次 */
+    paint(true);
 
-var initialValues = values.slice();
-var form = closest(root, 'form');
-function onFormReset() {
-setTimeout(function () {
-if (destroyed) return;
-values = initialValues.slice();
-paint();
-}, 0);
-}
-if (form) form.addEventListener('reset', onFormReset);
+    return {
+      open: open, close: close,
+      get value() { return value(); },
+      set value(v) { seed(v); paint(); },
+      get values() { return values.slice(); },
+      set values(v) { seed(v); paint(); },
+      /* 🔴 对外必须能销毁：动态移除组件时，document 上的 dismissable 监听、
+         typeahead 缓冲、btn 上的 keydown 都要摘掉，否则越挂越多。 */
+      destroy: function () {
+        if (destroyed) return;
+        destroyed = true;
+        btn.removeEventListener('keydown', onBtnKey);
+        btn.removeEventListener('click', onBtnClick);
+        list.removeEventListener('click', onListClick);
+        if (form) form.removeEventListener('reset', onFormReset);
+        dismiss.destroy();
+        typeahead.destroy();
+        fr.clear();
+        list.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+        btn.removeAttribute('aria-activedescendant');
+        /* 只删我们自己补出来的 hidden（作者写的那几个不动） */
+        [].slice.call(root.querySelectorAll('input[type="hidden"][data-select-value="1"]'))
+          .forEach(function (i) { if (i.parentNode) i.parentNode.removeChild(i); });
+      },
+    };
+  }
 
-paint(true);
-
-return {
-open: open, close: close,
-get value() { return value(); },
-set value(v) { seed(v); paint(); },
-get values() { return values.slice(); },
-set values(v) { seed(v); paint(); },
-
-destroy: function () {
-if (destroyed) return;
-destroyed = true;
-btn.removeEventListener('keydown', onBtnKey);
-btn.removeEventListener('click', onBtnClick);
-list.removeEventListener('click', onListClick);
-if (form) form.removeEventListener('reset', onFormReset);
-dismiss.destroy();
-typeahead.destroy();
-fr.clear();
-list.hidden = true;
-btn.setAttribute('aria-expanded', 'false');
-btn.removeAttribute('aria-activedescendant');
-
-[].slice.call(root.querySelectorAll('input[type="hidden"][data-select-value="1"]'))
-.forEach(function (i) { if (i.parentNode) i.parentNode.removeChild(i); });
-},
-};
-}
-
-global.Select = { create: create };
+  global.Select = { create: create };
 })(typeof window !== 'undefined' ? window : globalThis);

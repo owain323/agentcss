@@ -140,7 +140,7 @@ this.labelClose = this.labels.close || '关闭菜单';
 this.toggle = root.querySelector('[data-nav-toggle]') || root.querySelector('.nav__toggle');
 this.list = root.querySelector('[data-nav-list]') || root.querySelector('.nav__list');
 
-if (this.list && !this.list.hasAttribute('tabindex')) {
+if (this.toggle && this.list && !this.list.hasAttribute('tabindex')) {
 this.list.setAttribute('tabindex', '-1');
 }
 

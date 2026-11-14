@@ -34,6 +34,9 @@ WHITELIST = {
     'FakeElement',
     # form-validation.js 的公开全局名（契约/探针/类型三处登记），非内部代号
     'FormValidation',
+    # 同上的**类型名**（types/index.d.ts 的 interface，CHANGELOG 引用它），
+    # 0.27.11 出现在变更日志里 ⇒ 补登记
+    'FormValidationApi',
     # 类型文件里的公开接口名（DialogAction / DrawerOpenOptions 引用），非内部代号
     'DialogAction',
     # 语言 / 平台

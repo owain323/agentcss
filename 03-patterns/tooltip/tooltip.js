@@ -7,11 +7,16 @@
  *   ③ ⛔ **不承载必要信息** —— 触屏没有 hover，只放 tooltip 等于不存在
  *
  * 🔴 触发规则（0.27 审查实测修出，这里只写"为什么"）：
- *   气泡记一个"openBy"（hover / focus / click 谁开的）：
- *   click **只翻转自己开的**（openBy==='click' 才关）——
+ *   气泡记一份**所有权集合**（hover / focus / click 各一份，互不覆盖）：
+ *   任一持有者存在就显示，**全部释放**才收。
+ *   click **只翻转自己那份**（owns.click 才关）——
  *   否则真指针/触屏的第一次点击 = focus 先出 + click 再翻转关，
  *   气泡闪一下就没（实测：第一次点击以关闭收场）。
- *   focus / hover 刚开的那一下 click 只把 openBy 改成 click（钉住）。
+ *   focus / hover 刚开的那一下 click 只把 click 那份加上（钉住）。
+ *
+ *   🔴 0.27.11：原先是**单值** openBy，谁最后调用谁覆盖 —— 实测两处必错：
+ *   click 钉住后 hover 进出一次钉子就没了；focus 未移开、鼠标移出气泡也消失
+ *   （违反 WCAG 1.4.13）。所有权天生是集合，单值表达不了"还有别人持有"。
  *
  * 无依赖 · ES5 · 用法：
  *   Tooltip.attach(el, '文字')            // 默认 bottom
@@ -269,12 +274,14 @@ var flDismissable = function (opts) {
        ensureLiveRegion 自带"在 DOM 里就复用"判断，重复调用安全。 */
     function reensureLive() { live = ensureLiveRegion(); }
 
-    /* 气泡"为什么开着"：hover / focus / click / null。
-       click 只翻转 openBy==='click' 的（文件头"触发规则"）。 */
-    var openBy = null;
+    /* 气泡"谁在持有"：hover / focus / click **各自一份**，互不覆盖。
+       任一为真 ⇒ 该显示；全部为假 ⇒ 才收（见文件头 0.27.11 那段）。 */
+    var owned = { hover: false, focus: false, click: false };
+    var open = false;                       /* 当前是否已显示（避免重复定位/重复存档焦点） */
 
-    function show(reason) {
-      openBy = reason || 'focus';
+    function holding() { return owned.hover || owned.focus || owned.click; }
+
+    function show() {
       /* 🔴 打开的**这一刻**先记住焦点，关闭时才能还回去。
          必须在任何可能改变焦点的操作**之前**做（否则记到的是新元素）。 */
       fr.save();
@@ -308,37 +315,57 @@ var flDismissable = function (opts) {
       live.textContent = text;
     }
 
+    /* 收：所有权一并清空（Esc / 点外部 / 销毁 = 整体关掉） */
     function hide() {
-      openBy = null;
+      open = false;
+      owned.hover = owned.focus = owned.click = false;
       tip.removeAttribute('data-state');
       live.textContent = '';
     }
 
-    /* ① 键盘可达：focus 也出。重复 focus（点按、编程式）重定位无害，
-       只是把 openBy 升级成 focus —— blur 接管关闭。 */
-    function onFocus() { show('focus'); }
-    function onBlur() { hide(); }
+    /* 取一份所有权；从"关"变"开"的那一次才定位 + 存档焦点 */
+    function acquire(reason) {
+      owned[reason] = true;
+      if (open) return;
+      open = true;
+      show();
+    }
 
-    /* ② 悬停（0.27 审查补，见文件头 ①）：attach() 的气泡挂在 body，
-       CSS 的相邻兄弟 hover 规则打不中 ⇒ hover 必须由 JS 驱动。
-       手写兄弟结构的那条 CSS 路径不受影响，照旧生效。 */
+    /* 放掉一份；还有别人持有就**不动它**（这就是修 bug 的那一步） */
+    function release(reason) {
+      owned[reason] = false;
+      if (open && !holding()) hide();
+    }
+
+    /* ① 键盘可达：focus 也出。重复 focus 只加一份所有权，已开的不重定位 */
+    function onFocus() { acquire('focus'); }
+    /* blur 收掉 focus 与 click（demo 第 5 节写的就是"blur / Esc / 点外部收掉"）；
+       ⚠️ 指针还停在锚点上时 hover 那份仍在 ⇒ 气泡不消失，这是对的。 */
+    function onBlur() {
+      release('focus');
+      release('click');
+    }
+
+    /* ② 悬停：attach() 的气泡挂在 body，CSS 的相邻兄弟 hover 规则打不中，
+       所以必须由 JS 驱动（手写兄弟结构的那条 CSS 路径照旧生效）。
+       这里只加自己那一份，开/关由 holding() 统一判定。 */
     function onMouseEnter() {
       if (recentTouch()) return;           /* 触屏合成事件，不给开 */
-      if (openBy === 'hover') return;
-      show('hover');                       /* focus/click 开着就不动它 */
+      acquire('hover');
     }
     function onMouseLeave() {
-      /* 只关"hover 自己开的"；click 钉住的、focus 持有的各自负责关 */
-      if (openBy === 'hover') hide();
+      /* 只放掉 hover 那份；click 钉住的、focus 持有的各自负责关 */
+      release('hover');
     }
 
     /* ③ 触屏唯一入口 + 指针显式操作（文件头"触发规则"）：
        第一次点击必是开，第二次才是关；Esc / 点外部 / blur 也都能关。 */
     function onClick(e) {
       e.stopPropagation();
-      if (openBy === 'click') { hide(); return; }
-      if (openBy) { openBy = 'click'; return; }   /* focus/hover 刚开的，改归 click，不翻转 */
-      show('click');
+      if (owned.click) { hide(); return; }   /* 第二次点击：整体收掉 */
+      owned.click = true;                    /* 钉住（hover/focus 刚开的就只是升级） */
+      if (open) return;
+      acquire('click');
     }
 
     el.addEventListener('focus', onFocus);
@@ -355,7 +382,7 @@ var flDismissable = function (opts) {
     var dismiss = flDismissable({
       escOn: [el],
       inside: [el, tip],
-      when: function () { return openBy !== null; },
+      when: function () { return open; },
       onDismiss: function (ev, reason) {
         hide();
         /* 有"存进去的焦点"才还（focus 路径）；hover/click 开的没有存档，
@@ -386,7 +413,8 @@ var flDismissable = function (opts) {
       if (!hadDataTooltip) el.removeAttribute('data-tooltip');
       if (tip.parentNode) tip.parentNode.removeChild(tip);
       if (live.textContent === text) live.textContent = '';
-      openBy = null;
+      open = false;
+      owned.hover = owned.focus = owned.click = false;
     }
 
     el.tooltipInstance = { el: el, tip: tip, text: text, destroy: destroy, reensureLive: reensureLive };

@@ -65,10 +65,15 @@
 
 <h2>5 · 触发规则试炼场（修过的行为，对着试）</h2>
 <p class="note">
+<p class="note">
   真指针 / 触屏的<strong>第一次点击必是"开"</strong>，再点一下才是关
   （focus / hover 刚弹出的那一下点击不再翻转关闭 —— 修前第一次点击
-  实际以"关"收场）。悬停移开就关；<code>Esc</code> 与点外部也都能关；
+  实际以"关"收场）。<strong>悬停开的</strong>移开就关；
+  <code>Esc</code> 与点外部也都能关；
   click 开的会"钉住"，blur / Esc / 点外部任一都会收掉。
+  <br>hover / focus / click 是<strong>三份独立所有权</strong>：只要还有一份没释放，
+  气泡就不消失（焦点没移开、鼠标移出也仍在 —— WCAG 1.4.13 的 persistent）。
+</p>
 </p>
 <div class="row pad">
   <button class="btn" id="b-click">点我两下试试</button>

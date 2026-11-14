@@ -90,6 +90,7 @@
 <tr><td>点外部</td><td>关</td></tr>
 </tbody>
 </table></div>
+<p>⭐ 这些来源是<strong>三份独立的所有权</strong>，不是&quot;谁最后来谁说了算&quot;： hover / focus / click 各持一份，任一持有就显示，<strong>全部释放</strong>才收。所以「click 钉住后鼠标进出一次」和「焦点还在、鼠标移出」都不会把气泡弄没 —— 后者是 WCAG 1.4.13 的 persistent 要求。<code>blur</code> 释放 focus 与 click 两份，指针仍停在锚点上时 hover 那份继续持有。</p>
 <p>触屏没有 hover：点按合成的 mouse 事件被 touchstart 后 700ms 的抑制窗挡住，触屏只走 click / focus。手写兄弟结构的纯 CSS 路径（见 tooltip.css）仍只有 hover / focus-visible 驱动，没有 JS 保护。</p>
 <h2 id="s6">🔴 定位前必须先入 DOM<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
 <p>游离元素的 <code>getBoundingClientRect()</code> <strong>全是 0</strong>。</p>
@@ -137,7 +138,7 @@
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.27.10 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.27.11 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

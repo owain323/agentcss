@@ -389,6 +389,8 @@ list.forEach(function (x) { x.removeAttribute('data-state'); });
 list[i].setAttribute('data-state', 'active');
 list[i].focus();
 active = i;
+
+if (typeahead) typeahead.setLast(i);
 }
 
 function current() {

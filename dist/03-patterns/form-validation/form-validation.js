@@ -24,6 +24,8 @@ msg: '金额最多两位小数，例如 12.34',
 optional: { test: function () { return true; }, msg: '' },
 };
 
+var warnedUnknown = {};
+
 function rule(name, test, msg) {
 if (!name || typeof test !== 'function') return false;
 RULES[name] = { test: test, msg: msg || '' };
@@ -48,7 +50,17 @@ if (!input || !err) return true;
 var key = field.getAttribute('data-validate');
 var r = RULES[key];
 
-if (!r) { clearField(field, input, err); return true; }
+if (!r) {
+if (key && !warnedUnknown[key]) {
+warnedUnknown[key] = true;
+if (typeof console !== 'undefined' && console.warn) {
+console.warn('FormValidation：未登记的规则名 "' + key +
+'"（该字段被当作始终通过；可用 FormValidation.rule() 登记）');
+}
+}
+clearField(field, input, err);
+return true;
+}
 if (r.test(input.value)) { clearField(field, input, err); return true; }
 field.setAttribute('data-dirty', '');
 input.setAttribute('aria-invalid', 'true');
@@ -109,9 +121,16 @@ if (typeof opts.labels.success === 'string') this.labels.success = opts.labels.s
 this.slot = form.querySelector('[data-summary-slot]') ||
 form.querySelector('#summary-slot');
 this.fields = toArray(form.querySelectorAll('.field'));
+
+this._bound = [];
 this.bind();
 form.fvInstance = this;
 }
+
+FormValidation.prototype._on = function (el, type, fn) {
+el.addEventListener(type, fn);
+this._bound.push([el, type, fn]);
+};
 
 FormValidation.prototype.check = function (field) {
 return checkField(field);
@@ -143,14 +162,14 @@ var form = this.form;
 this.fields.forEach(function (field) {
 var input = field.querySelector('.field__input');
 if (!input) return;
-input.addEventListener('blur', function () { self.check(field); });
+self._on(input, 'blur', function () { self.check(field); });
 
-input.addEventListener('input', function () {
+self._on(input, 'input', function () {
 if (field.hasAttribute('data-dirty')) self.check(field);
 });
 });
 
-form.addEventListener('submit', function (e) {
+this._on(form, 'submit', function (e) {
 
 if (e.preventDefault) e.preventDefault();
 var bad = self.checkAll();
@@ -181,17 +200,29 @@ ok.focus();
 }
 });
 
-form.addEventListener('reset', function () {
+this._on(form, 'reset', function () {
 self.clear();
 });
 
-form.addEventListener('click', function (e) {
+this._on(form, 'click', function (e) {
 var a = closest(e.target, '.form__summary-link');
 if (!a || !form.contains(a)) return;
 if (e.preventDefault) e.preventDefault();
 var t = document.querySelector(a.getAttribute('href'));
 if (t && t.focus) t.focus();
 });
+};
+
+FormValidation.prototype.destroy = function () {
+var form = this.form;
+this._bound.forEach(function (b) { b[0].removeEventListener(b[1], b[2]); });
+this._bound = [];
+if (form) {
+clearSummary(form, this.slot);
+if (form.fvInstance === this) {
+try { delete form.fvInstance; } catch (e) { form.fvInstance = null; }
+}
+}
 };
 
 global.FormValidation = {

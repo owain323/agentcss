@@ -305,7 +305,8 @@ export interface DateRangeOptions {
    */
   /**
    * 要显示哪些快捷区间（取值为预设名）。
-   * ⚠️ 传了但 DOM 里没有对应 `data-dr_preset` 按钮的，会被静默忽略。
+   * ⚠️ 只**渲染**这里列出的快捷项（没列的不进 DOM）；
+   *    宿主没写 `[data-dr-presets]` 容器时，一个都不渲染（也不报错）。
    */
   presets?: PresetName[];
   /** 校验文案覆盖（默认中文） */
@@ -587,6 +588,12 @@ export interface FormValidationApi {
     check(field: HTMLElement): boolean;
     checkAll(): HTMLElement[];
     clear(): void;
+    /**
+     * 摘掉本实例挂在 form 与每个字段上的监听（SPA 换页 / 表单被替换时调）。
+     * ⚠️ 0.27.11 才补上：此前监听是匿名函数直接挂的，**装得上、摘不下**，
+     * 与 select / combobox / drawer 的「对外有 destroy()」契约不一致。
+     */
+    destroy(): void;
   };
   /** 注册/覆盖一条校验规则（key 对应字段上的 `data-validate`） */
   rule(name: string, test: (v: string) => boolean, msg?: string): boolean;

@@ -296,6 +296,87 @@ const REPO = path.resolve(__dirname, '..');
         return { ok: true, note: '一击开、二击关 ✅' };
       },
 
+      /* ⑧·2 所有权是**集合**：钉住的 / 聚焦持有中的，不能被 hover 顶掉。
+         🔴 0.27.11 修出来的真缺陷（单值 openBy 时代实测）：
+            · click 钉住 → 鼠标移入再移出 ⇒ 钉子被 hover 覆盖，气泡没了
+            · focus 还在 → 鼠标移入再移出 ⇒ 气泡没了，但焦点从没移开
+              （WCAG 1.4.13 明确要求"焦点未移开应持续可见"）
+         ⚠️ 三条容易写歪的地方：
+            1. 必须真鼠标（p.mouse.move）——`mouseenter` 是合成不出来的
+            2. 判定要绑到**这个探针自己的** aria-describedby，
+               不能查全页 `.tooltip[data-state=open]`：
+               鼠标路过别的触发器会开别人的气泡 ⇒ 判据变成"页面上有气泡"，
+               于是无论探针错成什么样都绿（典型的假绿）
+            3. 探针按钮用 position:fixed 且留出 200px 上边距，
+               否则移到"上方"会移出视口（mouseleave 都不会触发） */
+      '钉住与聚焦不被 hover 顶掉（所有权是集合）': async (p) => {
+        const mk = (id, left) => p.evaluate(([i, l]) => {
+          const btn = document.createElement('button');
+          btn.id = i;
+          btn.textContent = '所有权探针';
+          btn.style.cssText = 'position:fixed;top:420px;left:' + l + 'px;z-index:99999';
+          document.body.appendChild(btn);
+          window.Tooltip.attach(btn, '所有权探针的说明');
+        }, [id, left]);
+        const at = (id) => p.evaluate((i) => {
+          const b = document.getElementById(i).getBoundingClientRect();
+          return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        }, id);
+        const isOpen = (id) => p.evaluate((i) => {
+          const b = document.getElementById(i);
+          if (!b) return false;
+          const ref = (b.getAttribute('aria-describedby') || '').split(' ').pop();
+          const t = ref ? document.getElementById(ref) : null;
+          return !!t && t.getAttribute('data-state') === 'open';
+        }, id);
+        const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+        const drop = (id) => p.evaluate((i) => {
+          const b = document.getElementById(i);
+          window.Tooltip.detach(b);
+          b.remove();
+        }, id);
+
+        /* A：click 钉住 → 移出 / 移入 / 移出 ⇒ 必须还开着 */
+        await mk('tt-own-a', 30);    /* ⚠️ 门禁视口只有 393px 宽——放到 400 会出屏，click 打空 */
+        const a = await at('tt-own-a');
+        await p.mouse.click(a.x, a.y);
+        await wait(220);
+        const aOn = await isOpen('tt-own-a');
+        await p.mouse.move(a.x, a.y - 200);
+        await wait(90);
+        await p.mouse.move(a.x, a.y);
+        await wait(90);
+        await p.mouse.move(a.x, a.y - 200);
+        await wait(220);
+        const aAlive = await isOpen('tt-own-a');
+        await drop('tt-own-a');
+
+        /* B：focus 持有 → 鼠标进 / 出 ⇒ 必须还开着（焦点没移开） */
+        await mk('tt-own-b', 190);
+        const b = await at('tt-own-b');
+        await p.evaluate(() => { document.getElementById('tt-own-b').focus(); });
+        await wait(180);
+        const bOn = await isOpen('tt-own-b');
+        await p.mouse.move(b.x, b.y);
+        await wait(90);
+        await p.mouse.move(b.x, b.y - 200);
+        await wait(220);
+        const bAlive = await isOpen('tt-own-b');
+        await p.evaluate(() => { document.getElementById('tt-own-b').blur(); });
+        await wait(120);
+        await drop('tt-own-b');
+
+        if (!aOn) return { ok: false, note: '🔴 click 没能钉住（第一下就没开，A 段无从测）' };
+        if (!aAlive) {
+          return { ok: false, note: '🔴 click 钉住后被 hover 顶掉了（所有权又变回单值？）' };
+        }
+        if (!bOn) return { ok: false, note: '🔴 focus 没能打开（B 段无从测）' };
+        if (!bAlive) {
+          return { ok: false, note: '🔴 焦点未移开、鼠标移出就消失（违反 WCAG 1.4.13 的 persistent）' };
+        }
+        return { ok: true, note: 'click 钉住 / focus 持有 都没被 hover 顶掉 ✅' };
+      },
+
       /* ⑨ 点外部能关（dismissable 核 —— 栈记录必须活着才守得住这条）
          ⚠️ 用 document.body.click() 而不是挑坐标：
             demo 下半屏全是 cmp 面板与其它触发器，真坐标可能点开**另一个**

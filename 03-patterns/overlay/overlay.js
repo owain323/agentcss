@@ -298,11 +298,26 @@
      => aria-labelledby / aria-describedby 指到同一个 id，读屏全乱。 */
   var dlgUid = 0;
 
-  /* 动作按钮 variant 白名单（与 drawer.js 同一张表）：未知值退回次要按钮 */
+  /* 动作按钮 variant 白名单（与 drawer.js 同一张表、同一套兜底）：
+     未知值退成**裸 .btn**（不再退成 .btn--secondary —— 那会让"写错了"
+     看起来像一个正常的设计选择，两个组件也因此不一致，见 0.27.11）。
+     每个未知值只告警一次。 */
   var BTN_VARIANT = {
     primary: 'btn--primary', danger: 'btn--danger',
     ghost: 'btn--ghost', secondary: 'btn--secondary',
   };
+  var warnedVariant = {};
+  function btnClassOf(v) {
+    var cls = BTN_VARIANT[v];
+    if (!cls && v != null && v !== '' && !warnedVariant[v]) {
+      warnedVariant[v] = 1;
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('overlay：未知的动作按钮 variant "' + v +
+                     '"（退回无修饰的 .btn；可用值：primary/danger/ghost/secondary）');
+      }
+    }
+    return 'btn' + (cls ? ' ' + cls : '');
+  }
 
   function toast(opts) {
     opts = opts || {};
@@ -536,7 +551,7 @@
     (opts.actions || []).forEach(function (a) {
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'btn ' + (BTN_VARIANT[a.variant] || 'btn--secondary');
+      b.className = btnClassOf(a.variant);
       b.textContent = a.label;
       b.addEventListener('click', function () {
         if (a.onClick) a.onClick(close);

@@ -161,6 +161,70 @@ const REPO = path.resolve(__dirname, '..');
                        (r.txt.indexOf('Fund') >= 0 ? ' ✅ 类型搜索生效' : ' 🔴 没跳到匹配项') };
       },
 
+      /* ④·2 类型搜索的**锚点**必须跟着游标走（APG：从**当前项之后**开始找）
+         🔴 0.27.11 补的真缺陷：`setLast` 的口在核里、tree 接了，
+            **select / dropdown 没接** —— 游标被 ↑↓ 挪走后，锚点还停在上一次命中项。
+         ⚠️ demo 的选项集测不出这条（全表只有一个 F 开头，绕一圈总归会命中它），
+            所以这里**现场造**一张三项表：Apple / Banana / Apricot。
+            锚点同步了 ⇒ 从 Banana 之后找 ⇒ **Apricot**；
+            没同步（last=-1）⇒ 从表头找 ⇒ **Apple**。
+            注意"绕回去"不是更安全：它把焦点搬到了当前项**之前**，方向是反的。 */
+      '类型搜索的锚点跟着游标走（从当前项之后开始）': async (p) => {
+        const readActive = () => p.evaluate(() => {
+          const ad = document.querySelector('#ta-anchor-probe [data-select-btn]')
+                       .getAttribute('aria-activedescendant');
+          const o = document.getElementById(ad);
+          return o ? o.textContent.trim() : '?';
+        });
+
+        await p.evaluate(() => {
+          const host = document.createElement('div');
+          host.className = 'select';
+          host.id = 'ta-anchor-probe';
+          host.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99999;width:220px';
+          host.innerHTML =
+            '<button class="select__btn" data-select-btn type="button">' +
+            '<span class="select__value">请选择</span>' +
+            '<span class="select__caret"></span></button>' +
+            '<ul class="select__list" data-select-list hidden>' +
+            '<li class="select__opt" data-value="a" role="option">' +
+            '<span class="select__opt-text">Apple</span></li>' +
+            '<li class="select__opt" data-value="b" role="option">' +
+            '<span class="select__opt-text">Banana</span></li>' +
+            '<li class="select__opt" data-value="c" role="option">' +
+            '<span class="select__opt-text">Apricot</span></li>' +
+            '</ul>';
+          document.body.appendChild(host);
+          window.__anchorProbe = window.Select.create(host, { value: 'a' });
+          host.querySelector('[data-select-btn]').click();     /* 打开即聚焦按钮 */
+        });
+        await new Promise((r) => setTimeout(r, 220));
+
+        await p.keyboard.press('ArrowDown');                   /* Apple(0) → Banana(1) */
+        await new Promise((r) => setTimeout(r, 140));
+        const mid = await readActive();
+
+        await p.keyboard.press('KeyA');                        /* 打 "a" */
+        await new Promise((r) => setTimeout(r, 180));
+        const hit = await readActive();
+
+        await p.evaluate(() => {
+          const h = document.getElementById('ta-anchor-probe');
+          if (window.__anchorProbe) window.__anchorProbe.destroy();
+          if (h) h.remove();
+        });
+
+        if (mid.indexOf('Banana') < 0) {
+          return { ok: false, note: '🔴 ↓ 之后游标没到 Banana（现在「' + mid + '」）⇒ 探针前提不成立' };
+        }
+        if (hit.indexOf('Apricot') < 0) {
+          return { ok: false,
+                   note: '🔴 游标在 Banana 时打 "a" 落到了「' + hit + '」'
+                         + '（应为 Apricot）⇒ 锚点没跟着游标走，仍从旧位置/表头开始' };
+        }
+        return { ok: true, note: '游标在 Banana 打 "a" → Apricot（从当前项之后找）✅' };
+      },
+
       /* ⭐ 二次打开后，类型搜索必须**仍然可用**（缓冲不被上一次残留污染）。
          迁移前缓冲是组件里的闭包变量，**关闭时从来不清** ⇒ 二次打开再打同一个
          字母会拼成 "ff" ⇒ 匹配不上 ⇒ 打字"突然失效"。

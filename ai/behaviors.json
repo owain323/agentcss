@@ -81,11 +81,11 @@
         "n/a",
         "分页控件常驻页面，没有浮层"
       ],
-"form-validation": [
+      "form-validation": [
         "n/a",
         "无浮层；Esc/点外部语义交给宿主页面。表单级监听挂在 form 自身（幂等 init），无浮层、无焦点游走、无类型搜索"
       ],
-            "tabs": [
+      "tabs": [
         "n/a",
         "面板切换不是浮层；Esc 无语义"
       ],
@@ -179,11 +179,11 @@
         "n/a",
         "焦点常驻页码按钮"
       ],
-"form-validation": [
+      "form-validation": [
         "n/a",
         "不创建浮层、不搬焦点；汇总条 focus 是提交流程的一部分，不需要归位核。表单级监听挂在 form 自身（幂等 init），无浮层、无焦点游走、无类型搜索"
       ],
-            "tabs": [
+      "tabs": [
         "n/a",
         "焦点一直在 tab 组内"
       ],
@@ -277,11 +277,11 @@
         "n/a",
         "←→/Home·End 是**翻页命令**，不是在一组项里移动焦点"
       ],
-"form-validation": [
+      "form-validation": [
         "n/a",
         "表单级监听挂在 form 自身（幂等 init），无浮层、无焦点游走、无类型搜索"
       ],
-            "tabs": [
+      "tabs": [
         "core",
         ""
       ],
@@ -375,11 +375,11 @@
         "n/a",
         "页码是数字，不适用首字母跳转"
       ],
-"form-validation": [
+      "form-validation": [
         "n/a",
         "表单级监听挂在 form 自身（幂等 init），无浮层、无焦点游走、无类型搜索"
       ],
-            "tabs": [
+      "tabs": [
         "n/a",
         "APG Tabs 未要求 typeahead"
       ],

@@ -157,6 +157,21 @@
     primary: 'btn--primary', danger: 'btn--danger',
     ghost: 'btn--ghost', secondary: 'btn--secondary',
   };
+  /* 未知 variant 的兜底必须与 overlay 一致（原先裸 .btn vs .btn--secondary）。
+     统一退成裸 .btn（与 toast 的"认不得就不加修饰"一致），每个未知值告警一次
+     —— 光退回不吭声等于把作者的笔误吃进肚子里。 */
+  var warnedVariant = {};
+  function btnClassOf(v) {
+    var cls = BTN_VARIANT[v];
+    if (!cls && v != null && v !== '' && !warnedVariant[v]) {
+      warnedVariant[v] = 1;
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('drawer：未知的动作按钮 variant "' + v +
+                     '"（退回无修饰的 .btn；可用值：primary/danger/ghost/secondary）');
+      }
+    }
+    return 'btn' + (cls ? ' ' + cls : '');
+  }
   var lockCount = 0, savedScroll = 0;
   /* 滚动条宽度补偿：只记录自己真的改过的（unlock 只回写这些，见 unlockScroll） */
   var sbwChanged = false, sbwSaved = '';
@@ -381,7 +396,7 @@
         /* 🔴 variant 走白名单：拼 `' btn--' + a.variant` 会把任何字符串都
            拼成类名（'tp' => .btn--tp，无 CSS 命中、门禁也认不出谁在用）。
            同 overlay.js 的 TOAST_VARIANT：未知值退回默认按钮。 */
-        b.className = 'btn' + (BTN_VARIANT[a.variant] ? ' ' + BTN_VARIANT[a.variant] : '');
+        b.className = btnClassOf(a.variant);
         b.textContent = a.label;
         b.addEventListener('click', function () {
           if (a.onClick) a.onClick(close);
