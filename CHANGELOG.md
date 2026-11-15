@@ -114,6 +114,24 @@
 - **ARCHITECTURE 不再断言"全部稳定可用"**：成熟度是逐组件事实，以
   ai/components.json 为准。
 
+### Added
+
+- **安卓真机行为门禁入仓**（`05-audit/android-bench/`，27 项判据）：真·安卓 Chromium 上跑
+  三套契约——真触摸序列（tooltip 700ms 抑制窗、一次点按开/再点关、点外部/Esc/blur 关闭、
+  所有权集合）、真 IME 合成（combobox 三层守卫：229 / 标志层 / isComposing，建议列表照常刷新）、
+  真无障碍树（select 朗读「字段名+当前值」、tooltip live region）。桌面 Playwright 覆盖不到的
+  **事件层事实**，现在有台子、有脚本、有 report.json。有台子的机器发版前跑
+  `bash 05-audit/android-bench/run-gate.sh`（无台子自动 SKIP，退出码 2）；CI 不受影响。
+  判据清单与台子搭建见 05-audit/android-bench/README.md；发布冻结点补记见 docs/RELEASE-PROCESS.md §4.2。
+- **单组件契约卡**：`ai components --json --component=<id>` —— 便宜模型一次只用一两个组件，
+  不该吞整份 components.json（60KB+）才能拿到一张卡。未知 id 报错并列出全部可用 id
+  （与 enumFlag 同一哲学：拼错参数读成"库里没有"比报错危险）。llms.txt 已补用法行。
+- **AI 契约面字节预算**（`ai-surface-budget-gate.py` + `ai-surface-budget.json`）：
+  llms.txt + llms-full.txt + components.json + ai/START-HERE.md 是 agent 要吞的全部机器面，
+  此前无上限——加组件时悄悄涨，挤占便宜模型的可用上下文。首设 100 KiB 上限
+  （实测 91,393 字节，余量 11%），数字放 JSON（被约束的人手里不握数字）、
+  调预算走 bumpLog 留账，配三态边界自检。已注册进 check-all 静态层。
+
 ### Fixed — MODE=full（组件层）首跑暴露的 5 项
 
 > fast 档跳过的组件层在完整档首跑暴露一批问题，逐项清零后 253 道全绿。

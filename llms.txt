@@ -16,6 +16,7 @@ Query the contract instead of guessing:
 
 ```bash
 npx agentcss ai components --json                    # all 40 components
+npx agentcss ai components --json --component=table  # ONE component's full contract card (small context)
 npx agentcss ai components --json --maturity=stable  # only stable
 npx agentcss ai tokens --json --set=dark
 npx agentcss ai pitfalls --json --component=table

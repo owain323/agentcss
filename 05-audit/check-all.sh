@@ -1211,6 +1211,13 @@ run "perf"         $PY 05-audit/perf-gate.py
 #   写反不等号、把天花板判成储备，跑一百次都是绿的。
 #   它用临时账本（FL_BUDGET）逼出每个分支，并核对真账本 sha 未变。
 run "budget-self" @serial $PY 05-audit/budget-selftest.py
+#   安卓真机档（手动，不进队列）：bash 05-audit/android-bench/run-gate.sh
+#   —— 真安卓 Chrome 上的 27 项行为契约（触摸/IME/无障碍树）；CI 无台子自动 SKIP。
+#   组成（逐字文件名，给 orphan-gate 的引用图看）：
+#   run-all.mjs touch-tooltip.mjs touch-tooltip-full.mjs ime-combobox.mjs
+#   ime-combobox-full.mjs a11y-select.mjs dvh-viewport.mjs lib-env.mjs run-gate.sh
+run "ai-surface-budget"      $PY 05-audit/ai-surface-budget-gate.py
+run "ai-surface-budget-self" @serial $PY 05-audit/ai-surface-budget-gate.py --selftest
 run "coverage"    $PY 05-audit/coverage-gate.py
 # 反向控制：孤儿类 / 幻影类 / 未登记重名 / 登记过期 / 水位上涨 五条判据
 # 都必须能红。喂的是合成数据，所以不需要碰真仓库。

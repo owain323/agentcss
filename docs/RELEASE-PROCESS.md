@@ -116,6 +116,13 @@ pack-smoke.sh            # npm pack → 装进空项目 → 解析入口
 
 这两道属于 component 层，`--fast` 会跳过它们。**因此发布工作流里单独、无条件地跑这两步**（见 5.1）。这条不写在别处，只写在这里，因为"发布前跑过全部门禁"是一句会骗人的话。
 
+**安卓真机档（2026-11-16 起，同样不在 publish:check 里）**：`05-audit/android-bench/run-gate.sh`
+在真·安卓 Chromium（模拟器或真机）上跑 27 项行为契约——真触摸序列（tooltip 700ms 抑制窗、
+一次点按开/再点关）、真 IME 合成（combobox 三层守卫）、真无障碍树（select 的
+"字段名+当前值"播报）。这些是桌面 Playwright 覆盖不到的**事件层事实**。
+它与 dist 语义比对同类：**需要台子的机器上、发布前手动跑**——台子缺失时自动 SKIP
+（退出码 2，不算失败），CI 不受影响。台子搭建与判据清单见 05-audit/android-bench/README.md。
+
 ---
 
 ## 5. 发布状态机

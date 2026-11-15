@@ -20,7 +20,7 @@
  *   agentcss ai validate   <file.json> --schema=<名字>（见 SCHEMAS，当前 8 份）
  *   agentcss ai diff       <a.json> <b.json>
  *   agentcss ai patch      <doc.json> <patch.json> [-o out.json]
- *   agentcss ai components [--maturity=stable] [--json]
+ *   agentcss ai components [--maturity=stable] [--component=<id>] [--json]
  *   agentcss ai tokens     [--set=light|dark] [--json]
  *   agentcss ai profile    列出三档及其差异
  *   agentcss ai capabilities
@@ -660,9 +660,24 @@ function cmdPitfalls(args) {
 function cmdComponents(args) {
   var doc = readJSON(path.join(AI, 'components.json'));
   var m = enumFlag('maturity');
+  /* 🔴 --component=<id>：单组件契约卡（2026-11-16）。
+     便宜模型的上下文小 —— 它通常一次只用一两个组件，却要吞整份
+     components.json（60KB+）才能拿到一张卡。按 id 过滤后，
+     单卡（契约 + 翻车点 + 文件表）就是它的"最小够用上下文"。
+     🔴 未知的 id **必须报错**（与 enumFlag 同一哲学）：拼错参数读成
+     "库里没有这个组件"并据此写错结论，比报错危险得多。 */
+  var cid = flag('component');
   var list = doc.components.filter(function (c) {
     return !m || c.maturity === m;
   });
+  if (cid) {
+    var hit = doc.components.filter(function (c) { return c.id === cid; });
+    if (!hit.length) {
+      die('`components` 未知组件 id ' + JSON.stringify(cid) +
+        '（可用：' + doc.components.map(function (c) { return c.id; }).join(' / ') + '）');
+    }
+    list = hit;
+  }
   /* 🔴 每个组件都带上自己的翻车点（id + 标题），字段恒存在（空数组也写）。
      形状恒定比"有值才出现"好：调用方不用写 if，也不会因为某个组件
      恰好没有翻车点而少一个键。 */
@@ -1232,7 +1247,7 @@ var FLAGS = {
   validate: ['schema'],
   diff: [],
   patch: ['o'],
-  components: ['maturity'],
+  components: ['maturity', 'component'],
   assets: [],
   tokens: ['set'],
   tree: ['set', 'cat'],

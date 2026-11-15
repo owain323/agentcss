@@ -34,6 +34,8 @@ WHITELIST = {
     'FakeElement',
     # form-validation.js 的公开全局名（契约/探针/类型三处登记），非内部代号
     'FormValidation',
+    # 平台 API 名（android-bench 测试脚本触达的浏览器/CDP 接口），非内部代号
+    'AbortSignal', 'CompositionEvent', 'InputEvent', 'ImeCommitText',
     # 同上的**类型名**（types/index.d.ts 的 interface，CHANGELOG 引用它），
     # 0.27.11 出现在变更日志里 ⇒ 补登记
     'FormValidationApi',
