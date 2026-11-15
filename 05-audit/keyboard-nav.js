@@ -133,20 +133,52 @@ const PAGES = [
           el.blur();
         }
 
-        /* ③ 焦点顺序：DOM 顺序 vs 视觉顺序（top 坐标应大致单调） */
-        const pts = all.map((el) => {
-          const r = el.getBoundingClientRect();
-          return { top: Math.round(r.top), left: Math.round(r.left) };
-        });
+        /* ③ 焦点顺序：DOM 顺序 vs 视觉顺序（top 坐标应大致单调）
+           🔴 必须用**文档绝对坐标**（rect.top + scrollY）：
+              上面的焦点环检查逐个 focus()，每次 focus 都会滚动页面 ⇒
+              视口相对坐标被滚动扭曲，量出假倒挂（实测 nav 页 top=-2286）。 */
+        const pts = all
+          .filter((el) => {
+            /* 🔴 sticky/fixed 豁免（与 ① 的 roving 豁免同模式）：
+               侧栏/回顶链接的视觉位置**设计上**就与 DOM 顺序解耦
+               （内容在前、侧栏在后 = 移动优先的推荐顺序），
+               拿它们比顺序，量出来的是布局模式，不是跳序。
+               ⚠️ 链接本身往往是 static，sticky 在**容器**上
+               ⇒ 沿祖先链上溯判定，不能只看元素自己。 */
+            for (let n = el; n && n.nodeType === 1 && n !== document.body;
+                 n = n.parentElement) {
+              const pos = getComputedStyle(n).position;
+              if (pos === 'fixed' || pos === 'sticky') return false;
+            }
+            return true;
+          })
+          .map((el) => {
+            const r = el.getBoundingClientRect();
+            return {
+              top: Math.round(r.top + (window.scrollY || 0)),
+              left: Math.round(r.left + (window.scrollX || 0)),
+            };
+          });
         let inversions = 0;
+        const inversionsAt = [];
         for (let i = 1; i < pts.length; i++) {
           /* 同一行内允许 left 递增；换行时 top 必须递增 */
           if (pts[i].top > pts[i - 1].top + 30) continue;
-          if (pts[i].left < pts[i - 1].left - 30) inversions++;
+          if (pts[i].left < pts[i - 1].left - 30) {
+            inversions++;
+            inversionsAt.push({
+              before: all[i - 1].tagName.toLowerCase() +
+                (all[i - 1].textContent || '').trim().slice(0, 14),
+              after: all[i].tagName.toLowerCase() +
+                (all[i].textContent || '').trim().slice(0, 14),
+              topA: pts[i - 1].top, topB: pts[i].top,
+              leftA: pts[i - 1].left, leftB: pts[i].left,
+            });
+          }
         }
 
         return { total: all.length, bad: bad.length,
-                 noRing: noRingCount, inversions };
+                 noRing: noRingCount, inversions, inversionsAt };
       });
 
       totalEl += v.total;
@@ -158,7 +190,18 @@ const PAGES = [
       const issues = [];
       if (v.bad) issues.push('到不了 ' + v.bad);
       if (v.noRing) issues.push('无焦点环 ' + v.noRing);
-      if (v.inversions) issues.push('顺序倒挂 ' + v.inversions);
+      if (v.inversions) issues.push('顺序倒挂 ' + v.inversions +
+        '（升级前先定位：见下方 PER-页 归因）');
+      /* 🔴 归因：报告模式只给总数 ⇒ 没法升级成 fail（不知道修哪页）。
+         把倒挂的前后两个可聚焦元素打出来，人可以立刻判断是
+         "真跳序"还是"网格布局的合法 DOM 顺序"。 */
+      if (v.inversions && v.inversionsAt && v.inversionsAt.length) {
+        v.inversionsAt.slice(0, 3).forEach(function (iv, k) {
+          console.log('       ↳ 倒挂' + (k + 1) + '：' + iv.before +
+            ' → ' + iv.after + '（top ' + iv.topA + '→' + iv.topB +
+            '，left ' + iv.leftA + '→' + iv.leftB + '）');
+        });
+      }
       console.log('  ' + (issues.length ? 'WARN ' : 'OK   ') + label.padEnd(10) +
                   ' 可聚焦 ' + String(v.total).padStart(3) +
                   (issues.length ? '  ⚠ ' + issues.join(' / ') : '  ✅'));
@@ -189,8 +232,17 @@ const PAGES = [
     console.log('    ⇒ 0 个元素 = **门禁没真正工作**（假绿），必须修');
     process.exit(1);
   }
-  console.log('  ⇒ ⭐ 报告模式：以上是**基线数字**，达标后升级为 fail');
-  console.log('    ① 是硬红线（键盘用户到不了）⇒ 目标 0');
-  console.log('    ② 需组件配合 :focus-visible 样式 ⇒ 逐个补');
+  /* 🔴 ③ 升级为红线（2026-11-16）：文档绝对坐标 + sticky/fixed 祖先豁免
+     落地后全页归零（nav 的 sticky 侧栏倒挂确认是测量伪影 + 合法布局模式），
+     达到了文件头写的「达标后升级 fail」条件。
+     ① ② 仍为报告模式（① 依赖页面结构差异大；② 需逐个补 :focus-visible）。 */
+  if (orderBad > 0) {
+    console.log('');
+    console.log('  🔴 ③ 焦点顺序与视觉不一致 ' + orderBad +
+                ' 处 —— sticky/fixed 已豁免后仍倒挂 = 真跳序，键盘用户会"跳"');
+    console.log('    归因见上方每页的 ↳ 行（升级判据：2026-11-16 达标后升级）');
+    process.exit(1);
+  }
+  console.log('  ⇒ ③ 已升级为红线（当前 0）。① ② 仍为报告模式（基线数字见上）。');
   process.exit(0);
 })();

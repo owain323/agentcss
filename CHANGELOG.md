@@ -18,6 +18,41 @@
 
 ## [Unreleased]
 
+## [0.27.12] - 2026-11-16
+
+> 来源：发版后继续推进的四件事——安卓真机门禁入仓、AI 工作流的"最小够用上下文"、
+> 键盘顺序判据升级、包内容微调。每一条都配了判据或反向控制。
+
+### Added
+
+- **安卓真机行为门禁入仓**（`05-audit/android-bench/`，27 项判据）：真·安卓 Chromium 上跑
+  三套契约——真触摸序列（tooltip 700ms 抑制窗、一次点按开/再点关、点外部/Esc/blur 关闭、
+  所有权集合）、真 IME 合成（combobox 三层守卫：229 / 标志层 / isComposing，建议列表照常刷新）、
+  真无障碍树（select 朗读「字段名+当前值」、tooltip live region）。桌面 Playwright 覆盖不到的
+  **事件层事实**，现在有台子、有脚本、有 report.json。有台子的机器发版前跑
+  `bash 05-audit/android-bench/run-gate.sh`（无台子自动 SKIP，退出码 2）；CI 不受影响。
+  判据清单与台子搭建见 05-audit/android-bench/README.md；发布冻结点补记见 docs/RELEASE-PROCESS.md §4.2。
+- **单组件契约卡**：`ai components --json --component=<id>` —— 便宜模型一次只用一两个组件，
+  不该吞整份 components.json（60KB+）才能拿到一张卡。未知 id 报错并列出全部可用 id
+  （与 enumFlag 同一哲学：拼错参数读成"库里没有"比报错危险）。llms.txt 已补用法行。
+- **AI 契约面字节预算**（`ai-surface-budget-gate.py` + `ai-surface-budget.json`）：
+  llms.txt + llms-full.txt + components.json + ai/START-HERE.md 是 agent 要吞的全部机器面，
+  此前无上限——加组件时悄悄涨，挤占便宜模型的可用上下文。首设 100 KiB 上限
+  （实测 91,393 字节，余量 11%），数字放 JSON（被约束的人手里不握数字）、
+  调预算走 bumpLog 留账，配三态边界自检。已注册进 check-all 静态层。
+
+### Changed
+
+- **npm 包移出根级 `index.html`**（9KB 的 demo 索引）：README 里的「Save this as
+  `index.html`」指的是**使用者自己**要建的文件，不是包里这份；包里那份是文档站
+  生成器的产物，文档站与 GitHub 上都有。description 改为中英双语（npm 搜索的
+  英文关键词此前完全命中不了）。
+- **keyboard-nav ③ 升级为红线**：焦点顺序比对改用**文档绝对坐标**（原视口相对
+  坐标被逐个 focus() 的滚动扭曲，量出假倒挂——实测 top=-2286 的"跳序"全是
+  测量伪影）+ sticky/fixed **祖先链豁免**（侧栏/回顶链接的视觉位置设计上与
+  DOM 顺序解耦，内容在前侧栏在后 = 移动优先的推荐顺序）。豁免后全页归零，
+  达到文件头预留的「达标后升级 fail」条件。① ② 仍为报告模式。
+
 ## [0.27.11] - 2026-11-14
 
 > 来源：一次独立评审（行为 JS 实测 + 工具链审读 + 真浏览器复现）。
@@ -113,6 +148,17 @@
   悬停 / 单击开 / 点外部 / detach 五条红可证判据。
 - **ARCHITECTURE 不再断言"全部稳定可用"**：成熟度是逐组件事实，以
   ai/components.json 为准。
+
+### Changed
+
+- **npm 包移出根级 `index.html`**（9KB 的 demo 索引）：README 里的「Save this as
+  `index.html`」指的是**使用者自己**要建的文件，不是包里这份；包里那份是文档站
+  生成器的产物，文档站与 GitHub 上都有。description 改为中英双语（npm 搜索的
+  英文关键词此前完全命中不了）。
+- **keyboard-nav ③ 升级为红线**：焦点顺序比对改用**文档绝对坐标**（原视口相对
+  坐标被逐个 focus() 的滚动扭曲，量出假倒挂）+ sticky/fixed **祖先链豁免**
+  （侧栏/回顶链接的视觉位置设计上与 DOM 顺序解耦）。豁免后全页归零，
+  达到文件头预留的「达标后升级 fail」条件。① ② 仍为报告模式。
 
 ### Added
 
