@@ -60,6 +60,24 @@ CI 是 Linux（无模拟器、无 Chrome APK）——挂进 check-all 任何 MOD
 稳定态 visualViewport==innerHeight（page.css 的 100vh+100dvh 双写在真机上的信号）。
 地址栏收不收本身是 Chrome UI 层行为，**只观测不计分**。
 
+### old-engine（5 项 · 裸 CDP，兼容 Chrome 69 旧协议）
+
+老引擎台：`bench28` AVD（API28 google_apis_playstore，自带 **Chrome 69**——2018 年引擎）。
+这是"老 WebView 可用"的**实证**层：ES5 语法、无原生 closest 的兜底路径、
+触摸事件契约，全部在真旧引擎上过一遍。
+
+| # | 判据 |
+|---|---|
+| ① | 引擎 UA 确认（Chrome/68–69 时代） |
+| ② | 页面渲染（.page .wrap 存在） |
+| ③ | **零 JS 错误**（ES5 全量在旧引擎上无异常） |
+| ④ | tooltip 真触摸：一次点按开 |
+| ⑤ | tooltip 真触摸：再点关 |
+
+⚠️ Chrome 69 的 CDP 协议较老——Playwright `connectOverCDP` 会发它不认识的
+`Browser.setDownloadBehavior` 导致连接被断。本脚本用 **Node 原生 WebSocket 裸 CDP**
+（Runtime.evaluate / Input.dispatchTouchEvent）绕过，不依赖 Playwright。
+
 ## 用法
 
 ```bash

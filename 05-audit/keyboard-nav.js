@@ -232,17 +232,18 @@ const PAGES = [
     console.log('    ⇒ 0 个元素 = **门禁没真正工作**（假绿），必须修');
     process.exit(1);
   }
-  /* 🔴 ③ 升级为红线（2026-11-16）：文档绝对坐标 + sticky/fixed 祖先豁免
-     落地后全页归零（nav 的 sticky 侧栏倒挂确认是测量伪影 + 合法布局模式），
-     达到了文件头写的「达标后升级 fail」条件。
-     ① ② 仍为报告模式（① 依赖页面结构差异大；② 需逐个补 :focus-visible）。 */
-  if (orderBad > 0) {
+  /* 🔴 ①②③ 全部升级为红线（2026-11-16）：
+     ③ 文档绝对坐标 + sticky/fixed 祖先豁免落地后全页归零；
+     ① 原生元素被踢出 Tab 序列（roving/aria-hidden 已豁免）实测 0；
+     ② 聚焦无可见焦点环实测 0。
+     三条判据都达到了文件头写的「达标后升级 fail」条件，全部咬住。 */
+  if (orderBad > 0 || unreachable > 0 || noRing > 0) {
     console.log('');
-    console.log('  🔴 ③ 焦点顺序与视觉不一致 ' + orderBad +
-                ' 处 —— sticky/fixed 已豁免后仍倒挂 = 真跳序，键盘用户会"跳"');
-    console.log('    归因见上方每页的 ↳ 行（升级判据：2026-11-16 达标后升级）');
+    console.log('  🔴 红线未达标：到不了 ' + unreachable +
+                ' · 无焦点环 ' + noRing + ' · 顺序倒挂 ' + orderBad);
+    console.log('    归因见上方每页的 OK/WARN 行与 ↳ 行');
     process.exit(1);
   }
-  console.log('  ⇒ ③ 已升级为红线（当前 0）。① ② 仍为报告模式（基线数字见上）。');
+  console.log('  ⇒ ①②③ 已全部升级为红线（当前全部 0）。');
   process.exit(0);
 })();

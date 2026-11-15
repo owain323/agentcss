@@ -30,7 +30,7 @@ import { createRequire } from 'node:module';
 
 const ANDROID_BENCH_ROOT = process.env.ANDROID_BENCH;
 /* 同目录兄弟脚本（orphan-gate 的 stem 登记也写在这里）：
-   'dvh-viewport' 'run-gate' 两个兄弟脚本（观测项 / 手动门禁入口）也在这里维护 */
+   'dvh-viewport' 'run-gate' 'old-engine' 三个兄弟脚本（观测项 / 手动门禁 / 老引擎）也在这里维护 */
 if (!ANDROID_BENCH_ROOT) {
   console.error('[android-bench] 请设 ANDROID_BENCH 环境变量指向台子根目录（内含 sdk/platform-tools/adb.exe）。'
     + ' 例（Git Bash）：export ANDROID_BENCH=台子根目录（内含 sdk/）');

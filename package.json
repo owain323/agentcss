@@ -9,7 +9,12 @@
     "webview",
     "accessibility",
     "dark-mode",
-    "rtl"
+    "design-tokens",
+    "machine-readable",
+    "print-to-pdf",
+    "ai-friendly",
+    "rtl",
+    "keyboard-navigation"
   ],
   "license": "MIT",
   "type": "commonjs",
