@@ -292,33 +292,92 @@ var flDismissable = function (opts) {
       tip.style.display = 'block';
       if (!tip.parentNode) document.body.appendChild(tip);
 
-      var b = el.getBoundingClientRect();
-      var t = tip.getBoundingClientRect();
-      if (pos === 'top') {
-        tip.style.top = (b.top - t.height) + window.pageYOffset + 'px';
-        tip.style.left = (b.left + b.width / 2 - t.width / 2) + window.pageXOffset + 'px';
-      } else if (pos === 'start' || pos === 'end') {
-        var rtl = getComputedStyle(el).direction === 'rtl';
-        /* start = 气泡在锚点的内联起点侧：LTR 靠左（右缘贴锚点左缘），
-           RTL 靠右（左缘贴锚点右缘） */
-        var x = (pos === 'start')
-          ? (rtl ? b.right : b.left - t.width)
-          : (rtl ? b.left - t.width : b.right);
-        tip.style.left = x + window.pageXOffset + 'px';
-        tip.style.top = (b.top + b.height / 2 - t.height / 2) + window.pageYOffset + 'px';
-      } else {
-        tip.style.top = (b.bottom + window.pageYOffset) + 'px';
-        tip.style.left = (b.left + b.width / 2 - t.width / 2) + window.pageXOffset + 'px';
-      }
+      layoutTip();
+      bindReposition();
       tip.style.visibility = '';       /* 交还给 CSS（data-state 控制显隐） */
       tip.setAttribute('data-state', 'open');
       live.textContent = text;
+    }
+
+    /* 🔴 0.27.13：定位收编成一个 layoutTip()（含视口边缘**翻转**与**钳制**），
+       并在开着期间跟随 scroll/resize **重定位**——此前是两条已知限制
+       （不翻转、不重定位，靠近视口边缘整块溢出、滚动后气泡留在原地）。
+       所有权状态机不参与定位：place() 只挪坐标，不动 owned。 */
+    function layoutTip() {
+      var b = el.getBoundingClientRect();
+      var t = tip.getBoundingClientRect();
+      var vw = document.documentElement.clientWidth;
+      var vh = document.documentElement.clientHeight;
+      var sy = window.pageYOffset || 0;
+      var sx = window.pageXOffset || 0;
+      var M = 8;                                   /* 视口最小边距 */
+      var p = pos;                                 /* 首选方位（attach 时解析） */
+
+      /* 翻转：首选侧放不下且对侧放得下 ⇒ 换对侧；两侧都放不下 ⇒ 保持并钳制 */
+      if (p === 'top' && b.top - t.height < M && b.bottom + t.height <= vh - M) p = 'bottom';
+      if (p === 'bottom' && b.bottom + t.height > vh - M && b.top - t.height >= M) p = 'top';
+
+      var top, left;
+      if (p === 'top' || p === 'bottom') {
+        left = b.left + b.width / 2 - t.width / 2;
+        top = (p === 'top') ? b.top - t.height : b.bottom;
+        /* 垂直钳制：上下都放不下（气泡比视口还高）时按边距贴边 */
+        top = Math.max(M, Math.min(top, vh - t.height - M));
+      } else {
+        var rtl = getComputedStyle(el).direction === 'rtl';
+        /* start = 气泡在锚点的内联起点侧：LTR 靠左（右缘贴锚点左缘），
+           RTL 靠右（左缘贴锚点右缘） */
+        left = (p === 'start')
+          ? (rtl ? b.right : b.left - t.width)
+          : (rtl ? b.left - t.width : b.right);
+        top = b.top + b.height / 2 - t.height / 2;
+        /* 水平翻转：start 放不下且 end 能放 ⇒ 换 end（反之亦然） */
+        if (p === 'start' && left < M && b.right + t.width <= vw - M) p = 'end';
+        if (p === 'end' && left + t.width > vw - M && b.left - t.width >= M) p = 'start';
+        left = (p === 'start')
+          ? (rtl ? b.right : b.left - t.width)
+          : (rtl ? b.left - t.width : b.right);
+        top = Math.max(M, Math.min(top, vh - t.height - M));
+      }
+      /* 水平钳制：两步翻转都不够时，贴边放（不再溢出视口） */
+      left = Math.max(M, Math.min(left, Math.max(M, vw - t.width - M)));
+
+      /* 类名跟着实际方位走：箭头方向由 CSS 类决定，翻了不换类 = 箭头指反 */
+      tip.className = 'tooltip ' + CLS[p];
+      tip.style.top = (top + sy) + 'px';
+      tip.style.left = (left + sx) + 'px';
+    }
+
+    /* 重定位：开着期间 scroll/resize → rAF 节流重贴。
+       scroll 挂捕获：锚点在嵌套滚动容器里时也要跟（宿主页面很常见）。
+       hide 时摘掉；锚点跟随是文档坐标（+pageOffset），滚动不改变相对位置，
+       重贴只是纠"锚点因滚动移动了"这一件事。 */
+    var repositionQueued = false;
+    function scheduleReposition() {
+      if (!open || repositionQueued) return;
+      repositionQueued = true;
+      var raf = (typeof window.requestAnimationFrame === 'function')
+        ? window.requestAnimationFrame.bind(window)
+        : function (fn) { setTimeout(fn, 80); };
+      raf(function () {
+        repositionQueued = false;
+        if (open) layoutTip();
+      });
+    }
+    function bindReposition() {
+      window.addEventListener('scroll', scheduleReposition, true);
+      window.addEventListener('resize', scheduleReposition);
+    }
+    function unbindReposition() {
+      window.removeEventListener('scroll', scheduleReposition, true);
+      window.removeEventListener('resize', scheduleReposition);
     }
 
     /* 收：所有权一并清空（Esc / 点外部 / 销毁 = 整体关掉） */
     function hide() {
       open = false;
       owned.hover = owned.focus = owned.click = false;
+      unbindReposition();
       tip.removeAttribute('data-state');
       live.textContent = '';
     }
@@ -407,6 +466,7 @@ var flDismissable = function (opts) {
       el.removeEventListener('mouseenter', onMouseEnter);
       el.removeEventListener('mouseleave', onMouseLeave);
       el.removeEventListener('click', onClick);
+      unbindReposition();   /* 开着时销毁：重定位监听也必须摘 */
       dismiss.destroy();
       if (prevDescribed) el.setAttribute('aria-describedby', prevDescribed);
       else el.removeAttribute('aria-describedby');

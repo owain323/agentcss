@@ -50,7 +50,7 @@
 | 标签页 | `03-patterns/tabs/tabs.css` | 181 | **必需 321** (`tabs.js`) | 同层级内容切换就要 |
 | 折叠面板 | `03-patterns/accordion/accordion.css` | 453 | **必需 389** (`accordion.js`) | 长表单分段就要 |
 | 动作菜单 | `03-patterns/dropdown/dropdown.css` | 135 | **必需 600** (`dropdown.js`) | 要一组动作（新建 / 导出 / 删除）就要 |
-| 文字提示 | `03-patterns/tooltip/tooltip.css` | 94 | **必需 440** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
+| 文字提示 | `03-patterns/tooltip/tooltip.css` | 94 | **必需 500** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
 | 分页 | `03-patterns/pagination/pagination.css` | 193 | **必需 432** (`pagination.js`) | 数据多到要翻页就要 |
 | 树形 | `03-patterns/tree/tree.css` | 122 | **必需 539** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
 | 侧边抽屉 | `03-patterns/drawer/drawer.css` | 145 | **必需 520** (`drawer.js`) | 要从侧边滑出面板就要 |

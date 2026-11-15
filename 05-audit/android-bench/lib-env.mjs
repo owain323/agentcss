@@ -33,7 +33,7 @@ const ANDROID_BENCH_ROOT = process.env.ANDROID_BENCH;
    'dvh-viewport' 'run-gate' 'old-engine' 三个兄弟脚本（观测项 / 手动门禁 / 老引擎）也在这里维护 */
 if (!ANDROID_BENCH_ROOT) {
   console.error('[android-bench] 请设 ANDROID_BENCH 环境变量指向台子根目录（内含 sdk/platform-tools/adb.exe）。'
-    + ' 例（Git Bash）：export ANDROID_BENCH=台子根目录（内含 sdk/）');
+    + ' 例：ANDROID_BENCH=<台子根目录>（其下应有 sdk/platform-tools/adb.exe）');
   process.exit(2);
 }
 
@@ -45,9 +45,9 @@ const { chromium } = require('playwright');
 
 export { chromium };
 
-export const ADB_EXE = '<台子根目录>/sdk/platform-tools/adb.exe';
-export const RESULTS_DIR = '<台子根目录>/results';
-export const REPORT_PATH = path.join(RESULTS_DIR, 'report.json');
+export const ADB_EXE = ANDROID_BENCH_ROOT + '/sdk/platform-tools/adb.exe';
+export const RESULTS_DIR = ANDROID_BENCH_ROOT + '/results';
+export const REPORT_PATH = RESULTS_DIR + '/report.json';
 export const BASE_URL = 'http://localhost:8000';
 export const CDP_URL = 'http://127.0.0.1:9222';
 
@@ -69,8 +69,10 @@ export function isDirectRun(callerModuleUrl) {
 /* ---------------------------------------------------------------------------
  * adb：execSync 封装。返回 { ok, out }；allowFail=true 时失败不抛（只记文本）。
  * ------------------------------------------------------------------------- */
+/* 🔴 多台并存时锁定 serial（ANDROID_SERIAL 显式指定 > 第一台 device） */
+let SERIAL = process.env.ANDROID_SERIAL || null;
 export function adb(args, { timeoutMs = 20000, allowFail = false } = {}) {
-  const line = `"${ADB_EXE}" ${args}`;
+  const line = `"${ADB_EXE}" ${SERIAL ? "-s " + SERIAL + " " : ""}${args}`;
   let out;
   try {
     out = execSync(line, { encoding: 'utf8', timeout: timeoutMs, windowsHide: true });
@@ -87,10 +89,12 @@ export function adb(args, { timeoutMs = 20000, allowFail = false } = {}) {
 /* 确认至少一台状态为 device 的设备；返回设备序列号数组（写进报告 meta） */
 export function ensureDevice() {
   const r = adb('devices');
+  /* 多台并存时锁定 serial（安卓台可能同时有 bench35 与 bench28） */
   const ready = r.out
     .split(/\r?\n/)
     .slice(1)
     .filter((l) => /\tdevice\s*$/.test(l));
+  if (ready.length && !SERIAL) SERIAL = ready[0].split('\t')[0].trim();
   if (!ready.length) {
     throw new Error(
       '没有状态为 device 的 Android 设备。adb devices 输出：\n    ' +
@@ -100,8 +104,6 @@ export function ensureDevice() {
   }
   return ready.map((l) => l.split('\t')[0].trim());
 }
-
-/* adb reverse tcp:8000 tcp:8000，并用 reverse --list 核实 */
 export function ensureReverse() {
   adb('reverse tcp:8000 tcp:8000');
   const list = adb('reverse --list');

@@ -119,9 +119,11 @@ Esc / 点外部 / 焦点归位都走 dismissable + focus-return 核，
 
 | 限制 | 含义 | 现在的行为 |
 |---|---|---|
-| `position:no-flip` | 定位不做视口避让 | 靠视口边缘时气泡会被裁掉一角，不自动翻转 |
-| `position:no-reposition` | 打开后不跟随滚动 / 改尺寸重算 | 滚动页面时气泡留在原坐标，与锚点脱开 |
 | `css-sibling:manual` | 手写兄弟结构是纯 CSS 路径，没有 JS | 只有 hover / focus-visible 驱动，Esc / 点外部关不掉 —— 要完整行为请用 `Tooltip.attach()` |
+
+已还清的两条（2026-11-16）：`position:no-flip`（视口边缘自动翻转 +
+水平垂直钳制）与 `position:no-reposition`（开着期间 scroll/resize
+实时重贴，捕获嵌套滚动容器）。判据见 tooltip-check 的「右缘翻转」一条。
 
 ## 反例
 

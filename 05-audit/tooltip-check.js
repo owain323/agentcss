@@ -149,6 +149,43 @@ const REPO = path.resolve(__dirname, '..');
          ⚠️ 为什么必须**在真浏览器里量**：
             读源码只能知道"类名对不对"，知道不了"这条声明有没有被渲染出来"。
             计算样式是浏览器给的，不是我推断的。 */
+      /* ⑦ 边缘翻转（0.27.13）：靠右缘时 'right' 放不下 ⇒ 气泡翻到锚点左侧，
+         箭头（::after 有色边）跟着指向锚点。反向控制：把翻转逻辑禁用必须红。 */
+      '右缘翻转：right 放不下翻到左侧且箭头仍指向锚点': async (p) => {
+        const r = await p.evaluate(() => {
+          var box = document.createElement('div');
+          box.setAttribute('dir', 'ltr');
+          box.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999';
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = 'edge';
+          btn.style.cssText = 'position:absolute;top:120px;left:330px;' +
+                              'width:50px;height:24px';
+          box.appendChild(btn);
+          document.body.appendChild(box);
+          window.Tooltip.attach(btn, 'probe-edge', 'right');
+          btn.click();
+          var tips = document.querySelectorAll('.tooltip[data-state="open"]');
+          var tip = tips[tips.length - 1];
+          if (!tip) { box.remove(); return { err: '气泡没弹出' }; }
+          var vw = document.documentElement.clientWidth;
+          var tr = tip.getBoundingClientRect();
+          var br = btn.getBoundingClientRect();
+          var cs = getComputedStyle(tip, '::after');
+          var out = {
+            cls: tip.className,
+            bubbleInside: tr.left >= 0 && tr.right <= vw,
+            arrowPointsToAnchor: cs.borderLeftColor !== 'rgba(0, 0, 0, 0)',
+            detail: 'bubble ' + Math.round(tr.left) + '..' + Math.round(tr.right) +
+                    ' vw=' + vw + ' cls=' + tip.className,
+          };
+          box.remove();
+          return out;
+        });
+        return { ok: r.bubbleInside === true && r.arrowPointsToAnchor === true,
+                 note: r.err || r.detail };
+      },
+
       '左右方位的小三角真的画出来了（含 RTL）': async (p) => {
         const r = await p.evaluate(() => {
           function one(dir, place) {
@@ -159,7 +196,10 @@ const REPO = path.resolve(__dirname, '..');
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.textContent = 'p';
-            btn.style.cssText = 'position:absolute;top:300px;left:300px;' +
+            /* 🔴 0.27.13 起有边缘翻转：按钮必须离左右缘足够远，
+               否则 place() 会合法地翻到对侧，箭头期望就不成立了
+               （边缘翻转行为由新增的独立判据负责）。 */
+            btn.style.cssText = 'position:absolute;top:300px;left:80px;' +
                                 'width:60px;height:24px';
             box.appendChild(btn);
             document.body.appendChild(box);

@@ -134,7 +134,27 @@ async function main() {
       await sleep(60);
       await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     };
-    const state = () => page.evaluate(() => window.__ttState());
+    /* 🔴 软件渲染的模拟器上 opacity 过渡（120ms）会拖到 300-500ms 才稳定
+       ⇒ 固定 250ms 后量 opacity 是**量动画中途**，真机必假红
+       （实测 ③=0.81、④=0.02、⑨ 明明 data-state 正确）。
+       改成轮询：opacity 连续两次读数不变（或 900ms 超时）才算稳定态。
+       data-state 是契约信号（transition 结束的判据），opacity 是稳态复核。 */
+    const state = async () => {
+      let prev = null;
+      const deadline = Date.now() + 900;
+      let st = await page.evaluate(() => window.__ttState());
+      while (Date.now() < deadline) {
+        await sleep(120);
+        const next = await page.evaluate(() => window.__ttState());
+        if (next.opacity === st.opacity && next.state === st.state) {
+          st = next;
+          break;
+        }
+        prev = st; st = next;
+        if (prev && prev.opacity === next.opacity) break;
+      }
+      return st;
+    };
     const syntheticMouse = (type) => page.evaluate((t) => {
       document.getElementById('b1').dispatchEvent(
         new MouseEvent(t, { bubbles: false, cancelable: false, view: window })

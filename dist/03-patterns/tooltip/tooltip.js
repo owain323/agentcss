@@ -194,31 +194,80 @@ tip.style.visibility = 'hidden';
 tip.style.display = 'block';
 if (!tip.parentNode) document.body.appendChild(tip);
 
-var b = el.getBoundingClientRect();
-var t = tip.getBoundingClientRect();
-if (pos === 'top') {
-tip.style.top = (b.top - t.height) + window.pageYOffset + 'px';
-tip.style.left = (b.left + b.width / 2 - t.width / 2) + window.pageXOffset + 'px';
-} else if (pos === 'start' || pos === 'end') {
-var rtl = getComputedStyle(el).direction === 'rtl';
-
-var x = (pos === 'start')
-? (rtl ? b.right : b.left - t.width)
-: (rtl ? b.left - t.width : b.right);
-tip.style.left = x + window.pageXOffset + 'px';
-tip.style.top = (b.top + b.height / 2 - t.height / 2) + window.pageYOffset + 'px';
-} else {
-tip.style.top = (b.bottom + window.pageYOffset) + 'px';
-tip.style.left = (b.left + b.width / 2 - t.width / 2) + window.pageXOffset + 'px';
-}
+layoutTip();
+bindReposition();
 tip.style.visibility = '';
 tip.setAttribute('data-state', 'open');
 live.textContent = text;
 }
 
+function layoutTip() {
+var b = el.getBoundingClientRect();
+var t = tip.getBoundingClientRect();
+var vw = document.documentElement.clientWidth;
+var vh = document.documentElement.clientHeight;
+var sy = window.pageYOffset || 0;
+var sx = window.pageXOffset || 0;
+var M = 8;
+var p = pos;
+
+if (p === 'top' && b.top - t.height < M && b.bottom + t.height <= vh - M) p = 'bottom';
+if (p === 'bottom' && b.bottom + t.height > vh - M && b.top - t.height >= M) p = 'top';
+
+var top, left;
+if (p === 'top' || p === 'bottom') {
+left = b.left + b.width / 2 - t.width / 2;
+top = (p === 'top') ? b.top - t.height : b.bottom;
+
+top = Math.max(M, Math.min(top, vh - t.height - M));
+} else {
+var rtl = getComputedStyle(el).direction === 'rtl';
+
+left = (p === 'start')
+? (rtl ? b.right : b.left - t.width)
+: (rtl ? b.left - t.width : b.right);
+top = b.top + b.height / 2 - t.height / 2;
+
+if (p === 'start' && left < M && b.right + t.width <= vw - M) p = 'end';
+if (p === 'end' && left + t.width > vw - M && b.left - t.width >= M) p = 'start';
+left = (p === 'start')
+? (rtl ? b.right : b.left - t.width)
+: (rtl ? b.left - t.width : b.right);
+top = Math.max(M, Math.min(top, vh - t.height - M));
+}
+
+left = Math.max(M, Math.min(left, Math.max(M, vw - t.width - M)));
+
+tip.className = 'tooltip ' + CLS[p];
+tip.style.top = (top + sy) + 'px';
+tip.style.left = (left + sx) + 'px';
+}
+
+var repositionQueued = false;
+function scheduleReposition() {
+if (!open || repositionQueued) return;
+repositionQueued = true;
+var raf = (typeof window.requestAnimationFrame === 'function')
+? window.requestAnimationFrame.bind(window)
+: function (fn) { setTimeout(fn, 80); };
+raf(function () {
+repositionQueued = false;
+if (open) layoutTip();
+});
+}
+function bindReposition() {
+window.addEventListener('scroll', scheduleReposition, true);
+window.addEventListener('resize', scheduleReposition);
+}
+function unbindReposition() {
+window.removeEventListener('scroll', scheduleReposition, true);
+window.removeEventListener('resize', scheduleReposition);
+}
+
 function hide() {
 open = false;
 owned.hover = owned.focus = owned.click = false;
+unbindReposition();
 tip.removeAttribute('data-state');
 live.textContent = '';
 }
@@ -287,6 +336,7 @@ el.removeEventListener('blur', onBlur);
 el.removeEventListener('mouseenter', onMouseEnter);
 el.removeEventListener('mouseleave', onMouseLeave);
 el.removeEventListener('click', onClick);
+unbindReposition();
 dismiss.destroy();
 if (prevDescribed) el.setAttribute('aria-describedby', prevDescribed);
 else el.removeAttribute('aria-describedby');

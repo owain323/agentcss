@@ -1,8 +1,25 @@
-/* MANUAL-ONLY: 老引擎验证需 bench28（API28 + Chrome 69）台子，由 run-gate 手动触发
- * 老引擎验证（裸 CDP，兼容 Chrome 69 的旧协议——Playwright connectOverCDP
+/* 老引擎验证（裸 CDP，兼容 Chrome 69 的旧协议——Playwright connectOverCDP
    会发 Chrome 69 不认识的 Browser.setDownloadBehavior ⇒ 连接被断）。
    判据：页面渲染、零 JS 错误、tooltip 触摸开关（ES5 路径在 2018 年引擎上）。 */
+/* MANUAL-ONLY: 老引擎验证需 bench28（API28 镜像自带 Chrome 69）台子，
+   由 run-gate 手动触发；裸 CDP（Node 原生 WebSocket）绕过 Playwright
+   对旧协议的不兼容（connectOverCDP 发 Chrome 69 不认识的
+   Browser.setDownloadBehavior ⇒ 连接被断）。 */
 import { writeFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+const ADB = (process.env.ANDROID_BENCH || 'D:/android-bench') + '/sdk/platform-tools/adb.exe';
+const serial = process.env.ANDROID_SERIAL || (() => {
+  try {
+    const out = execSync('"' + ADB + '" devices').toString();
+    const l = out.split(/\r?\n/).filter(x => /\tdevice\s*$/.test(x))[0];
+    return l ? l.split('	')[0].trim() : null;
+  } catch (e) { return null; }
+})();
+if (serial) {
+  /* 🔴 转发必须带 -s：多台并存时裸 forward 会报 more than one device，
+     留着旧转发的话 CDP 会连到错误的那台（实测连成 Chrome 124）。 */
+  execSync('"' + ADB + '" -s ' + serial + ' forward tcp:9222 localabstract:chrome_devtools_remote');
+}
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const CDP = 'http://127.0.0.1:9222';
 const URL_TO_TEST = 'http://localhost:8000/03-patterns/tooltip/demo.html';
