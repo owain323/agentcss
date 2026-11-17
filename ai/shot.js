@@ -37,6 +37,7 @@ var path = require('path');
 var { pathToFileURL } = require('url');
 var pdf = require('./pdf.js');
 var connect = require('./cdp.js').connect;
+var computeShotVerdict = require('./shot-verdict.js').computeShotVerdict;
 
 var DEFAULT_WIDTHS = [1440];
 var DEFAULT_HEIGHT = 900;
@@ -51,21 +52,36 @@ var PROBE_JS = [
   '  var d = document.documentElement;',
   '  var vw = d.clientWidth;',
   '  var over = [];',
+  '  var overItems = [];',
   '  var all = document.querySelectorAll("body *");',
   '  for (var i = 0; i < all.length && over.length < 40; i++) {',
   '    var e = all[i], r = e.getBoundingClientRect();',
   '    if (r.width === 0 && r.height === 0) continue;',
   '    if (r.right > vw + 1 || r.left < -1) {',
   '      var cls = typeof e.className === "string" ? e.className : "";',
-  '      over.push(e.tagName.toLowerCase() + (cls ? "." + cls.trim().split(/\\s+/).join(".") : "")',
-  '        + " @" + Math.round(r.right));',
+  '      var tag = e.tagName.toLowerCase() + (cls ? "." + cls.trim().split(/\s+/).join(".") : "")',
+  '        + " @" + Math.round(r.right);',
+  '      /* P0-judge 判定语义必须在浏览器侧做：溢出元素是否在 overflow:auto/scroll',
+  '         的祖先内 = 设计内滚动（warn）与真溢出（fail）的唯一分界。',
+  '         在 Node 侧拿类名猜 = 假绿。 */',
+  '      var inScroll = false;',
+  '      for (var p = e.parentElement; p; p = p.parentElement) {',
+  '        var cs = getComputedStyle(p);',
+  '        var ox = cs.overflowX, oy = cs.overflowY;',
+  '        if (ox === "auto" || ox === "scroll" || oy === "auto" || oy === "scroll") { inScroll = true; break; }',
+  '        if (p === document.body) break;',
+  '      }',
+  '      over.push(tag);',
+  '      if (overItems.length < 40) overItems.push({ tag: tag, inScroll: inScroll });',
   '    }',
   '  }',
   '  return JSON.stringify({',
   '    viewport: vw, scrollWidth: d.scrollWidth, scrollHeight: d.scrollHeight,',
-  '    overflow: over.slice(0, 6), overflowCount: over.length',
+  '    pageOverflow: d.scrollWidth > vw + 1,',
+  '    overflow: over.slice(0, 6), overflowCount: over.length,',
+  '    overflowItems: overItems',
   '  });',
-  '})()'
+  '})();',
 ].join('\n');
 
 function slugWidth(w) { return String(w); }
@@ -156,7 +172,8 @@ async function shoot(o) {
 
     for (var w = 0; w < widths.length; w++) {
       if (Date.now() > deadline) {
-        return { ok: false, code: 'timeout', message: '超出时间预算 ' + budget + 'ms', chrome: chrome.path, shots: shots };
+        return { ok: false, code: 'timeout', message: '超出时间预算 ' + budget + 'ms', chrome: chrome.path, shots: shots,
+          verdict: { status: 'fail', reasons: [{ code: 'capture-incomplete', severity: 'fail', where: 'w' + widths[w], detail: '超出时间预算——部分宽度没截，判定不可信' }], summary: '采集不完整，判定不可信' } };
       }
       var width = widths[w];
       var w0 = Date.now();
@@ -169,7 +186,8 @@ async function shoot(o) {
       var nav = await cdp.send('Page.navigate', { url: remote ? o.src : pathToFileURL(o.src).href }, sid);
       if (nav && nav.errorText) {
         return { ok: false, code: 'render',
-          message: '页面加载失败（' + nav.errorText + '）：' + o.src, chrome: chrome.path, shots: shots };
+          message: '页面加载失败（' + nav.errorText + '）：' + o.src, chrome: chrome.path, shots: shots,
+          verdict: { status: 'fail', reasons: [{ code: 'capture-incomplete', severity: 'fail', where: 'w' + widths[w], detail: '页面加载失败——判定不可信' }], summary: '采集不完整，判定不可信' } };
       }
       await loaded;
       if (o.wait) await new Promise(function (r) { setTimeout(r, o.wait); });
@@ -212,14 +230,21 @@ async function shoot(o) {
         scrollWidth: info.scrollWidth === undefined ? null : info.scrollWidth,
         scrollHeight: info.scrollHeight === undefined ? null : info.scrollHeight,
         overflow: info.overflow || [],
-        overflowCount: info.overflowCount || 0
+        overflowCount: info.overflowCount || 0,
+        captureOk: info.viewport !== undefined,
+        pageOverflow: info.pageOverflow === true,
+        overflowItems: info.overflowItems || []
       });
     }
 
+    var verdict = computeShotVerdict(shots, consoleErrors);
+    var verdictMod = require('./shot-verdict.js');
     return {
       ok: true, code: null, message: null, chrome: chrome.path,
       scale: scale, wait: o.wait === undefined ? DEFAULT_WAIT : o.wait,
-      shots: shots, consoleErrors: consoleErrors, ms: Date.now() - t0
+      shots: shots, consoleErrors: consoleErrors,
+      verdict: verdict, summary: verdictMod.summarize(verdict, shots.length),
+      ms: Date.now() - t0
     };
   } catch (e) {
     return { ok: false, code: 'render', message: String(e && e.message || e), chrome: chrome.path, shots: shots };

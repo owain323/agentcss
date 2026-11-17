@@ -1209,6 +1209,12 @@ function cmdShot(args) {
       process.exitCode = 0;
       return;
     }
+    /* 🔴 0.27.15：verdict 是 agent 的行动信号（结构化判读），
+       这行是给人类的结论——修什么、要不要修，先看这里再看明细。 */
+    if (r.verdict && r.verdict.summary) {
+      var mark = r.verdict.status === 'pass' ? 'OK  ' : r.verdict.status.toUpperCase() + ' ';
+      process.stdout.write('  ' + mark + '判定：' + r.verdict.summary + '\n');
+    }
     r.shots.forEach(function (s) {
       process.stdout.write('  OK  ' + s.out + '\n');
       process.stdout.write('      ' + s.png.width + '×' + s.png.height + ' px'

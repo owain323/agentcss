@@ -1218,6 +1218,8 @@ run "budget-self" @serial $PY 05-audit/budget-selftest.py
 #   ime-combobox-full.mjs a11y-select.mjs dvh-viewport.mjs lib-env.mjs run-gate.sh
 run "ai-surface-budget"      $PY 05-audit/ai-surface-budget-gate.py
 run "ai-surface-budget-self" @serial $PY 05-audit/ai-surface-budget-gate.py --selftest
+run "shot-verdict-self" @static node ai/shot-verdict.js --selftest
+run "shot-verdict" @component node 05-audit/shot-verdict-check.js
 run "coverage"    $PY 05-audit/coverage-gate.py
 # 反向控制：孤儿类 / 幻影类 / 未登记重名 / 登记过期 / 水位上涨 五条判据
 # 都必须能红。喂的是合成数据，所以不需要碰真仓库。
