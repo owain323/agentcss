@@ -465,6 +465,7 @@ ASSET_DESC = {
     'model-viewer': '惰性加载的 3D 模型查看器',
     'scientific-plot': '二维科学绘图：坐标轴 / 误差棒 / 置信区间带 / 对数轴',
     'sparkline': '迷你趋势线，没有坐标轴的走势提示',
+    'icons': '35 个 Lucide 官方 SVG 图标（icon-forge 产出，sha256 溯源；AI 不碰图形）',
 }
 # 09-assets/README.md 里的目录表也由本脚本生成 —— 2026-10-10 收口时发现：
 # 那份 README 的标题还写着「素材（图标）」，而这一层早就是 5 个图表能力，

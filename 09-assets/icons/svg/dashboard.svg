@@ -1,0 +1,7 @@
+<!-- 来源: lucide-static layout-dashboard.svg · ISC (lucide-static v1.73.0) · 原样搬运，sha256:ee8e14bdb897eed5 -->
+<svg role="img" aria-label="dashboard" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect width="7" height="9" x="3" y="3" rx="1" />
+  <rect width="7" height="5" x="14" y="3" rx="1" />
+  <rect width="7" height="9" x="14" y="12" rx="1" />
+  <rect width="7" height="5" x="3" y="16" rx="1" />
+</svg>

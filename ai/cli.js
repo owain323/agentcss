@@ -599,6 +599,72 @@ function pitfallsFor(id) {
   return outList;
 }
 
+/* 🔴 图标查找：manifest 是唯一真值（icon-forge 产出，sha256 溯源到 Lucide 官方）。
+   查询词匹配 name / label / keywords / group 四字段。
+   与 enumFlag 同一哲学：拼错查询词不该静默返回 0 条，
+   但图标名是**开放集合**（Lucide 有 2359 个，我们选了 35 个放进来），
+   没匹配时给出提示而不是 die —— 用户可能只是换了个说法。 */
+function cmdIcons(args) {
+  var manifestPath = path.join(ROOT, '09-assets', 'icons', 'manifest.json');
+  var manifest = readJSON(manifestPath);
+  var icons = manifest.icons || [];
+  var total = icons.length;
+  var q = flag('query', flag('_query', null));
+  var grp = flag('group', null);
+
+  /* 位置参数兜底：`ai icons 利润` = `ai icons --query=利润` */
+  var positional = args.filter(function (a) { return a.charAt(0) !== '-'; });
+  if (!q && positional.length) q = positional[0];
+
+  if (grp) {
+    var gids = [];
+    (manifest.groups || []).forEach(function (g) { gids.push(g.id || g.groupId); });
+    if (gids.indexOf(grp) < 0) {
+      die('未知分组：' + grp + '（可用：' + gids.join(' / ') + '）');
+    }
+  }
+
+  if (q) {
+    var needle = String(q).toLowerCase();
+    icons = icons.filter(function (ic) {
+      var fields = [ic.name, ic.label, ic.group].concat(ic.keywords || []);
+      return fields.some(function (f) {
+        return f && String(f).toLowerCase().indexOf(needle) >= 0;
+      });
+    });
+  }
+  if (grp) {
+    icons = icons.filter(function (ic) { return ic.groupId === grp || ic.group === grp; });
+  }
+
+  if (isJson()) {
+    out({
+      count: icons.length,
+      total: total,
+      source: manifest.source || null,
+      usage: '09-assets/icons/svg/<source>.svg（<img> 引用或 inline SVG；stroke=currentColor）',
+      icons: icons
+    });
+    process.exit(0);
+  }
+
+  process.stdout.write('  === 图标（' + icons.length + ' / ' + total +
+    ' · 来源 ' + (manifest.source || 'Lucide') + '）===\n\n');
+  if (!icons.length) {
+    process.stdout.write('  无匹配。用法：ai icons <查询词>，' +
+      '或 ai icons --group=<groupId>。\n');
+    return;
+  }
+  icons.forEach(function (ic) {
+    var srcFile = ic.source || ic.name;
+    process.stdout.write('  ' + (ic.label || ic.name) + '  (' + srcFile + '.svg)\n');
+    if (ic.keywords && ic.keywords.length) {
+      process.stdout.write('    关键词: ' + ic.keywords.join('、') + '\n');
+    }
+  });
+  process.stdout.write('\n  用法：<img src="…/icons/svg/<source>.svg" width="24" height="24" alt="…">\n');
+}
+
 function cmdPitfalls(args) {
   var doc = pitfallsDoc();
   var list = (doc.pitfalls || []).slice();
@@ -1260,6 +1326,7 @@ var FLAGS = {
   profile: [],
   capabilities: [],
   pitfalls: ['component', 'scope', 'tag'],
+  icons: ['query', 'group'],
   pdf: ['out', 'paper', 'margin', 'max-pages', 'wait-ms', 'ready-selector',
     'chrome', 'network-policy'],
   scaffold: ['out', 'css-prefix'],
@@ -1289,6 +1356,7 @@ var CMDS = {
   profile: cmdProfile,
   capabilities: cmdCapabilities,
   pitfalls: cmdPitfalls,
+  icons: cmdIcons,
   pdf: cmdPdf,
   scaffold: cmdScaffold,
   shot: cmdShot
@@ -1311,6 +1379,7 @@ function usage() {
       '  ai tokens       [--set=light|dark] [--json]\n' +
       '  ai tree         [--set=light|dark] [--cat=color] [--json]\n' +
       '  ai pitfalls     [--component=<id>] [--scope=component|layout|process|writing] [--tag=<t>] [--json]\n' +
+      '  ai icons        [查询词] [--group=<groupId>] [--json]\n' +
       '  ai profile      [--json]   列出三档及其差异\n' +
       '  ai capabilities [--json]   列出可协商的能力\n' +
       '  ai pdf          <页面.html|URL> --out <file.pdf> [--paper=a4|letter|a5|a3|legal]\n' +

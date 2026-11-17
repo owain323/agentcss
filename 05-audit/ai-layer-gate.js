@@ -341,6 +341,7 @@ try {
     ['patch', [fDoc, fPat]],
     ['components', []], ['assets', []], ['tokens', []], ['tree', []],
     ['profile', []], ['capabilities', []], ['pitfalls', ['--component=table']],
+    ['icons', []],
     /* ⚠️ 文件名带 pid：`scaffold` 拒绝覆盖已存在的文件（防手滑），
        固定文件名会让**第二次运行**起就红 —— 一道只在干净机器上绿的门禁，
        等于把"跑过一遍"变成失败原因。 */

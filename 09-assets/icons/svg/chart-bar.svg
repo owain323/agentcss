@@ -1,0 +1,7 @@
+<!-- 来源: lucide-static chart-column.svg · ISC (lucide-static v1.73.0) · 原样搬运，sha256:6f4df2b4dac51ce2 -->
+<svg role="img" aria-label="chart-bar" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+  <path d="M18 17V9" />
+  <path d="M13 17V5" />
+  <path d="M8 17v-3" />
+</svg>

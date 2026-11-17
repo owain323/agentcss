@@ -1,7 +1,10 @@
 # 素材（图表与可视化）
 
 > 这一层放**按需取用**的可视化能力 —— 用哪个拿哪个，互不牵连。
-> 本库**不内置图标**；需要图形时怎么加，见文末。
+> 本库内置 **35 个 Lucide 官方 SVG 图标**（`09-assets/icons/svg/`，ISC 许可，
+> sha256 逐个溯源到 lucide-static v1.73.0）。生成管线在 icon-forge（AI 不碰图形），
+> 本目录只放消费产出。原先"不内置"的立场在 0.27.16 变更——
+> 理由与判据见 `05-audit/CHANGELOG` 或下方「图标」一节。
 
 ## 这一层有什么
 
@@ -10,6 +13,7 @@
 |---|---|
 | `09-assets/bar/` | 柱状图，含图表规范的裁剪铁律 |
 | `09-assets/echarts-adapter/` | 把令牌喂给 ECharts，按需引入；本库不含 ECharts |
+| `09-assets/icons/` | 35 个 Lucide 官方 SVG 图标（icon-forge 产出，sha256 溯源；AI 不碰图形） |
 | `09-assets/model-viewer/` | 惰性加载的 3D 模型查看器 |
 | `09-assets/scientific-plot/` | 二维科学绘图：坐标轴 / 误差棒 / 置信区间带 / 对数轴 |
 | `09-assets/sparkline/` | 迷你趋势线，没有坐标轴的走势提示 |
@@ -43,10 +47,26 @@ getComputedStyle(el.closest('[data-theme]') || document.documentElement)
 （`theme-toggle.js` 只把 `data-theme-current` 写在 `:root` 上，容器永远读不到）。
 `theme-scope-gate` 的 ⑥ 会检查这一点：新加的 JS 资产若从根读颜色，门禁直接红。
 
-## 图标：本库不内置，需要就自己内联
+## 图标：内置 35 个 Lucide 官方 SVG（0.27.16 起）
 
-要"关闭""警告""箭头"这类图形时，**一律内联 SVG** ——
-不引图标字体、不引图片文件。三条都是硬收益：
+0.27.15 之前本库不内置图标（没好来源、怕 AI 画歪）。0.27.16 起 icon-forge
+管线就位（Lucide 官方 SVG 原样搬运 + sha256 溯源 + 反向控制），
+内置从"风险"变成了"有真值源的资产"。
+
+要"关闭""警告""箭头"这类图形时，两种方式：
+
+**内联 SVG**（原推荐，仍然有效）——
+自己找 SVG 粘进来。零外部请求、currentColor 自动跟随暗色、
+描边粗细随字号变。适合只要 1~2 个图形的场景。
+
+**用内置 35 个**（0.27.16 起）——
+`<img src="…/icons/svg/chart-line.svg" width="24" height="24" alt="…">`。
+文件在 `09-assets/icons/svg/`，manifest.json 有 sha256 溯源。
+适合需要一批风格统一的图标、且不想自己找/校验的场景。
+
+三条硬收益（零外部请求、currentColor、描边随字号）对 **inline 方式** 仍然成立；
+`<img>` 方式丢掉 currentColor 但零 JS 依赖。
+反例（仍然成立）：
 
 - **零外部请求** —— 不能外链的页面（精简档）依然能用
 - 颜色随 `currentColor`，**暗色模式自动跟随**

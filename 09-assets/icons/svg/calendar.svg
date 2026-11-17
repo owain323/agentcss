@@ -1,0 +1,7 @@
+<!-- 来源: lucide-static calendar.svg · ISC (lucide-static v1.73.0) · 原样搬运，sha256:b8d1b9dc8db2849d -->
+<svg role="img" aria-label="日历" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M8 2v3" />
+  <path d="M16 2v3" />
+  <rect x="3" y="3" width="18" height="18" rx="2" />
+  <path d="M3 9h18" />
+</svg>

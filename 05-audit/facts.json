@@ -1,6 +1,6 @@
 {
   "cli": {
-    "subcommands": 14
+    "subcommands": 15
   },
   "components": {
     "byMaturity": {
@@ -35,5 +35,5 @@
     "total": 12
   },
   "schemaVersion": 1,
-  "version": "0.27.15"
+  "version": "0.27.16"
 }

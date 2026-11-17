@@ -90,7 +90,7 @@ echo "  OK    tarball 内无内部文档"
 # ⚠️ 为什么不改 files 改成显式排除：白名单目录已经很长，
 #    再加一串 `!` 排除会让"包里该有什么"更难读。
 #    ⇒ 保持白名单简洁，用**判据**守住。
-JUNK=$(cd "$PKG" && find . \( -name '*baseline*.json' -o -name 'manifest.json' \
+JUNK=$(cd "$PKG" && find . \( -name '*baseline*.json' -o -name 'manifest.json' -not -path './09-assets/icons/*' \
         -o -path '*/fixtures/*' -o -name '*selfcheck*' \) 2>/dev/null \
         | tr '\n' ' ')
 if [ -n "$(echo "$JUNK" | tr -d ' ')" ]; then

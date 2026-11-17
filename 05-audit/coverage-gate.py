@@ -260,6 +260,14 @@ def components():
                            if os.path.basename(norm(f)).lower() != 'readme.md']
             if not has_content:
                 continue
+            # 🔴 纯资产目录（只有 SVG/图片/JSON，无 CSS/JS）不在覆盖率范围内
+            #    —— 覆盖率量的是 CSS 类与行为契约，纯资产没这些可量。
+            #    实测：09-assets/icons/ 只有 .svg 文件，把它当组件量
+            #    会报"没有契约保护"（但 icons 是纯资产，本来就没有契约）。 */
+            has_code = [f for f in glob.glob(os.path.join(p, '*'))
+                        if f.endswith(('.css', '.js', '.mjs'))]
+            if not has_code:
+                continue
             nm = os.path.basename(norm(p))
             if nm in LAYOUT_PAGES:
                 continue          # 排版页，不是组件
