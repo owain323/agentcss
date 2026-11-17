@@ -304,6 +304,10 @@ var flDismissable = function (opts) {
        （不翻转、不重定位，靠近视口边缘整块溢出、滚动后气泡留在原地）。
        所有权状态机不参与定位：place() 只挪坐标，不动 owned。 */
     function layoutTip() {
+      /* 🔴 锚点已被移出 DOM（SPA 路由切换/框架卸载）：getBoundingClientRect
+         全是 0 ⇒ 气泡会被钳制到视口左上角"飞走"。锚点没了，提示就没有意义
+         ⇒ 直接整体收掉（与 focus-return 核同款 contains 判据，老 WebView 安全）。 */
+      if (!el || !document.contains(el)) { hide(); return; }
       var b = el.getBoundingClientRect();
       var t = tip.getBoundingClientRect();
       var vw = document.documentElement.clientWidth;

@@ -202,6 +202,8 @@ live.textContent = text;
 }
 
 function layoutTip() {
+
+if (!el || !document.contains(el)) { hide(); return; }
 var b = el.getBoundingClientRect();
 var t = tip.getBoundingClientRect();
 var vw = document.documentElement.clientWidth;

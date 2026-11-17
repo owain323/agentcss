@@ -18,6 +18,16 @@
 
 ## [Unreleased]
 
+## [0.27.14] - 2026-11-17
+
+### Fixed
+
+- **tooltip 锚点被移出 DOM 时的"飞走"**：SPA 卸载/路由切换后仍开着的气泡，
+  layoutTip() 会把全零 rect 钳制到视口左上角。锚点没了提示就没有意义
+  ⇒ 整体收掉（与 focus-return 核同款 contains 判据）。
+
+---
+
 ## [0.27.13] - 2026-11-16
 
 ### TODO · 这一版改了什么
@@ -27,6 +37,12 @@
 ---
 
 ## [Unreleased]
+
+### Fixed
+
+- **tooltip 锚点被移出 DOM 时的"飞走"**：SPA 卸载/路由切换后仍开着的气泡，
+  layoutTip() 会把全零 rect 钳制到视口左上角。锚点没了提示就没有意义
+  ⇒ 整体收掉（与 focus-return 核同款 contains 判据）。
 
 ### Added
 
@@ -53,7 +69,7 @@
 
 ### Added
 
-- **安卓真机行为门禁入仓**（`05-audit/android-bench/`，27 项判据）：真·安卓 Chromium 上跑
+- **安卓真机行为门禁入仓**（`05-audit/android-bench/`，26 项命名判据）：真·安卓 Chromium 上跑
   三套契约——真触摸序列（tooltip 700ms 抑制窗、一次点按开/再点关、点外部/Esc/blur 关闭、
   所有权集合）、真 IME 合成（combobox 三层守卫：229 / 标志层 / isComposing，建议列表照常刷新）、
   真无障碍树（select 朗读「字段名+当前值」、tooltip live region）。桌面 Playwright 覆盖不到的
@@ -190,7 +206,7 @@
 
 ### Added
 
-- **安卓真机行为门禁入仓**（`05-audit/android-bench/`，27 项判据）：真·安卓 Chromium 上跑
+- **安卓真机行为门禁入仓**（`05-audit/android-bench/`，26 项命名判据）：真·安卓 Chromium 上跑
   三套契约——真触摸序列（tooltip 700ms 抑制窗、一次点按开/再点关、点外部/Esc/blur 关闭、
   所有权集合）、真 IME 合成（combobox 三层守卫：229 / 标志层 / isComposing，建议列表照常刷新）、
   真无障碍树（select 朗读「字段名+当前值」、tooltip live region）。桌面 Playwright 覆盖不到的

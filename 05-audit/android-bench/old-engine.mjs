@@ -7,7 +7,7 @@
    Browser.setDownloadBehavior ⇒ 连接被断）。 */
 import { writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-const ADB = (process.env.ANDROID_BENCH || 'D:/android-bench') + '/sdk/platform-tools/adb.exe';
+const ADB = (process.env.ANDROID_BENCH) + '/sdk/platform-tools/adb.exe';
 const serial = process.env.ANDROID_SERIAL || (() => {
   try {
     const out = execSync('"' + ADB + '" devices').toString();

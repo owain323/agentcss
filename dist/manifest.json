@@ -13,8 +13,8 @@
   ],
   "totals": {
     "sourceFiles": 81,
-    "sourceBytes": 1062624,
-    "distGzip": 127618
+    "sourceBytes": 1062994,
+    "distGzip": 127634
   },
   "files": [
     {
@@ -911,15 +911,15 @@
     },
     {
       "source": "03-patterns/tooltip/tooltip.js",
-      "sourceSha256": "ad72d28dc874cd49654f2f2f536ab6f8556ae1e83ad6627cf38474d13fa1f60a",
-      "sourceBytes": 22505,
-      "sourceGzip": 9015,
+      "sourceSha256": "fed81cbde8eb48d8cc16de6281a5bf34abd82d359e20f5d9aad3dc3b118511ad",
+      "sourceBytes": 22875,
+      "sourceGzip": 9149,
       "outputs": [
         {
           "path": "dist/03-patterns/tooltip/tooltip.js",
           "kind": "stripped",
-          "bytes": 9179,
-          "gzip": 2964
+          "bytes": 9235,
+          "gzip": 2980
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

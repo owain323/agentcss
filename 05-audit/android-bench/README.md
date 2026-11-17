@@ -16,7 +16,7 @@ CI 是 Linux（无模拟器、无 Chrome APK）——挂进 check-all 任何 MOD
 | 页面服务 | 宿主 8000 端口跑 `05-audit/http-serve.py`（仓库根启动） |
 | 网络 | `adb reverse tcp:8000 tcp:8000` 由脚本自动做 |
 
-## 判据（27 项，分布三个套件）
+## 判据（26 项命名判据 + 前置/诊断条目，分布三个套件）
 
 ### touch-tooltip（11 项 · CDP `Input.dispatchTouchEvent` 真触摸）
 
