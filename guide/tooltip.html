@@ -58,6 +58,7 @@
 </tbody>
 </table></div>
 <p><code>start</code> / <code>end</code> 是<strong>内联轴</strong>方位（随书写方向镜像）；<code>left</code> / <code>right</code> 是<strong>物理</strong>方位（RTL 下仍是物理左 / 右，不镜像）。</p>
+<p><strong>RTL 的两件事引擎替你做</strong>（0.27.17）： ① 气泡挂在 <code>body</code> 下，自身继承的是 body 的书写方向 —— 引擎在定位时把锚点的 <code>direction</code> 写到气泡上，<code>--inset-inline-*</code> 的逻辑属性才会按锚点的方向渲染，小三角才真的指向锚点（实测过：不写这层，RTL 箭头永远背向锚点）； ② 视口边缘翻转的溢出判据跟随方向 —— RTL 的 <code>start</code> 在锚点右侧，溢出判&quot;右缘越界&quot;而不是 LTR 的 <code>left &lt; M</code>。<code>tooltip-check</code> 两条判据（⑦ LTR / ⑦b RTL）各守一边。</p>
 <p>类名说的是<strong>气泡的位置</strong>，小三角一律指向锚点：</p>
 <div class="table" tabindex="0" role="region" aria-label="结构（JS 生成，不要手写）（可横向滚动）"><table>
 <thead><tr>
@@ -137,7 +138,7 @@
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.27.16 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.27.17 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

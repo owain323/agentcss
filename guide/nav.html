@@ -82,27 +82,29 @@
 <p>&quot;窗口变宽就关掉&quot;的判据是<strong>汉堡按钮还在不在</strong>（<code>offsetParent !== null</code>），不是 <code>window.innerWidth &gt; 768</code>。CSS 里改一个断点值，写死数字的 JS 会<strong>静默错位</strong>。</p>
 <h3 id="s7">事件<a class="anchor" href="#s7" aria-label="本节直链">#</a></h3>
 <p><code>fl-nav-open</code> / <code>fl-nav-close</code>（<code>detail = { root }</code>）。自动初始化不接回调 —— 要收通知请听事件（与 <code>tabs.js</code> 同一条纪律）。</p>
+<h3 id="s8">销毁<a class="anchor" href="#s8" aria-label="本节直链">#</a></h3>
+<p><code>root.navInstance.destroy()</code>：关掉抽屉、摘掉全部监听，并<strong>回滚 init 时对作者 DOM 的两处越界写入</strong> —— JS 给列表补的 <code>tabindex=&quot;-1&quot;</code>、缺遮罩时自动建的 <code>.nav__scrim</code>。destroy 之后 root 回到&quot;只是一段普通标记&quot;的状态，重新 <code>new Nav(root)</code> 不会拿到上一实例留下的脏状态。</p>
 <hr>
-<h2 id="s8">目录高亮：<code>toc.js</code><a class="anchor" href="#s8" aria-label="本节直链">#</a></h2>
+<h2 id="s9">目录高亮：<code>toc.js</code><a class="anchor" href="#s9" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code class="language-js">Toc.init({ links: '#toc-list .toc__link', sections: 'main h2[id]' });</code></pre>
 <p>返回一个取消函数（解绑事件）。</p>
-<h3 id="s9">🔴 为什么不用 <code>IntersectionObserver</code>（实测到 bug）<a class="anchor" href="#s9" aria-label="本节直链">#</a></h3>
+<h3 id="s10">🔴 为什么不用 <code>IntersectionObserver</code>（实测到 bug）<a class="anchor" href="#s10" aria-label="本节直链">#</a></h3>
 <p>第一版用的是 <code>IntersectionObserver</code> + <code>rootMargin: '-10% 0px -70% 0px'</code>，靠 <code>seen[id] = isIntersecting</code> 增量维护当前节。</p>
 <p><strong>实测反馈&quot;导航不跟随文章移动&quot;。</strong> 根因：</p>
 <blockquote><p><strong>滚到两个 section 之间时，观察区里一个 section 都没有</strong><br>⇒ <code>seen</code> 全为 false ⇒ 不调 <code>mark()</code> ⇒ 高亮停在上一个不动。</p></blockquote>
 <p><strong>这不是边界情况，是常态</strong>——用户大部分时间就滚在两节之间。</p>
 <p>现在统一用计算：<code>取最后一个 offsetTop &lt;= 滚动位置 + 100px 的 section</code>。 <strong>任何滚动位置都有确定答案</strong>，不会出现&quot;都不在观察区&quot;的状态。</p>
 <p><strong>为什么不用 IO 省 CPU</strong>：两者成本其实一样——<code>scroll</code> 监听也只在<strong>滚动时</strong>执行（已用 <code>rAF</code> 节流），不滚动时都不跑。为了一个&quot;看起来更优&quot;的方案换正确性风险，不划算。</p>
-<h3 id="s10">⚠️ <code>offsetTop</code> 的前提<a class="anchor" href="#s10" aria-label="本节直链">#</a></h3>
+<h3 id="s11">⚠️ <code>offsetTop</code> 的前提<a class="anchor" href="#s11" aria-label="本节直链">#</a></h3>
 <p>它相对于 <strong><code>offsetParent</code></strong>。若把目录放在一个 <code>position: relative</code> 的容器里， <code>offsetTop</code> 会是相对那个容器的值，与 <code>pageYOffset</code> 不可比 ⇒ <strong>高亮会错位</strong>。</p>
 <p><strong>目录所在的祖先链上不要出现 <code>position: relative/absolute</code>。</strong></p>
-<h3 id="s11">前提：目录项与标题 id 一一对应<a class="anchor" href="#s11" aria-label="本节直链">#</a></h3>
+<h3 id="s12">前提：目录项与标题 id 一一对应<a class="anchor" href="#s12" aria-label="本节直链">#</a></h3>
 <pre class="code" tabindex="0"><code class="language-html">&lt;h2 id=&quot;mem&quot;&gt;…&lt;/h2&gt;          ← 标题必须有 id
 &lt;a class=&quot;toc__link&quot; href=&quot;#mem&quot;&gt;…&lt;/a&gt;   ← 目录指向它</code></pre>
 <p>少一个，<strong>那一项永远不会被高亮</strong>。<code>refs.py</code> 会静态抓这个错。</p>
 <hr>
 <hr>
-<h2 id="s12">目录的 sticky 必须在库里，不在 demo 里<a class="anchor" href="#s12" aria-label="本节直链">#</a></h2>
+<h2 id="s13">目录的 sticky 必须在库里，不在 demo 里<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
 <p>🔴 第一版这条只写在 demo 的内联 <code>&lt;style&gt;</code> 里，<strong>任何引了 <code>nav.css</code> 的页面都没有 sticky</strong> ——目录随正文滚出视口，&quot;跟着走&quot;这个最基本的效果没有。</p>
 <p><strong>布局规则写在 demo 里 = 分层崩了。</strong> 现在 <code>nav.css</code> 里：</p>
 <pre class="code" tabindex="0"><code class="language-css">@media (min-width: 60rem) {
@@ -110,21 +112,21 @@
 }</code></pre>
 <ul><li><code>top</code> 要<strong>大于页头高度</strong>（56px + 20px 留白），否则会停在页头下面被遮住</li><li><code>align-self: start</code> <strong>必须写</strong> —— grid 子项默认 <code>stretch</code>，元素被拉高后 sticky 无处可动</li></ul>
 <hr>
-<h2 id="s13">抽屉：五条判据<a class="anchor" href="#s13" aria-label="本节直链">#</a></h2>
-<h3 id="s14">1. 只动 <code>transform</code>，不动 <code>width/left/top</code><a class="anchor" href="#s14" aria-label="本节直链">#</a></h3>
+<h2 id="s14">抽屉：五条判据<a class="anchor" href="#s14" aria-label="本节直链">#</a></h2>
+<h3 id="s15">1. 只动 <code>transform</code>，不动 <code>width/left/top</code><a class="anchor" href="#s15" aria-label="本节直链">#</a></h3>
 <pre class="code" tabindex="0"><code class="language-css">.nav__list { transform: translateX(100%); transition: transform 180ms; }
 .nav__list[data-state=&quot;open&quot;] { transform: translateX(0); }</code></pre>
 <p>动 <code>width</code> 会引起重排，页面抖一下。</p>
-<h3 id="s15">2. 打开时背景必须锁<a class="anchor" href="#s15" aria-label="本节直链">#</a></h3>
+<h3 id="s16">2. 打开时背景必须锁<a class="anchor" href="#s16" aria-label="本节直链">#</a></h3>
 <p>视觉上是覆盖层，逻辑上也要是模态——<strong>两边必须一致</strong>。否则用户能 Tab 到抽屉外面看不见的地方。</p>
-<h3 id="s16">3. 焦点必须移进抽屉，并且<strong>关闭后回到汉堡按钮</strong><a class="anchor" href="#s16" aria-label="本节直链">#</a></h3>
+<h3 id="s17">3. 焦点必须移进抽屉，并且<strong>关闭后回到汉堡按钮</strong><a class="anchor" href="#s17" aria-label="本节直链">#</a></h3>
 <p>丢了焦点，键盘用户就不知道自己在哪了。</p>
-<h3 id="s17">4. Esc 必须能关<a class="anchor" href="#s17" aria-label="本节直链">#</a></h3>
+<h3 id="s18">4. Esc 必须能关<a class="anchor" href="#s18" aria-label="本节直链">#</a></h3>
 <p>这是唯一&quot;所有人都知道&quot;的操作，不能只靠点遮罩。</p>
-<h3 id="s18">5. 窗口变宽时自动关掉<a class="anchor" href="#s18" aria-label="本节直链">#</a></h3>
+<h3 id="s19">5. 窗口变宽时自动关掉<a class="anchor" href="#s19" aria-label="本节直链">#</a></h3>
 <p>否则抽屉会留在打开状态，而桌面布局下 <code>nav__list</code> 是横排的—— 用户会看到一个&quot;开着但不对&quot;的菜单。</p>
 <hr>
-<h2 id="s19">三个无障碍细节<a class="anchor" href="#s19" aria-label="本节直链">#</a></h2>
+<h2 id="s20">三个无障碍细节<a class="anchor" href="#s20" aria-label="本节直链">#</a></h2>
 <div class="table" tabindex="0" role="region" aria-label="三个无障碍细节（可横向滚动）"><table>
 <thead><tr>
 <th>做法</th><th>原因</th>
@@ -136,7 +138,7 @@
 </tbody>
 </table></div>
 <hr>
-<h2 id="s20">汉堡按钮的三条线怎么变 X<a class="anchor" href="#s20" aria-label="本节直链">#</a></h2>
+<h2 id="s21">汉堡按钮的三条线怎么变 X<a class="anchor" href="#s21" aria-label="本节直链">#</a></h2>
 <pre class="code" tabindex="0"><code>默认：  ─────  三条线
         i::before / i::after 上下偏移 ±5.5px
 
@@ -145,10 +147,10 @@
         i::after opacity 0        → 消失</code></pre>
 <p><strong>为什么偏移量是 5.5px</strong>：线宽 1.5px，中心间距 11px，所以偏移 5.5px 让它们重合到中心。这个数是算出来的，不是估的。</p>
 <hr>
-<h2 id="s21">反模式<a class="anchor" href="#s21" aria-label="本节直链">#</a></h2>
+<h2 id="s22">反模式<a class="anchor" href="#s22" aria-label="本节直链">#</a></h2>
 <ul><li>❌ <strong>抽屉展开时动 <code>width</code> / <code>left</code> / <code>top</code></strong> —— 引起重排，页面抖</li><li>❌ <strong>抽屉打开后背景仍可 Tab / 可点</strong> —— 视觉是覆盖层，逻辑不是模态</li><li>❌ <strong>汉堡按钮小于 44px</strong> —— 触摸目标硬下限</li><li>❌ <strong>当前页指示用自定义 class 而非 <code>aria-current</code></strong> —— 屏幕阅读器不知道</li><li>❌ <strong>目录项允许换行</strong> —— 行高跳变，目录看着散</li><li>❌ <strong>没有 IntersectionObserver 就不做高亮</strong> —— 目录变成死链接</li><li>❌ <strong>跳过链接用 <code>display:none</code></strong> —— 移出 tab 顺序，键盘到不了</li><li>❌ <strong>页头 sticky 但没背景色</strong> —— 内容从下面透出来像重影</li></ul>
 <hr>
-<h2 id="s22">门禁<a class="anchor" href="#s22" aria-label="本节直链">#</a></h2>
+<h2 id="s23">门禁<a class="anchor" href="#s23" aria-label="本节直链">#</a></h2>
 <div class="table" tabindex="0" role="region" aria-label="门禁（可横向滚动）"><table>
 <thead><tr>
 <th>项</th><th>能否机械检查</th>
@@ -170,11 +172,11 @@
   </main>
   <aside class="g-side">
     <p class="g-side__title" id="toc-title">本页目录</p>
-    <ul class="g-toc"><li><a href="#s2">一个目录，两个全局</a></li><li><a href="#s3">抽屉行为层：nav.js（可选，但没有它抽屉就是死的）</a></li><li><a href="#s8">目录高亮：toc.js</a></li><li><a href="#s12">目录的 sticky 必须在库里，不在 demo 里</a></li><li><a href="#s13">抽屉：五条判据</a></li><li><a href="#s19">三个无障碍细节</a></li><li><a href="#s20">汉堡按钮的三条线怎么变 X</a></li><li><a href="#s21">反模式</a></li><li><a href="#s22">门禁</a></li></ul>
+    <ul class="g-toc"><li><a href="#s2">一个目录，两个全局</a></li><li><a href="#s3">抽屉行为层：nav.js（可选，但没有它抽屉就是死的）</a></li><li><a href="#s9">目录高亮：toc.js</a></li><li><a href="#s13">目录的 sticky 必须在库里，不在 demo 里</a></li><li><a href="#s14">抽屉：五条判据</a></li><li><a href="#s20">三个无障碍细节</a></li><li><a href="#s21">汉堡按钮的三条线怎么变 X</a></li><li><a href="#s22">反模式</a></li><li><a href="#s23">门禁</a></li></ul>
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.27.16 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.27.17 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

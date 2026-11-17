@@ -133,13 +133,18 @@ export async function run() {
           }
         : { exists: false };
     });
-    c.check('④ tooltip demo 页存在 live region（role=tooltip）节点',
-      tips.length > 0 || domTip.exists,
-      (tips.length > 0
+    /* 🔴 0.27.17 AX 树证据是硬判据：旧实现 `tips.length > 0 || domTip.exists`
+       在 AX 树缺席时退化为"DOM 里有个 div"——#tooltip-live 在 attach 时必建，
+       demo 页一加载就在，断言近乎恒真。DOM 证据只做旁证不计分；
+       AX 树取不到 = 判据未执行 = 记红（与 ime ③ 同一纪律）。 */
+    const axReady = !!(tree2 && tree2.nodes && tree2.nodes.length > 0);
+    c.check('④ tooltip demo 页在 AX 树里有 role=tooltip 的 live region',
+      axReady && tips.length > 0,
+      (axReady
         ? 'AX 树证据：role=tooltip 节点 ' + tips.length + ' 个，name=' +
           tipNames.join(' / ')
-        : 'AX 树未见（可能被裁剪），以 DOM 为准记录') +
-        '；DOM 证据：#tooltip-live 存在=' + domTip.exists +
+        : 'AX 树未取到（节点 0 条）——判据未执行，不许以 DOM 兜底记绿') +
+        '；DOM 旁证：#tooltip-live 存在=' + domTip.exists +
         '，role=' + domTip.role + '，aria-label=' + domTip.label +
         '，aria-live=' + domTip.live + '，aria-atomic=' + domTip.atomic);
   } catch (e) {

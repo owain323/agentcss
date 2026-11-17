@@ -32,7 +32,8 @@ import {
   ensureDevice, ensureReverse, openInChrome, mergeReport, createCollector,
   isDirectRun, RESULTS_DIR, REPORT_PATH, ADB_EXE, BASE_URL,
 } from './lib-env.mjs';
-import { run as runA11ySelect } from './a11y-select.mjs';
+/* a11y-select 由 loadSuiteRun 按 SUITES_DEF 动态 import（与另两套件同路径），
+   不在此静态导入 —— 0.27.17 删掉过一处"导入后从未使用"的死导入。 */
 
 /* name = report.json 分节键（固定，不随 full/basic 变）；
    base = 文件名前缀；hasFull = 是否存在 -full 深度版可选 */

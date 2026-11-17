@@ -11,7 +11,7 @@
  *
  * 🔴 三联（§3.3）：夹具本身就是"注入的缺陷"（随仓库提交，改坏即红）；
  *    还原 = clean 夹具必须绿；sha256 一致 = 夹具文件随 git 锚定。
- *    判定规则的离线变异探针在 ai/shot-verdict.js --selftest（M1~M5）。
+ *    判定规则的离线对照断言在 ai/shot-verdict.js --selftest。
  *
  * ⚠️ 需要真 Chrome（与 ai shot 同款解析），无浏览器环境跑不了——
  *    属 component 层判据。
@@ -21,10 +21,14 @@
 
 var path = require('path');
 var fs = require('fs');
+var os = require('os');
 var shoot = require('../ai/shot.js').shoot;
 
 var FIXTURES = path.join(__dirname, 'fixtures', 'shot-verdict');
-var OUT = path.join(__dirname, '..', '..', 'tmp', 'shot-verdict-out');
+/* 🔴 0.27.17 截图产物落系统临时目录：旧路径 `__dirname/../../tmp` 会
+   静默越过仓库根，落到工作区共享目录（调试时找半天）。截图是一次性
+   渲染产物，不进仓库也不该堆在仓库旁边。 */
+var OUT = path.join(os.tmpdir(), 'agentcss-shot-verdict-out');
 /* 窄视口：让真溢出/容器滚动都真的发生（1440 下 600px 元素不溢出） */
 var WIDTH = 390;
 

@@ -609,19 +609,56 @@ function cmdIcons(args) {
   var manifest = readJSON(manifestPath);
   var icons = manifest.icons || [];
   var total = icons.length;
-  var q = flag('query', flag('_query', null));
+
+  /* 🔴 0.27.17 参数解析要"认领值"：flag() 只认 `--k=v` 连写式，
+     两段式 `--query x` 的值会被旧实现当位置查询词吃掉
+     （`ai icons --group finance` ⇒ 把 finance 当查询词）。
+     这里自己拆一遍：连写式交给 flag()，两段式在这里收值并跳过；
+     裸开关没值就吵（enumFlag 哲学：拼错不静默）。 */
+  var HERE_FLAGS = { query: 1, group: 1 };
+  var q = flag('query', null);
   var grp = flag('group', null);
+  var positional = [];
+  for (var i = 0; i < args.length; i++) {
+    var a = args[i];
+    if (a.indexOf('--') !== 0) { positional.push(a); continue; }
+    var eq = a.indexOf('=');
+    var fname = (eq < 0) ? a.slice(2) : a.slice(2, eq);
+    if (!HERE_FLAGS[fname]) continue;          /* 全局开关交给通用解析 */
+    if (eq >= 0) {
+      if (fname === 'query') q = a.slice(eq + 1);
+      else grp = a.slice(eq + 1);
+      continue;
+    }
+    if (i + 1 < args.length && args[i + 1].charAt(0) !== '-') {
+      if (fname === 'query') q = args[i + 1];
+      else grp = args[i + 1];
+      i++;                                     /* 值已认领，跳过 */
+    } else {
+      die('开关 --' + fname + ' 缺值：用 --' + fname + '=<值> 或 --' + fname + ' <值>');
+    }
+  }
+
+  /* 🔴 显式空值也吵：`--query=` 静默返回全量属于歧义
+     （要全量就别带 --query，意图才不会猜错）。 */
+  if (q === '') die('--query 为空：要列出全部图标请去掉 --query');
+  if (grp === '') die('--group 为空：可用分组先 `ai icons --json` 看 groupId 字段');
 
   /* 位置参数兜底：`ai icons 利润` = `ai icons --query=利润` */
-  var positional = args.filter(function (a) { return a.charAt(0) !== '-'; });
   if (!q && positional.length) q = positional[0];
 
-  if (grp) {
-    var gids = [];
-    (manifest.groups || []).forEach(function (g) { gids.push(g.id || g.groupId); });
-    if (gids.indexOf(grp) < 0) {
-      die('未知分组：' + grp + '（可用：' + gids.join(' / ') + '）');
-    }
+  /* 🔴 0.27.17 分组清单从**图标条目**推导 —— manifest 根上没有 groups 键，
+     旧实现读 manifest.groups 恒空 ⇒ --group 任何值都 die（实测 exit 2），
+     帮助文本教的开关 100% 不可用。推导保持 manifest 是唯一真值：
+     根 schema 不动，分组随条目走。 */
+  var gids = [];
+  var seenGid = {};
+  icons.forEach(function (ic) {
+    var gid = ic.groupId || ic.group;
+    if (gid && !seenGid[gid]) { seenGid[gid] = 1; gids.push(gid); }
+  });
+  if (grp && gids.indexOf(grp) < 0) {
+    die('未知分组：' + grp + '（可用：' + gids.join(' / ') + '）');
   }
 
   if (q) {

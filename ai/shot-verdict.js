@@ -111,20 +111,28 @@ function summarize(verdict, widthCount) {
 }
 
 /* ---------------------------------------------------------------- 自检
-   反向控制（§3.3 三联的离线层）：①②③④ 四用例 + 变异探针。
-   变异探针 = 把某条规则"关掉"后，对应用例的判定必须翻转
-   ⇒ 证明每条规则都是**承重的**，不是装饰。
+   反向控制（§3.3 三联的离线层）：①②③④ 四用例 + 边界 + 对照断言。
+   🔴 0.27.17 诚实化：这组原来叫"变异探针 M1~M5"，但它们**没有把任何
+   规则关掉再跑**——只是同参数重复断言（M1≡③、M3≡② 逐字同参），
+   "每条规则单独承重"的证明力弱于其声称。真正关规则需要测试钩子进
+   生产代码，交换不划算 ⇒ 如实改叫**对照断言**，且每条只断言前组
+   用例没碰过的**独有性质**（分型/分档/聚合维度）。计数动态汇报，
+   不再写死"8 项"。
    （浏览器侧 fixture 三联——注入缺陷必红/还原必绿/快照不变——
      由 05-audit/shot-verdict-check.js 用真浏览器跑，见该文件头。） */
 function selftest() {
-  var bad = 0;
+  var bad = 0, total = 0;
   function expect(name, got, want, why) {
+    total++;
     if (got === want) console.log('  OK   ' + name);
-    else { console.log('  FAIL ' + name + '：期望 ' + want + ' 实得 ' + got + '（' + why + '）'); bad++; }
+    else { console.log('  FAIL ' + name + '：期望 ' + JSON.stringify(want) +
+      ' 实得 ' + JSON.stringify(got) + '（' + why + '）'); bad++; }
   }
   var W = function (o) {
-    return { width: 390, captureOk: true, consoleErrors: [], pageOverflow: false,
-      overflowItems: (o && o.items) || [] };
+    o = o || {};
+    return { width: 390, captureOk: true, consoleErrors: [],
+      pageOverflow: !!o.pageOverflow,
+      overflowItems: o.items || [] };
   };
 
   /* ④ 干净页面 → pass */
@@ -149,31 +157,50 @@ function selftest() {
   var ci = computeShotVerdict([{ width: 390, captureOk: false }], []);
   expect('边界 采集不完整 → fail', ci.status, 'fail', '判定不可信必须如实说');
 
+  /* 页面级溢出 → fail（0.27.17 补：page-overflow 规则此前自检零覆盖） */
+  var po = computeShotVerdict([W({ pageOverflow: true })], []);
+  expect('页面级溢出 → fail', po.status, 'fail', '页面顶破必须红');
+
   /* 多宽度聚合：最差档 */
   var agg = computeShotVerdict(
     [W({ items: [{ tag: 'div.d', inScroll: true }] }), W({ items: [{ tag: 'p.p', inScroll: false }] })], []);
   expect('多宽度聚合取最差档', agg.status, 'fail', 'warn + fail 并存 ⇒ fail');
 
-  /* ---- 变异探针（5 条）：每条规则单独承重 ---- */
-  /* 变异 M1：若无 js-error 规则 ⇒ 报错用例应为 pass，实际 fail ⇒ 规则承重 */
-  var m1 = computeShotVerdict([W({})], ['TypeError: x']);
-  expect('M1 js-error 规则承重', m1.status === 'fail', true, '去掉该规则这里会变 pass');
-  /* M2：若无 true-overflow 规则 ⇒ 真溢出用例应为 warn（容器路径），实际 fail */
-  var m2 = computeShotVerdict([W({ items: [{ tag: 'table.t', inScroll: false }] })], []);
-  expect('M2 true-overflow 规则承重', m2.reasons.some(function (r) {
-    return r.code === 'true-overflow'; }), true, '去掉该规则会误判成设计内滚动');
-  /* M3：若无 container-warn 分辨 ⇒ 容器内滚动会误判成 fail（这条最容易做反） */
-  var m3 = computeShotVerdict([W({ items: [{ tag: 'table.t', inScroll: true }] })], []);
-  expect('M3 容器分辨承重（warn 不是 fail）', m3.status === 'warn', true,
-    '做反 = 表格页全部假红');
-  /* M4：若无 capture-incomplete ⇒ 采集失败会被当成 pass（假绿） */
-  var m4 = computeShotVerdict([{ width: 390, captureOk: false }], []);
-  expect('M4 capture-incomplete 规则承重', m4.status === 'fail', true,
-    '去掉该规则 = 探针没跑也报绿');
-  /* M5：聚合取最差档 ⇒ warn+fail 并存必须 fail */
-  expect('M5 聚合取最差档承重', agg.status === 'fail', true, '取 min 会漏报');
+  /* ---- 对照断言：只断言前面用例没碰过的独有性质 ---- */
+  /* 对照A js-error 的**分型**在位且是 fail 档（③ 只查了总档） */
+  expect('对照A js-error 分型 severity=fail', !!(je.reasons[0] &&
+    je.reasons[0].code === 'js-error' && je.reasons[0].severity === 'fail'),
+    true, '分型丢了 agent 就没法定位');
 
-  console.log(bad ? '  [FAIL] 自检 %d 项'.replace('%d', bad) : '  [OK  ] shot-verdict 自检 8 项全过（4 用例 + 5 变异探针，含三态边界）');
+  /* 对照B true-overflow 分型 severity=fail（① 只查了"存在"） */
+  var toR = to.reasons.filter(function (r) { return r.code === 'true-overflow'; })[0];
+  expect('对照B true-overflow severity=fail', !!toR && toR.severity === 'fail',
+    true, '降档会让 agent 拿着 warn 不动手');
+
+  /* 对照C inScroll 条目**永不**产生 true-overflow 分型 —— 容器分辨规则的
+     独有性质（② 只查了总档 warn；做反 = 表格页假红 + 分型错） */
+  expect('对照C inScroll 不产生 true-overflow', cs.reasons.some(function (r) {
+    return r.code === 'true-overflow'; }), false, '做反 = 表格页全部假红');
+
+  /* 对照D capture-incomplete 分型在位（边界只查了总档） */
+  expect('对照D capture-incomplete 分型在位', !!(ci.reasons[0] &&
+    ci.reasons[0].code === 'capture-incomplete' && ci.reasons[0].severity === 'fail'),
+    true, '探针没跑成必须带分型上报');
+
+  /* 对照E page-overflow 分型在位（新用例只查了总档） */
+  expect('对照E page-overflow 分型在位', po.reasons.some(function (r) {
+    return r.code === 'page-overflow'; }), true, '页面级与元素级必须分得开');
+
+  /* 对照F 聚合的 perWidth 维度：各宽度档位如实保留、聚合=最差档
+     （旧 M5 只查总档，看不出聚合是"取 max"还是"首宽度决定"） */
+  var pw = agg.perWidth.map(function (v) { return v.status; });
+  expect('对照F perWidth 档位 [warn, fail] 且聚合 fail',
+    JSON.stringify(pw) === JSON.stringify(['warn', 'fail']) && agg.status === 'fail',
+    true, '聚合必须真取最差档，不是取第一个');
+
+  console.log(bad
+    ? '  [FAIL] 自检 ' + bad + ' / ' + total + ' 项不过'
+    : '  [OK  ] shot-verdict 自检 ' + total + ' 项全过（4 用例 + 边界 + 对照断言）');
   return bad ? 1 : 0;
 }
 
@@ -184,7 +211,7 @@ module.exports = {
   selftest: selftest
 };
 
-/* 直接运行 ⇒ 自检（四用例 + 五变异探针）。exit 0 = 判据可信。 */
+/* 直接运行 ⇒ 自检（四用例 + 边界 + 对照断言）。exit 0 = 判据可信。 */
 if (require.main === module) {
   process.exit(selftest());
 }

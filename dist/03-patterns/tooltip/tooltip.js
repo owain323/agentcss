@@ -194,7 +194,10 @@ tip.style.visibility = 'hidden';
 tip.style.display = 'block';
 if (!tip.parentNode) document.body.appendChild(tip);
 
-layoutTip();
+if (!layoutTip()) {
+tip.style.visibility = '';
+return;
+}
 bindReposition();
 tip.style.visibility = '';
 tip.setAttribute('data-state', 'open');
@@ -203,7 +206,8 @@ live.textContent = text;
 
 function layoutTip() {
 
-if (!el || !document.contains(el)) { hide(); return; }
+var anchorGone = !el || !(el.isConnected || document.contains(el));
+if (anchorGone || !tip.parentNode) { hide(); return false; }
 var b = el.getBoundingClientRect();
 var t = tip.getBoundingClientRect();
 var vw = document.documentElement.clientWidth;
@@ -212,6 +216,9 @@ var sy = window.pageYOffset || 0;
 var sx = window.pageXOffset || 0;
 var M = 8;
 var p = pos;
+var rtl = getComputedStyle(el).direction === 'rtl';
+
+tip.style.direction = rtl ? 'rtl' : '';
 
 if (p === 'top' && b.top - t.height < M && b.bottom + t.height <= vh - M) p = 'bottom';
 if (p === 'bottom' && b.bottom + t.height > vh - M && b.top - t.height >= M) p = 'top';
@@ -223,15 +230,22 @@ top = (p === 'top') ? b.top - t.height : b.bottom;
 
 top = Math.max(M, Math.min(top, vh - t.height - M));
 } else {
-var rtl = getComputedStyle(el).direction === 'rtl';
 
 left = (p === 'start')
 ? (rtl ? b.right : b.left - t.width)
 : (rtl ? b.left - t.width : b.right);
 top = b.top + b.height / 2 - t.height / 2;
 
-if (p === 'start' && left < M && b.right + t.width <= vw - M) p = 'end';
-if (p === 'end' && left + t.width > vw - M && b.left - t.width >= M) p = 'start';
+var startOverflow = rtl ? (b.right + t.width > vw - M)
+: (b.left - t.width < M);
+var startFits     = rtl ? (b.right + t.width <= vw - M)
+: (b.left - t.width >= M);
+var endOverflow   = rtl ? (b.left - t.width < M)
+: (b.right + t.width > vw - M);
+var endFits       = rtl ? (b.left - t.width >= M)
+: (b.right + t.width <= vw - M);
+if (p === 'start' && startOverflow && endFits) p = 'end';
+if (p === 'end' && endOverflow && startFits) p = 'start';
 left = (p === 'start')
 ? (rtl ? b.right : b.left - t.width)
 : (rtl ? b.left - t.width : b.right);
@@ -240,12 +254,30 @@ top = Math.max(M, Math.min(top, vh - t.height - M));
 
 left = Math.max(M, Math.min(left, Math.max(M, vw - t.width - M)));
 
-tip.className = 'tooltip ' + CLS[p];
+syncPlacementCls(p);
 tip.style.top = (top + sy) + 'px';
 tip.style.left = (left + sx) + 'px';
+return true;
 }
 
 var repositionQueued = false;
+
+function syncPlacementCls(p) {
+var parts = tip.className.split(/\s+/);
+var keep = [];
+for (var i = 0; i < parts.length; i++) {
+var c = parts[i];
+if (!c || c === 'tooltip') continue;
+var isPlacement = false;
+for (var k in CLS) {
+if (CLS[k] === c) { isPlacement = true; break; }
+}
+if (!isPlacement) keep.push(c);
+}
+keep.push('tooltip', CLS[p]);
+var next = keep.join(' ');
+if (next !== tip.className) tip.className = next;
+}
 function scheduleReposition() {
 if (!open || repositionQueued) return;
 repositionQueued = true;

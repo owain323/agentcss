@@ -219,8 +219,10 @@
        不进 Tab 序，对使用者的标记零影响。
        ⚠️ 只对**有抽屉**（有 toggle）的实例加（0.27.11）：静态导航没有 open()
           —— 没有谁会去 focus 它，凭空往作者的 DOM 上写一个属性属于越界。 */
+    this._addedTabindex = false;
     if (this.toggle && this.list && !this.list.hasAttribute('tabindex')) {
       this.list.setAttribute('tabindex', '-1');
+      this._addedTabindex = true;   /* destroy() 时回收：越界写入必须能回滚 */
     }
 
     if (!this.toggle || !this.list) {
@@ -234,10 +236,12 @@
     }
 
     this.scrim = root.querySelector('.nav__scrim');
+    this._createdScrim = false;
     if (!this.scrim) {
       this.scrim = document.createElement('div');
       this.scrim.className = 'nav__scrim';
       root.appendChild(this.scrim);
+      this._createdScrim = true;   /* 同上：自动建的遮罩，destroy() 时摘走 */
     }
     /* 遮罩是纯装饰：它只承载"点这里关闭"，语义上没有任何内容。
        不标 aria-hidden 的话，读屏会读到一个空的 div。 */
@@ -406,6 +410,17 @@
     this.list.removeEventListener('click', this.onListClick);
     window.removeEventListener('resize', this.onResize);
     if (this.dismiss) this.dismiss.destroy();
+    /* 回滚 init 时对作者 DOM 的两处越界写入（0.27.17）：
+       destroy 之后 root 应当回到"只是一段普通标记"的状态，
+       否则重新 new Nav(root) 会拿到上一实例留下的 tabindex / 遮罩，
+       表现是"看起来能用，实际状态机已经脏了"。 */
+    if (this._addedTabindex) this.list.removeAttribute('tabindex');
+    if (this._createdScrim && this.scrim.parentNode) {
+      this.scrim.parentNode.removeChild(this.scrim);
+    }
+    this.scrim = null;
+    this._addedTabindex = false;
+    this._createdScrim = false;
   };
 
   /* 列表要能被脚本聚焦（陷阱的空列表兜底会 focus 它） */

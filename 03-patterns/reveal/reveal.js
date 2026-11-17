@@ -24,6 +24,9 @@
       ④⑤ 是 0.9.1 补的。此前 `data-reveal-ready` 先打上、再 new IntersectionObserver：
       构造函数一旦抛错（部分 WebView 有此问题），隐藏态已经生效而 revealAll()
       永远跑不到 ⇒ **整页空白**。这正是"隐藏态必须配兜底"那条的落点。
+      ⑥ 🆕 enable() 之后才进 DOM 的 [data-reveal]（SPA 渲染 / 列表注入）⇒
+         MutationObserver 复扫把新元素 observe 进去（仅观察路径需要；
+         全显 / reduced 路径本来就没有隐藏态）。0.27.17 补。
    ========================================================================= */
 (function (global) {
   'use strict';
@@ -34,8 +37,11 @@
   var STAGGER_CAP = 6;      /* 封顶：不封顶时第 20 个元素要等 800ms 才动 */
   var THRESHOLD = 0.15;
   var WATCHDOG_MS = 2000;   /* 兜底看门狗：接管后 2s，视口内还没显示的强制显示 */
+  var RESCAN_MS = 120;      /* 复扫去抖：一次批量插入（列表渲染几十个节点）合并成一轮 */
   var observer = null;
   var watchdog = null;
+  var mo = null;
+  var rescanTimer = null;
 
   function each(list, fn) {
     for (var i = 0; i < list.length; i++) { fn(list[i], i); }
@@ -92,10 +98,35 @@
   function teardown() {
     if (watchdog) { global.clearTimeout(watchdog); watchdog = null; }
     if (observer) { observer.disconnect(); observer = null; }
+    if (mo) { mo.disconnect(); mo = null; }
+    if (rescanTimer) { global.clearTimeout(rescanTimer); rescanTimer = null; }
     each(document.querySelectorAll(SELECTOR), function (el) {
       clearDone(el);
     });
     document.documentElement.removeAttribute('data-reveal-ready');
+  }
+
+  /* 🔴 ⑥ 动态插入兜底（0.27.17）：enable() 之后才进 DOM 的 [data-reveal]
+     不会自己长进观察列表 —— 没人管的话它们停在 opacity:0 永远不出来，
+     恰好是"不许留下看不见的内容"红线的漏网情形。
+     复扫去抖 120ms：批量插入只跑一轮；observer.observe() 对已在观察中的
+     目标是规范定义的 no-op，不必记账。markDone 写的是属性、prepareGroups
+     写的是 style —— 都不触发 childList，复扫不会自激。 */
+  function rescanNow() {
+    rescanTimer = null;
+    if (!observer) { return; }   /* 非观察路径（全显/reduced）没有隐藏态 */
+    prepareGroups();
+    each(document.querySelectorAll(SELECTOR), function (el) {
+      if (!el.hasAttribute('data-reveal-done')) { observer.observe(el); }
+    });
+  }
+
+  function armRescan() {
+    if (!('MutationObserver' in global)) { return; }
+    mo = new global.MutationObserver(function () {
+      if (!rescanTimer) { rescanTimer = global.setTimeout(rescanNow, RESCAN_MS); }
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
   }
 
   function enable() {
@@ -142,6 +173,7 @@
     if (!watchdog) {
       watchdog = global.setTimeout(watchdogSweep, WATCHDOG_MS);
     }
+    armRescan();
     return true;
   }
 

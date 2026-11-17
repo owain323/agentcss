@@ -164,6 +164,27 @@ const RULES = [
       ' / 看门狗 ' + timer + ' / 真补元素 ' + sweeps];
   }],
 
+  ['动态插入有兜底', (f) => {
+    /* 🆕 0.27.17：enable() 之后才进 DOM 的 [data-reveal]（SPA 渲染 / 列表注入）
+       不会自己长进观察列表 —— 没人管就永远停在 opacity:0，恰好是
+       "不许留下看不见的内容"红线的漏网情形，而且上面那条「白屏有兜底」
+       查不到它（看门狗只在接管后 2s 跑一轮，管不了 2s 后插入的节点）。
+
+       判据要求四件事同时成立：
+         ① 特性检测（'MutationObserver' in global），缺失时静默跳过
+         ② 监听挂在 documentElement 上（childList + subtree）
+         ③ 有去抖（批量插入合并成一轮，不是每个节点跑一遍）
+         ④ 复扫函数真的把新元素 observe 进去（不是空函数）
+    */
+    const detect = /'MutationObserver'\s*in\s/.test(f.js);
+    const listen = /\.observe\(\s*document\.documentElement/.test(f.js);
+    const debounced = /RESCAN_MS/.test(f.js);
+    const scans = /function\s+rescanNow\s*\([^)]*\)\s*\{[\s\S]*?observer\.observe/.test(f.js);
+    const ok = detect && listen && debounced && scans;
+    return [ok, '特性检测 ' + detect + ' / 监听根 ' + listen +
+      ' / 去抖 ' + debounced + ' / 真复扫 ' + scans];
+  }],
+
   ['默认不自动接管', (f) => {
     /* 引擎只允许在 <html data-reveal-auto> 时自动 enable；
        直接无条件 enable() 等于"引了脚本内容就消失"，与无 JS 契约矛盾 */
@@ -206,6 +227,13 @@ const MUTATIONS = {
   '降级关掉位移': (f) => { f.css = f.css.replace('transform: none;', 'transform: scale(.99);'); },
   'JS 有 IO 兜底': (f) => { f.js = f.js.replace(/unobserve\(/g, '/* 去掉 */('); },
   '白屏有兜底': (f) => { f.js = f.js.replace('setTimeout(watchdogSweep', 'setTimeout(noop'); },
+  '动态插入有兜底': (f) => {
+    /* 杀掉"监听根"调用本身（比换检测词干净：不往源码里引入新的
+       驼峰词，proper-noun 门禁不用为变异词开白名单） */
+    f.js = f.js.replace(
+      'mo.observe(document.documentElement, { childList: true, subtree: true })',
+      'mo.observe(mo, { childList: true })');
+  },
   '默认不自动接管': (f) => { f.js = f.js.replace("hasAttribute('data-reveal-auto')", "hasAttribute('no-such-attr')"); },
   'demo 覆盖协议': (f) => { f.demo = f.demo.replace(/data-reveal-children/g, 'data-rv-children'); },
 };

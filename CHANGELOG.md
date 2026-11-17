@@ -18,19 +18,88 @@
 
 ## [Unreleased]
 
+## [0.27.17] - 2026-11-18
+
+### Fixed
+
+- **tooltip RTL 翻转谓词按 LTR 几何写死**：start/end 的水平翻转判据读的是
+  LTR 的 `left < M`，RTL 下真实溢出永不翻转、无关情形反而误翻转。
+  溢出/可容纳判据改为跟随方向计算（RTL 的 start 在锚点右侧 ⇒ 判右缘越界）。
+- **tooltip 箭头在 RTL 下背向锚点**：方位类全是逻辑属性（inset-inline-*），
+  渲染成哪条物理边跟随**气泡自己**的 direction——气泡挂在 body 下继承
+  LTR，RTL 锚点的箭头永远画在错的物理边。定位时把锚点的 direction 写给
+  气泡。判据 ⑥ 同步改为"箭头物理边跟随几何 + 气泡在期望的一侧"
+  （旧期望表在给箭头背向锚点的 bug 背书），并新增 ⑦b RTL 翻转判据
+  （真浏览器：翻类 / 气泡贴锚点 / 箭头有色边）。
+- **tooltip 锚点守卫两处**：`document.contains` 对 shadow 树内节点恒 false
+  ⇒ shadow DOM 用法下 hover/focus 每次误判"锚点已移除"，改 isConnected
+  （老 WebView 退回 contains）；show() 中途触发守卫时后半段会把刚关掉的
+  气泡"复活"（重挂监听 + data-state=open）⇒ layoutTip 返回存活与否，
+  show 见假即停。类名重写改为只替换自有产权类（外部追加的类保留、
+  无变更不写属性）。
+- **reveal 动态插入死锁**：enable() 只观察调用时刻存在的元素，之后才进
+  DOM 的 `[data-reveal]`（SPA 渲染/列表注入）永远停在 opacity:0。
+  观察路径加 MutationObserver 去抖复扫（120ms 合并批量插入，observe
+  对已观察目标是规范 no-op，无需记账）；缺 MutationObserver 的老 WebView
+  静默跳过。reveal-contract 新增「动态插入有兜底」判据（12→13 条）。
+- **nav destroy 回滚越界写入**：init 给列表补的 `tabindex="-1"`、缺遮罩时
+  自动建的 `.nav__scrim`，destroy 时全部回收（作者自己写的属性不动），
+  destroy 后 root 回到"只是一段普通标记"。nav-drawer 加合成 DOM
+  全生命周期判据。
+- **`ai icons --group` 是死开关**：分组校验读 manifest 根上不存在的
+  `groups` 键 ⇒ 任何值都报"未知分组（可用：）"退出 2，而帮助文本还在教。
+  分组清单改为从图标条目推导（manifest 是唯一真值，根 schema 不动）。
+  参数解析认领两段式 `--query x` 的值（旧实现把 `--group finance` 的值
+  当查询词吃掉）；`--query=` 空串从静默全量改为响亮报错。
+- **shot-verdict 自检诚实化**：原"M1~M5 变异探针"并没有把任何规则关掉
+  再跑（M1≡③、M3≡② 同参重复），如实改叫对照断言、每条只断言独有性质；
+  page-overflow 规则此前自检零覆盖，补用例；计数动态汇报（不再写死
+  "8 项"）。四夹具 `body{{...}}` 双花括号死规则修复；container-scroll
+  夹具的 max-width:390 在 390 视口永不生效（机制与注释不符），改
+  width:100%；集成检查的截图产物落系统临时目录（旧路径静默越过仓库根）。
+- **安卓台健壮性**：old-engine 裸 CDP 加超时 / onclose / 关闭即醒
+  （旧实现标签页关闭后 await 永久悬挂，run-gate 跟着挂）、console.error
+  计入"零 JS 错误"、自带 adb reverse、无设备响亮退出；ime ③
+  dispatchKeyEvent 抛错从"静默跳过"改记红；a11y ④ AX 树证据从"DOM 兜底
+  近乎恒真"改硬判据；dvh 结果落盘从文档占位符字面量改环境变量路径；
+  ANDROID_SERIAL 指向不可用设备时响亮报错（不再照用死 serial）；
+  connectPage 命中先重载（上轮残留状态不再造成假红）；run-all 删死导入。
+  CDP 建连后无自动重连作为已知限制入档（失败响亮、跨套件可恢复）。
+- **CHANGELOG 补账**：0.27.13/15/16 三节是空 TODO、另有一段发版时忘了
+  改名的 Unreleased——按提交实况重建（本节也属于补账）。
+
+---
+
 ## [0.27.16] - 2026-11-18
 
-### TODO · 这一版改了什么
+### Added
 
-（写清楚「改了什么 / 为什么」，有反向控制就写上）
+- **图标资产入仓**（`09-assets/icons/`，35 个 Lucide 官方 SVG + manifest）：
+  manifest 逐枚带 sha256，溯源到 lucide-static v1.73.0（ISC）；SVG 统一
+  后处理（width/height=1em、role="img" + 中文 aria-label，路径几何原样）。
+  随包新增 `ai icons` 子命令（按 name / label / keywords / group 四字段查询）。
+  图标是纯 SVG 资产，门禁按此适配：coverage-gate 纯资产目录豁免、
+  pack-smoke 豁免其 manifest.json、ai-layer-gate 登记 icons 用例、
+  START-HERE 补条目说明。
+- 配套：DeepSeek Harness 插件新增第 5 个工具 `agentcss_shot`（透传
+  `agentcss shot` 的 verdict；插件仓独立维护，不在本包内）。
 
 ---
 
 ## [0.27.15] - 2026-11-18
 
-### TODO · 这一版改了什么
+### Added
 
-（写清楚「改了什么 / 为什么」，有反向控制就写上）
+- **ai shot 判定引擎**（`ai/shot-verdict.js`，纯函数零依赖）：溢出/报错数据
+  之上固化判定语义——JS 报错→fail、真溢出→fail、设计内滚动→warn、
+  采集不完整→fail（判定不可信时不许假 pass）——多宽度聚合取最差档。
+  动机：让模型自己读 40 行溢出数据 = 回到"随模型能力自由发挥"；
+  verdict 让 agent 直接行动。探针（ai/shot.js）按滚动祖先分类溢出元素
+  并接线 verdict。
+- **集成反向控制**（`05-audit/shot-verdict-check.js` + 四夹具页）：
+  clean / true-overflow / container-scroll / js-error 真跑 shoot()
+  断言 verdict——注入缺陷必红、还原必绿；判定规则的离线对照断言
+  在 `ai/shot-verdict.js --selftest`。
 
 ---
 
@@ -45,14 +114,6 @@
 ---
 
 ## [0.27.13] - 2026-11-16
-
-### TODO · 这一版改了什么
-
-（写清楚「改了什么 / 为什么」，有反向控制就写上）
-
----
-
-## [Unreleased]
 
 ### Fixed
 

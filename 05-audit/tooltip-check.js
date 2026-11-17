@@ -186,6 +186,58 @@ const REPO = path.resolve(__dirname, '..');
                  note: r.err || r.detail };
       },
 
+      /* ⑦b RTL 边缘翻转（0.27.17）：RTL + place='start' + 锚贴右缘 ⇒
+         气泡在锚点右侧放不下（右缘越界），必须翻到 'end'（锚点左侧），
+         箭头仍指向锚点。
+         🔴 为什么必须有这条：0.27.16 的翻转谓词按 LTR 几何写死
+         （start 溢出判 left < M），RTL 下这个场景真实溢出**永不翻转**，
+         气泡被钳制到与锚点脱开 50px、箭头背向锚点 —— 不报错、只是错，
+         而 ⑦ 的 LTR 判据全程绿（假绿结构）。RTL 用户拿着全绿的
+         审计报告用着坏的翻转，就是这条判据要堵的洞。
+         期望四件事同时成立：翻类（--inset-inline-end）/ 气泡贴锚点
+         （右缘 ≈ 锚点左缘）/ 全程在视口内 / 箭头 border-left 有色
+         （气泡在锚左侧 ⇒ 箭头指右）。 */
+      'RTL 右缘翻转：start 放不下翻到 end 且气泡贴住锚点': async (p) => {
+        const r = await p.evaluate(() => {
+          var box = document.createElement('div');
+          box.setAttribute('dir', 'rtl');
+          box.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999';
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = 'edge';
+          var vw = document.documentElement.clientWidth;
+          btn.style.cssText = 'position:absolute;top:120px;left:' + (vw - 58) + 'px;' +
+                              'width:50px;height:24px';
+          box.appendChild(btn);
+          document.body.appendChild(box);
+          window.Tooltip.attach(btn, 'probe-edge-rtl', 'start');
+          btn.click();
+          var tips = document.querySelectorAll('.tooltip[data-state="open"]');
+          var tip = tips[tips.length - 1];
+          if (!tip) { box.remove(); return { err: '气泡没弹出' }; }
+          var tr = tip.getBoundingClientRect();
+          var br = btn.getBoundingClientRect();
+          var cs = getComputedStyle(tip, '::after');
+          var out = {
+            flippedToEnd: tip.className.indexOf('tooltip--inset-inline-end') >= 0,
+            stillStart: tip.className.indexOf('tooltip--inset-inline-start') >= 0,
+            bubbleInside: tr.left >= 0 && tr.right <= vw,
+            bubbleHugsAnchor: Math.abs(tr.right - br.left) <= 2,
+            arrowPointsToAnchor: cs.borderLeftColor !== 'rgba(0, 0, 0, 0)',
+            detail: 'bubble ' + Math.round(tr.left) + '..' + Math.round(tr.right) +
+                    ' anchor.left=' + Math.round(br.left) + ' vw=' + vw +
+                    ' cls=' + tip.className,
+          };
+          box.remove();
+          return out;
+        });
+        return { ok: r.flippedToEnd === true && r.bubbleInside === true &&
+                      r.bubbleHugsAnchor === true && r.arrowPointsToAnchor === true &&
+                      r.stillStart === false,
+                 note: r.err || (r.detail + ' flipped=' + r.flippedToEnd +
+                       ' hug=' + r.bubbleHugsAnchor + ' arrow=' + r.arrowPointsToAnchor) };
+      },
+
       '左右方位的小三角真的画出来了（含 RTL）': async (p) => {
         const r = await p.evaluate(() => {
           function one(dir, place) {
@@ -217,7 +269,14 @@ const REPO = path.resolve(__dirname, '..');
               return sides[k] && sides[k] !== 'rgba(0, 0, 0, 0)' &&
                      sides[k] !== 'transparent';
             });
+            /* 🔴 0.27.17 起补几何断言：place='left' 的气泡必须在锚点左侧、
+               'right' 在右侧 —— 旧版只查"有一条有色边"，而箭头的物理边
+               跟随气泡自己的 direction（0.27.17 修：跟随锚点写入），
+               修之前 RTL 的箭头几何上背向锚点，判据照样绿。 */
+            var tr = tip.getBoundingClientRect();
+            var br = btn.getBoundingClientRect();
             var out = { cls: tip.className, visible: visible,
+                        bubbleOnLeft: tr.right <= br.left + 2,
                         dir: getComputedStyle(btn).direction };
             box.remove();
             tip.remove();
@@ -228,15 +287,21 @@ const REPO = path.resolve(__dirname, '..');
             ltrRight: one('ltr', 'right'), rtlRight: one('rtl', 'right'),
           };
         });
-        /* 期望：恰好一条边有色；且 LTR 与 RTL 落在**相反**的物理边 */
+        /* 期望：恰好一条边有色；有色边跟随**几何**（气泡在锚点哪侧，
+           箭头就指向哪侧）：气泡在左 ⇒ 箭头指右（border-left 有色），
+           在右 ⇒ 指左（border-right 有色）。
+           🔴 0.27.17 之前期望表写的是"RTL 与 LTR 物理边相反"——
+              那是在给"箭头背向锚点"的 bug 背书：RTL 的 tip 继承 body 的
+              ltr，逻辑类渲染成物理边时方向就错了。修后 LTR/RTL 同一
+              几何布局的有色边必然相同，方向正确性由气泡位置断言守。 */
         const want = [
-          ['ltr + left', r.ltrLeft, 'left'],
-          ['rtl + left', r.rtlLeft, 'right'],
-          ['ltr + right', r.ltrRight, 'right'],
-          ['rtl + right', r.rtlRight, 'left'],
+          ['ltr + left', r.ltrLeft, 'left', true],
+          ['rtl + left', r.rtlLeft, 'left', true],
+          ['ltr + right', r.ltrRight, 'right', false],
+          ['rtl + right', r.rtlRight, 'right', false],
         ];
         const bad = [];
-        for (const [label, got, side] of want) {
+        for (const [label, got, side, onLeft] of want) {
           if (got.err) { bad.push(label + '：' + got.err); continue; }
           if (got.visible.length !== 1) {
             bad.push(label + '：有色边 ' + got.visible.length + ' 条（应为 1 条）' +
@@ -245,10 +310,14 @@ const REPO = path.resolve(__dirname, '..');
             bad.push(label + '：有色边是 ' + got.visible[0] + '（应为 ' + side + '）' +
                      ' class=' + got.cls);
           }
+          if (got.bubbleOnLeft !== onLeft) {
+            bad.push(label + '：气泡应在锚点' + (onLeft ? '左' : '右') + '侧，实测' +
+                     (got.bubbleOnLeft ? '左' : '右') + '侧');
+          }
         }
         return { ok: bad.length === 0,
                  note: bad.length ? '🔴 ' + bad.join('；')
-                                  : '四个组合各有一条有色边，且 RTL 物理边相反 ✅' };
+                                  : '四个组合各一条有色边、箭头指向锚点、气泡在期望的一侧 ✅' };
       },
 
       /* ⑦ 悬停能弹出、移开能关（attach 路径 —— 0.27 修的真缺陷）

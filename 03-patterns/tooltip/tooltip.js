@@ -292,7 +292,13 @@ var flDismissable = function (opts) {
       tip.style.display = 'block';
       if (!tip.parentNode) document.body.appendChild(tip);
 
-      layoutTip();
+      /* 🔴 0.27.17：layoutTip 可能判定"锚点/气泡已不在文档里"而就地收掉
+         （open=false、监听摘净）。返回 false 时后半段必须停 —— 否则
+         data-state=open 和重定位监听会把刚关掉的孤儿气泡"复活"。 */
+      if (!layoutTip()) {
+        tip.style.visibility = '';     /* 内联 hidden 交还给 CSS */
+        return;
+      }
       bindReposition();
       tip.style.visibility = '';       /* 交还给 CSS（data-state 控制显隐） */
       tip.setAttribute('data-state', 'open');
@@ -302,12 +308,19 @@ var flDismissable = function (opts) {
     /* 🔴 0.27.13：定位收编成一个 layoutTip()（含视口边缘**翻转**与**钳制**），
        并在开着期间跟随 scroll/resize **重定位**——此前是两条已知限制
        （不翻转、不重定位，靠近视口边缘整块溢出、滚动后气泡留在原地）。
-       所有权状态机不参与定位：place() 只挪坐标，不动 owned。 */
+       所有权状态机不参与定位：place() 只挪坐标，不动 owned。
+       🔴 0.27.17：返回 false = "已就地整体收掉（锚点/气泡不在文档里）"，
+       show() 的后半段必须停（见 show 内注释）。 */
     function layoutTip() {
       /* 🔴 锚点已被移出 DOM（SPA 路由切换/框架卸载）：getBoundingClientRect
          全是 0 ⇒ 气泡会被钳制到视口左上角"飞走"。锚点没了，提示就没有意义
-         ⇒ 直接整体收掉（与 focus-return 核同款 contains 判据，老 WebView 安全）。 */
-      if (!el || !document.contains(el)) { hide(); return; }
+         ⇒ 直接整体收掉。
+         🔴 0.27.17：判据用 isConnected 而不是 document.contains ——
+            后者对 shadow 树内的节点恒 false（getBoundingClientRect 却返回
+            真实值），shadow DOM 用法下 hover/focus 每次都会误判成"锚点已移除"。
+            isConnected 覆盖 shadow 树；没有它的老 WebView 退回 contains。 */
+      var anchorGone = !el || !(el.isConnected || document.contains(el));
+      if (anchorGone || !tip.parentNode) { hide(); return false; }
       var b = el.getBoundingClientRect();
       var t = tip.getBoundingClientRect();
       var vw = document.documentElement.clientWidth;
@@ -316,6 +329,13 @@ var flDismissable = function (opts) {
       var sx = window.pageXOffset || 0;
       var M = 8;                                   /* 视口最小边距 */
       var p = pos;                                 /* 首选方位（attach 时解析） */
+      var rtl = getComputedStyle(el).direction === 'rtl';
+      /* 🔴 0.27.17：方位类全是**逻辑属性**（inset-inline-* / border-inline-*），
+         渲染成哪条物理边跟随**气泡自己的** direction —— 而气泡挂在 body 下，
+         继承的是 body（通常 ltr），不是锚点的。RTL 锚点不把这层写过去，
+         箭头永远画在背向锚点的一侧（真浏览器实测：RTL end 箭头指左，
+         锚点在右）。判据 ⑥ 此前只查"有一条有色边"，放过了它。 */
+      tip.style.direction = rtl ? 'rtl' : '';
 
       /* 翻转：首选侧放不下且对侧放得下 ⇒ 换对侧；两侧都放不下 ⇒ 保持并钳制 */
       if (p === 'top' && b.top - t.height < M && b.bottom + t.height <= vh - M) p = 'bottom';
@@ -328,16 +348,27 @@ var flDismissable = function (opts) {
         /* 垂直钳制：上下都放不下（气泡比视口还高）时按边距贴边 */
         top = Math.max(M, Math.min(top, vh - t.height - M));
       } else {
-        var rtl = getComputedStyle(el).direction === 'rtl';
         /* start = 气泡在锚点的内联起点侧：LTR 靠左（右缘贴锚点左缘），
-           RTL 靠右（左缘贴锚点右缘） */
+           RTL 靠右（左缘贴锚点右缘）。rtl 已在函数头解析（还要写给气泡）。 */
         left = (p === 'start')
           ? (rtl ? b.right : b.left - t.width)
           : (rtl ? b.left - t.width : b.right);
         top = b.top + b.height / 2 - t.height / 2;
-        /* 水平翻转：start 放不下且 end 能放 ⇒ 换 end（反之亦然） */
-        if (p === 'start' && left < M && b.right + t.width <= vw - M) p = 'end';
-        if (p === 'end' && left + t.width > vw - M && b.left - t.width >= M) p = 'start';
+        /* 🔴 0.27.17 水平翻转：判据必须**跟随方向** —— 溢出判的是"气泡
+           实际占用的那一侧"，RTL 下 start 侧在锚点右边，溢出条件是
+           右缘越界，不是 LTR 的 left < M。旧谓词按 LTR 几何写死：
+           RTL 下真实溢出永不翻转，无关情形反而误翻转（0.27.16 实锤）。
+           fits* 用对侧位置判"换过去放不放得下"，与溢出判据同向对称。 */
+        var startOverflow = rtl ? (b.right + t.width > vw - M)
+                                : (b.left - t.width < M);
+        var startFits     = rtl ? (b.right + t.width <= vw - M)
+                                : (b.left - t.width >= M);
+        var endOverflow   = rtl ? (b.left - t.width < M)
+                                : (b.right + t.width > vw - M);
+        var endFits       = rtl ? (b.left - t.width >= M)
+                                : (b.right + t.width <= vw - M);
+        if (p === 'start' && startOverflow && endFits) p = 'end';
+        if (p === 'end' && endOverflow && startFits) p = 'start';
         left = (p === 'start')
           ? (rtl ? b.right : b.left - t.width)
           : (rtl ? b.left - t.width : b.right);
@@ -346,10 +377,15 @@ var flDismissable = function (opts) {
       /* 水平钳制：两步翻转都不够时，贴边放（不再溢出视口） */
       left = Math.max(M, Math.min(left, Math.max(M, vw - t.width - M)));
 
-      /* 类名跟着实际方位走：箭头方向由 CSS 类决定，翻了不换类 = 箭头指反 */
-      tip.className = 'tooltip ' + CLS[p];
+      /* 类名跟着实际方位走：箭头方向由 CSS 类决定，翻了不换类 = 箭头指反。
+         🔴 0.27.17：只**替换**自己拥有的类（tooltip + CLS 四个方位类），
+         外部经 tooltipInstance.tip 追加的类原样保留 —— 整串重写会在首次
+         scroll/翻转时把外部类抹掉；且无变更时不写属性（每帧 scroll 都写
+         一次 className 属于白做）。 */
+      syncPlacementCls(p);
       tip.style.top = (top + sy) + 'px';
       tip.style.left = (left + sx) + 'px';
+      return true;
     }
 
     /* 重定位：开着期间 scroll/resize → rAF 节流重贴。
@@ -357,6 +393,24 @@ var flDismissable = function (opts) {
        hide 时摘掉；锚点跟随是文档坐标（+pageOffset），滚动不改变相对位置，
        重贴只是纠"锚点因滚动移动了"这一件事。 */
     var repositionQueued = false;
+    /* 方位类是组件自有产权：替换时只动 'tooltip' 与 CLS 的四个方位值，
+       外部追加的类一律保留（判据在 tooltip-check）。 */
+    function syncPlacementCls(p) {
+      var parts = tip.className.split(/\s+/);
+      var keep = [];
+      for (var i = 0; i < parts.length; i++) {
+        var c = parts[i];
+        if (!c || c === 'tooltip') continue;
+        var isPlacement = false;
+        for (var k in CLS) {
+          if (CLS[k] === c) { isPlacement = true; break; }
+        }
+        if (!isPlacement) keep.push(c);
+      }
+      keep.push('tooltip', CLS[p]);
+      var next = keep.join(' ');
+      if (next !== tip.className) tip.className = next;
+    }
     function scheduleReposition() {
       if (!open || repositionQueued) return;
       repositionQueued = true;

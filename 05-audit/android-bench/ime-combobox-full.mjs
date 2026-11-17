@@ -250,6 +250,12 @@ async function main() {
         'trusted keydown(229) 到达输入框=' + s.trustedSeen +
           '；tags=' + JSON.stringify(s.tags) +
           '，activedescendant=' + JSON.stringify(s.activedesc));
+    } else {
+      /* 🔴 0.27.17 不许静默蒸发：dispatchKeyEvent 抛错时这条判据**没有跑**，
+         不是通过 —— 旧实现无 else 分支，套件照样显示"全过"，
+         "10+ 项覆盖"在报告里虚高。判据未执行 = 如实记红。 */
+      c.check('③ 浏览器派发的 trusted keydown（CDP dispatchKeyEvent, 229）也让路',
+        false, 'CDP dispatchKeyEvent 不可用（' + trustedErr + '）——判据未执行，记红');
     }
 
     await page.evaluate(() => {

@@ -16,6 +16,11 @@
  *      才存在 —— ensureCdp 支持 bootstrapUrl，轮询期间会自动 am start 拉起 Chrome。
  *   5. Node ≥ 18（本台为 24）；playwright 来自被测仓库 node_modules（不额外安装）。
  *
+ * 已知限制（诚实入档，0.27.17）：
+ *   CDP 建连**之后** Chrome 崩溃/重启没有自动重连 —— 该套件剩余断言会塌缩成
+ *   一条响亮的环境失败（不是假绿）；跨套件可恢复（每个套件自建连接）。
+ *   自动重连要动每个套件的 session 生命周期，收益配不上改动面，暂不做。
+ *
  * 结果契约：
  *   每个脚本跑完，把 {name, ok, detail}[] 按脚本名分节合并进
  *   <台子根>/results/report.json（重跑同一脚本只覆盖它自己那一节），
@@ -95,6 +100,17 @@ export function ensureDevice() {
     .slice(1)
     .filter((l) => /\tdevice\s*$/.test(l));
   if (ready.length && !SERIAL) SERIAL = ready[0].split('\t')[0].trim();
+  /* 🔴 0.27.17 显式 serial 必须校验：ANDROID_SERIAL 指向 offline/已拔设备时，
+     旧实现只要还有别的设备在线就照用死 serial，后续 adb -s 全部
+     "device offline / more than one device / not found"，报错不指向真因。
+     这里直接吵出来：serial 是台子级的确定性约定，静默换设备会污染基线。 */
+  if (SERIAL && !ready.some((l) => l.split('\t')[0].trim() === SERIAL)) {
+    throw new Error(
+      'ANDROID_SERIAL=' + SERIAL + ' 不在当前可用设备列表（状态须为 device）：\n    ' +
+        (ready.join('\n    ') || '（无）') +
+        '\n  排查：设备 offline/unauthorized 需在模拟器里授权；已拔除则清掉 ANDROID_SERIAL 重跑（不指定时自动取第一台）。'
+    );
+  }
   if (!ready.length) {
     throw new Error(
       '没有状态为 device 的 Android 设备。adb devices 输出：\n    ' +
@@ -180,6 +196,12 @@ export async function connectPage(urlSubstring, { openUrl = null, timeoutMs = 45
       const pages = browser.contexts().flatMap((ctx) => ctx.pages());
       const hit = pages.find((p) => p.url().includes(urlSubstring));
       if (hit) {
+        /* 🔴 0.27.17 命中先重载：上一轮残留的同 URL 标签会带着上一轮的
+           组件状态（抽屉开着、标签已加、tooltip 悬着）被优先命中，
+           造成"期望关闭却撞上残留 open"的假红（old-engine 的清标签
+           同款问题）。reload 把状态归零，与 am start 全新打开等价，
+           且不依赖调用方是否传 openUrl。 */
+        await hit.reload({ timeout: loadTimeoutMs }).catch(() => {});
         await hit.waitForLoadState('load', { timeout: loadTimeoutMs }).catch(() => {});
         /* 拉到前台：保证 CSS transition / IME 行为与真人使用一致（后台标签会被节流） */
         await hit.bringToFront().catch(() => {});

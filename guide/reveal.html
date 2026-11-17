@@ -75,7 +75,7 @@
 </tbody>
 </table></div>
 <h2 id="s5">三条硬约束<a class="anchor" href="#s5" aria-label="本节直链">#</a></h2>
-<ol><li><strong>无 JS 必须全可见。</strong> 隐藏只在 <code>&lt;html data-reveal-ready&gt;</code> 存在时生效，而这个标记由引擎在接管<strong>之后</strong>才加。没有 JS / JS 报错 / 没有 <code>IntersectionObserver</code> ⇒ 内容就是普通内容：透明度 1、位置不偏。</li><li><strong>降级是分级的。</strong> <code>prefers-reduced-motion</code> 下位移与缩放<strong>关掉</strong>，内容直接出现（不做淡入）。全库那条 <code>0.01ms !important</code> 兜底会把一切灭掉，本文件用更具体的规则覆盖它 —— 因为&quot;关掉位移&quot;不等于&quot;关掉可见性&quot;。</li><li><strong>只用于区块级入场。</strong> 不要给表格行、列表项逐行加：那是扫读场景，用户要在半秒内横向比三行数字，逐行错峰会让比较变成&quot;等动画&quot;。</li></ol>
+<ol><li><strong>无 JS 必须全可见。</strong> 隐藏只在 <code>&lt;html data-reveal-ready&gt;</code> 存在时生效，而这个标记由引擎在接管<strong>之后</strong>才加。没有 JS / JS 报错 / 没有 <code>IntersectionObserver</code> ⇒ 内容就是普通内容：透明度 1、位置不偏。</li><li><strong>降级是分级的。</strong> <code>prefers-reduced-motion</code> 下位移与缩放<strong>关掉</strong>，内容直接出现（不做淡入）。全库那条 <code>0.01ms !important</code> 兜底会把一切灭掉，本文件用更具体的规则覆盖它 —— 因为&quot;关掉位移&quot;不等于&quot;关掉可见性&quot;。</li><li><strong>只用于区块级入场。</strong> 不要给表格行、列表项逐行加：那是扫读场景，用户要在半秒内横向比三行数字，逐行错峰会让比较变成&quot;等动画&quot;。</li><li><strong>enable 之后插入的内容也会被接管。</strong> 接管期间动态进 DOM 的 <code>data-reveal</code>（SPA 渲染、列表注入、路由切换）由 MutationObserver 去抖复扫纳入观察 —— 不会停在 <code>opacity: 0</code> 不出来。缺 <code>MutationObserver</code> 的老 WebView 上静默跳过（那时不该用入场动效，兜底顺序里它排在 IO 兜底之后）。</li></ol>
 <h2 id="s6">类名<a class="anchor" href="#s6" aria-label="本节直链">#</a></h2>
 <div class="table" tabindex="0" role="region" aria-label="类名（可横向滚动）"><table>
 <thead><tr>
@@ -119,7 +119,7 @@
   </aside>
 </div>
 <footer class="g-foot">
-  <p>v0.27.16 · 零第三方运行时依赖 · 组件数 40</p>
+  <p>v0.27.17 · 零第三方运行时依赖 · 组件数 40</p>
 </footer>
 </body>
 </html>

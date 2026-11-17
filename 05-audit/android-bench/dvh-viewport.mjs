@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 /* MANUAL-ONLY: 观测项脚本 —— 地址栏收拢是 Chrome UI 层行为（无窗模拟器下不稳定），只在有台子的机器上人工跑。
    不进 check-all 队列的理由见 05-audit/android-bench/README.md。 */
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 
 const ANDROID_BENCH_ROOT = process.env.ANDROID_BENCH;
 if (!ANDROID_BENCH_ROOT) {
@@ -76,6 +76,10 @@ pass('visualViewport 与 innerHeight 稳定态一致（dvh 生效信号）', con
 
 console.log('---');
 console.log('通过 ' + results.filter(r => r.ok).length + '/' + results.length);
-writeFileSync('<台子根目录>/results/dvh-viewport.json', JSON.stringify({ before, after, results }, null, 2));
+/* 🔴 0.27.17 结果落盘走环境变量：旧实现把文档占位符 `<台子根目录>`
+   当成了字面量路径，writeFileSync 必 ENOENT 崩（诊断打完了产物落不了盘）。
+   与 lib-env 的 RESULTS_DIR 同源：ANDROID_BENCH/results/。 */
+fs.mkdirSync(ANDROID_BENCH_ROOT + '/results', { recursive: true });
+writeFileSync(ANDROID_BENCH_ROOT + '/results/dvh-viewport.json', JSON.stringify({ before, after, results }, null, 2));
 await page.close();
 await browser.close();

@@ -7,8 +7,11 @@ var STAGGER_MS = 40;
 var STAGGER_CAP = 6;
 var THRESHOLD = 0.15;
 var WATCHDOG_MS = 2000;
+var RESCAN_MS = 120;
 var observer = null;
 var watchdog = null;
+var mo = null;
+var rescanTimer = null;
 
 function each(list, fn) {
 for (var i = 0; i < list.length; i++) { fn(list[i], i); }
@@ -61,10 +64,29 @@ if (inViewport(el)) { markDone(el); }
 function teardown() {
 if (watchdog) { global.clearTimeout(watchdog); watchdog = null; }
 if (observer) { observer.disconnect(); observer = null; }
+if (mo) { mo.disconnect(); mo = null; }
+if (rescanTimer) { global.clearTimeout(rescanTimer); rescanTimer = null; }
 each(document.querySelectorAll(SELECTOR), function (el) {
 clearDone(el);
 });
 document.documentElement.removeAttribute('data-reveal-ready');
+}
+
+function rescanNow() {
+rescanTimer = null;
+if (!observer) { return; }
+prepareGroups();
+each(document.querySelectorAll(SELECTOR), function (el) {
+if (!el.hasAttribute('data-reveal-done')) { observer.observe(el); }
+});
+}
+
+function armRescan() {
+if (!('MutationObserver' in global)) { return; }
+mo = new global.MutationObserver(function () {
+if (!rescanTimer) { rescanTimer = global.setTimeout(rescanNow, RESCAN_MS); }
+});
+mo.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 function enable() {
@@ -109,6 +131,7 @@ return true;
 if (!watchdog) {
 watchdog = global.setTimeout(watchdogSweep, WATCHDOG_MS);
 }
+armRescan();
 return true;
 }
 

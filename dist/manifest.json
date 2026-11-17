@@ -13,8 +13,8 @@
   ],
   "totals": {
     "sourceFiles": 81,
-    "sourceBytes": 1062994,
-    "distGzip": 127634
+    "sourceBytes": 1068876,
+    "distGzip": 128108
   },
   "files": [
     {
@@ -737,15 +737,15 @@
     },
     {
       "source": "03-patterns/nav/nav.js",
-      "sourceSha256": "6b3323af5323daa2aa4d5e63660257df91fdb3657d5fbe02c1669a1345c74d4b",
-      "sourceBytes": 18534,
-      "sourceGzip": 6958,
+      "sourceSha256": "5dc1bcf86b133285df32a63e6c2f344b2a0f1af2e9363501d034241697ba87aa",
+      "sourceBytes": 19360,
+      "sourceGzip": 7247,
       "outputs": [
         {
           "path": "dist/03-patterns/nav/nav.js",
           "kind": "stripped",
-          "bytes": 8733,
-          "gzip": 2730
+          "bytes": 9086,
+          "gzip": 2809
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -839,15 +839,15 @@
     },
     {
       "source": "03-patterns/reveal/reveal.js",
-      "sourceSha256": "7f3175f7b708a318cd94d4712ef2f4f32922ce29c08b436af48be6b1a96830a3",
-      "sourceBytes": 6802,
-      "sourceGzip": 2890,
+      "sourceSha256": "df091088f0be699ef5742d94e0aa9fbe1d3f44aeb860c7cda34151fa4cff9cf8",
+      "sourceBytes": 8499,
+      "sourceGzip": 3478,
       "outputs": [
         {
           "path": "dist/03-patterns/reveal/reveal.js",
           "kind": "stripped",
-          "bytes": 3294,
-          "gzip": 1188
+          "bytes": 3979,
+          "gzip": 1335
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -911,15 +911,15 @@
     },
     {
       "source": "03-patterns/tooltip/tooltip.js",
-      "sourceSha256": "fed81cbde8eb48d8cc16de6281a5bf34abd82d359e20f5d9aad3dc3b118511ad",
-      "sourceBytes": 22875,
-      "sourceGzip": 9149,
+      "sourceSha256": "e8445c297d817da23fbd8aecbe71340124921448a9498366451bcc90fc2f0752",
+      "sourceBytes": 26234,
+      "sourceGzip": 10337,
       "outputs": [
         {
           "path": "dist/03-patterns/tooltip/tooltip.js",
           "kind": "stripped",
-          "bytes": 9235,
-          "gzip": 2980
+          "bytes": 10103,
+          "gzip": 3228
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

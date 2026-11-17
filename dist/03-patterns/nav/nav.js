@@ -140,8 +140,10 @@ this.labelClose = this.labels.close || '关闭菜单';
 this.toggle = root.querySelector('[data-nav-toggle]') || root.querySelector('.nav__toggle');
 this.list = root.querySelector('[data-nav-list]') || root.querySelector('.nav__list');
 
+this._addedTabindex = false;
 if (this.toggle && this.list && !this.list.hasAttribute('tabindex')) {
 this.list.setAttribute('tabindex', '-1');
+this._addedTabindex = true;
 }
 
 if (!this.toggle || !this.list) {
@@ -153,10 +155,12 @@ return;
 }
 
 this.scrim = root.querySelector('.nav__scrim');
+this._createdScrim = false;
 if (!this.scrim) {
 this.scrim = document.createElement('div');
 this.scrim.className = 'nav__scrim';
 root.appendChild(this.scrim);
+this._createdScrim = true;
 }
 
 this.scrim.setAttribute('aria-hidden', 'true');
@@ -305,6 +309,14 @@ this.toggle.removeEventListener('click', this.onToggleClick);
 this.list.removeEventListener('click', this.onListClick);
 window.removeEventListener('resize', this.onResize);
 if (this.dismiss) this.dismiss.destroy();
+
+if (this._addedTabindex) this.list.removeAttribute('tabindex');
+if (this._createdScrim && this.scrim.parentNode) {
+this.scrim.parentNode.removeChild(this.scrim);
+}
+this.scrim = null;
+this._addedTabindex = false;
+this._createdScrim = false;
 };
 
 Nav.attach = function (root, opts) {

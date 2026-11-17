@@ -72,6 +72,13 @@
 `fl-nav-open` / `fl-nav-close`（`detail = { root }`）。自动初始化不接回调
 —— 要收通知请听事件（与 `tabs.js` 同一条纪律）。
 
+### 销毁
+
+`root.navInstance.destroy()`：关掉抽屉、摘掉全部监听，并**回滚 init 时
+对作者 DOM 的两处越界写入** —— JS 给列表补的 `tabindex="-1"`、缺遮罩时
+自动建的 `.nav__scrim`。destroy 之后 root 回到"只是一段普通标记"的状态，
+重新 `new Nav(root)` 不会拿到上一实例留下的脏状态。
+
 ---
 
 ## 目录高亮：`toc.js`

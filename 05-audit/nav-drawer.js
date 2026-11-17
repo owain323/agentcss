@@ -23,6 +23,8 @@
  *   键盘  ：连续 8 次 Tab 仍在抽屉内（焦点陷阱）
  *   关闭  ：Esc 关掉 / 焦点回到汉堡 / 解锁滚动 / 正文恢复可读
  *   其它  ：点遮罩关掉 / 视口变宽自动关掉 / 无 JS 报错
+ *   销毁  ：init 的越界写入（tabindex / 自动遮罩）destroy 全部回滚，重新 init 干净
+ *          （0.27.17 —— 合成 DOM 走完整生命周期，不依赖 demo 页面怎么写遮罩）
  *
  * ⚠️ 「正文被隐藏」的判据是 `closest('[aria-hidden="true"]')` 而不是看 main 自身：
  *    inert/aria-hidden 是打在 body 的**直接子元素**上的，正文常常包在 .shell 里。
@@ -144,6 +146,47 @@ function chk(label, ok, extra) {
     const s4 = await p.evaluate(() =>
       document.querySelector('.nav__toggle').getAttribute('aria-expanded'));
     chk('视口变宽自动关掉', s4 === 'false', s4);
+
+    /* destroy 回滚（0.27.17）：init 会对作者 DOM 做两处越界写入 ——
+       JS 给列表补 tabindex="-1"、缺遮罩时自动建 .nav__scrim。
+       合成 DOM 走完整生命周期：写入必须能回滚，destroy 之后 root
+       回到"只是一段普通标记"，重新 init 不带走上一实例的状态。 */
+    const s5 = await p.evaluate(() => {
+      const root = document.createElement('header');
+      root.className = 'nav';
+      root.setAttribute('data-nav', '');
+      root.innerHTML = '<button class="nav__toggle" aria-expanded="false">菜单</button>' +
+        '<ul class="nav__list"><li><a href="#a">A</a></li></ul>';
+      document.body.appendChild(root);
+      const inst = window.Nav.attach(root, {});
+      const list = root.querySelector('.nav__list');
+      const added = {
+        tabindex: list.getAttribute('tabindex') === '-1',
+        scrim: !!root.querySelector('.nav__scrim'),
+        children: root.children.length,   /* 2 个作者节点 + 1 个自动遮罩 = 3 */
+      };
+      inst.destroy();
+      const out = {
+        added: added,
+        tabindexGone: !list.hasAttribute('tabindex'),
+        scrimGone: !root.querySelector('.nav__scrim'),
+        childrenAfter: root.children.length,
+        reInitOk: (function () {
+          const i2 = window.Nav.attach(root, {});
+          const ok = !!(i2 && i2.toggle && list.getAttribute('tabindex') === '-1');
+          i2.destroy();
+          return ok;
+        })(),
+      };
+      document.body.removeChild(root);
+      return out;
+    });
+    chk('destroy: init 确实补了 tabindex 且自动建了遮罩',
+      s5.added.tabindex && s5.added.scrim && s5.added.children === 3, s5.added.children);
+    chk('destroy: 两处越界写入全部回滚',
+      s5.tabindexGone && s5.scrimGone && s5.childrenAfter === 2,
+      [s5.tabindexGone, s5.scrimGone, s5.childrenAfter]);
+    chk('destroy 后重新 init 状态干净', s5.reInitOk === true);
 
     chk('无 JS 报错', errs.length === 0, errs[0] || '');
     await p.close();
