@@ -174,3 +174,23 @@ git blame --date=short -- docs/LAYER-BASELINE.md | grep 'MQQBrowser/20.6.6'
 - 不判断"该不该支持百度浏览器"—— 那是产品判断，需要回答"它在目标受众里占多少"，
   这 15 项回答不了
 - 不把「本库没用到的能力缺失」算成缺陷
+
+
+---
+
+## 2026-11-19 · 0.27.18 真机回归（bench35 + bench28）
+
+> 0.27.17/18 的全部真机相关改动（old-engine Runtime.enable、ime ③ 记红、
+> a11y ④ AX 硬判据、SERIAL 校验、connectPage reload、run-all 死导入清理）
+> 首次上真机验证。台账：`10-review/android/2026-11-19/report-bench35.json`。
+
+| 项 | 实测 |
+|---|---|
+| bench35（API35 模拟器，AVD bench35）run-gate | **26/26 全绿**（touch-tooltip-full 11 / ime-combobox-full 11 / a11y-select 4；三套件均加载 -full 深度版） |
+| bench28（API28 模拟器，Chrome **69.0.3497.100** 原生）old-engine | **5/5 全绿**（渲染 / 零 JS 错误 / 真触摸开 / 再点关） |
+| **鉴别力探针（--inject-error，本轮新增）** | 注入 `console.error("probe")` ⇒ "零 JS 错误"判据 **FAIL 且精确捕获注入内容** ⇒ Runtime.enable 修复在 Chrome 69 上被证明活着（阴性对照：干净跑 5/5 绿） |
+| SERIAL 校验 | 单台在线自动锁定；未拦（预期） |
+| connectPage reload | 三套件全绿，未撞慢机假红 |
+
+**结论**：0.27.18 的"安卓台脚本未上真机"遗留项**清零**。old-engine 的
+"零 JS 错误"从"结构性恒真"变为"带阴性对照的可信判据"。

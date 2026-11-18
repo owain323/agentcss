@@ -1,0 +1,188 @@
+{
+  "scripts": {
+    "a11y-select": {
+      "ok": true,
+      "passed": 4,
+      "failed": 0,
+      "meta": {
+        "devices": [
+          "emulator-5554"
+        ],
+        "reverse": "host-16 tcp:8000 tcp:8000",
+        "cdpBrowser": "Chrome/124.0.6367.219"
+      },
+      "entries": [
+        {
+          "name": "① AX 树里有 role=combobox 节点（select demo 的触发按钮）",
+          "ok": true,
+          "detail": "整树 94 个节点，其中 role=combobox 3 个，name：投资主体 A 股主板 / 请选择板块 / 请选择（demo 有 s1/s2/s3 三个实例：s1 有 label，s2/s3 无 label 退 aria-label）"
+        },
+        {
+          "name": "② combobox 的可访问名 =「字段名 + 当前值」（投资主体 + A 股主板）",
+          "ok": true,
+          "detail": "name=\"投资主体 A 股主板\"（backendDOMNodeId=6）——aria-labelledby 拼接，朗读应念「投资主体 A 股主板」"
+        },
+        {
+          "name": "③ DOM 佐证：aria-labelledby =「字段名元素 值元素」且两段文字正确",
+          "ok": true,
+          "detail": "role=combobox，aria-labelledby=\"select-label-2 select-value-3\" → [投资主体 | A 股主板]，.select__value 文字=\"A 股主板\""
+        },
+        {
+          "name": "④ tooltip demo 页在 AX 树里有 role=tooltip 的 live region",
+          "ok": true,
+          "detail": "AX 树证据：role=tooltip 节点 1 个，name=组件提示；DOM 旁证：#tooltip-live 存在=true，role=tooltip，aria-label=组件提示，aria-live=polite，aria-atomic=true"
+        }
+      ]
+    },
+    "touch-tooltip": {
+      "ok": true,
+      "passed": 11,
+      "failed": 0,
+      "meta": {
+        "devices": [
+          "emulator-5554"
+        ],
+        "reverse": "host-16 tcp:8000 tcp:8000",
+        "cdpBrowser": "Chrome/124.0.6367.219",
+        "cdpBootstrap": false
+      },
+      "entries": [
+        {
+          "name": "前置：#b1 与中性元素（第一个 h2）都在视口内，可安全真触摸",
+          "ok": true,
+          "detail": "#b1 中心=(76,71)，中性 h2 中心=(197,19)，视口高=701"
+        },
+        {
+          "name": "① attach 创建气泡：show 前游离（设计如此），show 后挂 body",
+          "ok": true,
+          "detail": "tip id=tt1，show 前父节点=游离（游离=设计；挂 body 的验证见 ③）"
+        },
+        {
+          "name": "② 初态关闭：无 data-state（show 前游离，opacity 不可测）",
+          "ok": true,
+          "detail": "data-state=null（期望 null；游离节点上 opacity/visibility 是空串，不可断言）"
+        },
+        {
+          "name": "③ 一次点按必是「开」（真触摸，非 mouse）",
+          "ok": true,
+          "detail": "touch 点按 #b1 后 data-state=open，opacity=1，visibility=visible，气泡文字「这是补充说明：点击后会进入批量模式」，父节点=BODY（期望 open / ≈1 / visible / BODY；修前第一次点击以\"关\"收场）"
+        },
+        {
+          "name": "④ 再点一下才是「关」",
+          "ok": true,
+          "detail": "第二次点按后 data-state=null，opacity=0（期望 null / ≈0）"
+        },
+        {
+          "name": "⑤ touchstart 后 700ms 内的合成 mouseenter 不给开（触屏抑制窗）",
+          "ok": true,
+          "detail": "touchstart → 合成 mouseenter 实测 176ms（须 <700ms 才算落在窗内）；此刻 data-state=null，opacity=0"
+        },
+        {
+          "name": "⑥ 抑制窗过期（>700ms）后 mouseenter 恢复开气泡",
+          "ok": true,
+          "detail": "同一次触摸起 1287ms 后派发 mouseenter：data-state=open，opacity=1（期望 open / ≈1）"
+        },
+        {
+          "name": "⑦ 悬停开的，mouseleave 移开就收（hover 所有权释放）",
+          "ok": true,
+          "detail": "mouseleave 后 data-state=null，opacity=0（期望 null / ≈0）"
+        },
+        {
+          "name": "⑧ 点外部（真触摸）也能关",
+          "ok": true,
+          "detail": "点 #b1 开（data-state=open，opacity=1） → 点外部 h2 → data-state=null，opacity=0（两步都必须成立）"
+        },
+        {
+          "name": "⑨ Esc 能关（WCAG 1.4.13）",
+          "ok": true,
+          "detail": "点按开（data-state=open）→ Esc keydown → data-state=null，opacity=0（期望 null / ≈0）"
+        },
+        {
+          "name": "⑩ blur 能关（blur 同时收掉 focus 与 click 所有权）",
+          "ok": true,
+          "detail": "点按开（data-state=open）→ blur() → data-state=null，opacity=0（期望 null / ≈0）"
+        }
+      ]
+    },
+    "ime-combobox": {
+      "ok": true,
+      "passed": 11,
+      "failed": 0,
+      "meta": {
+        "devices": [
+          "emulator-5554"
+        ],
+        "reverse": "host-16 tcp:8000 tcp:8000",
+        "cdpBrowser": "Chrome/124.0.6367.219",
+        "imeVia": "CDP Input.imeSetComposition（真实 IME 通道）",
+        "endVia": "CDP Input.insertText（真实提交通道）"
+      },
+      "entries": [
+        {
+          "name": "前置：最小实例就绪（role=combobox、focus 后列表开、3 个选项、无标签）",
+          "ok": true,
+          "detail": "role=combobox，aria-autocomplete=list，listHidden=false，options=[\"ni\",\"nine\",\"shanghai\"]，tags=[]，activedescendant=null"
+        },
+        {
+          "name": "① 合成文本「ni」上屏且 compositionstart 已送达输入框",
+          "ok": true,
+          "detail": "IME 通道=CDP Input.imeSetComposition（真实 IME 通道）；input.value=\"ni\"，compositionstart 见探针=true，列表开=true，选项=[\"ni\",\"nine\"]"
+        },
+        {
+          "name": "② 合成期间 Enter（keydown keyCode=229）不加任何标签",
+          "ok": true,
+          "detail": "keydown {Enter,229} 后 tags=[]（守卫失效时 q=\"ni\" 会精确命中 value=\"ni\" 被加成标签）"
+        },
+        {
+          "name": "③ 浏览器派发的 trusted keydown（CDP dispatchKeyEvent, 229）也让路",
+          "ok": true,
+          "detail": "trusted keydown(229) 到达输入框=true；tags=[]，activedescendant=null"
+        },
+        {
+          "name": "④ 合成期间 ↑↓（keyCode=229）不动游标",
+          "ok": true,
+          "detail": "↓(229)+↑(229) 后 aria-activedescendant=null（期望 null/undefined；守卫失效时会指向第 0 项）"
+        },
+        {
+          "name": "⑤ 合成期间普通 keyCode 的 ↑↓ 也让路（compositionstart 标志层）",
+          "ok": true,
+          "detail": "composing=true 时 keydown {ArrowDown,40}/{ArrowUp,38} → aria-activedescendant=null（期望 null；标志层失效时会指向第 0 项）"
+        },
+        {
+          "name": "⑥ 合成期间普通 keyCode 的 Enter 也让路（不提交）",
+          "ok": true,
+          "detail": "composing=true 时 keydown {Enter,13} → tags=[]（期望 []；标志层失效时会精确命中「ni」）"
+        },
+        {
+          "name": "⑦ e.isComposing=true 的 Enter 让路（isComposing 层）",
+          "ok": true,
+          "detail": "keydown {Enter,13,isComposing:true} → tags=[]（期望 []）"
+        },
+        {
+          "name": "⑧ 合成期间建议列表照常刷新（input 事件不被拦）",
+          "ok": true,
+          "detail": "listHidden=false，选项文字=[\"NI 镍\",\"9 nine\"]（值 [\"ni\",\"nine\"]），带 <mark> 命中高亮=2 个（\"上海/shanghai\" 必须被滤掉）"
+        },
+        {
+          "name": "⑨ compositionend 后的收尾 Enter（keyCode=229）仍不加标签",
+          "ok": true,
+          "detail": "合成结束（CDP Input.insertText（真实提交通道））后 keydown {Enter,229} → tags=[]（期望 []；229 层失效时会精确命中「ni」）"
+        },
+        {
+          "name": "⑩ compositionend 后普通 Enter 正常提交（成标签、输入清空）",
+          "ok": true,
+          "detail": "keydown {Enter,13} → tags=[\"ni\"]，input.value=\"\"（期望 [\"ni\"] 与 \"\"；同时证明合成标志已被 compositionend 复位）"
+        }
+      ]
+    }
+  },
+  "generatedAt": "2026-11-18T17:39:51.388Z",
+  "summary": {
+    "scripts": 3,
+    "scriptsOk": 3,
+    "checks": 26,
+    "checksPassed": 26,
+    "checksFailed": 0,
+    "passRate": "100%"
+  }
+}

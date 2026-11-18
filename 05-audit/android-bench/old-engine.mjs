@@ -112,6 +112,15 @@ for (let i = 0; i < 20; i++) {
 const ua = (await evalJs('navigator.userAgent')).result?.value || '';
 console.log('引擎 UA:', ua);
 pass('引擎确认（Chrome 69 时代）', /Chrome\/6[89]/.test(ua), ua.slice(0, 70));
+/* 🔴 0.27.19 鉴别力探针（--inject-error）：Runtime.enable 修复的清算——
+   在页面上注入一条 console.error，"零 JS 错误"判据必须变红。
+   没有这一步，"补了 enable"只是代码看起来对了；enable 之后监听
+   真的活着，必须由一次阴性对照证明（质量门神 R2-2）。 */
+const INJECT = process.argv.includes('--inject-error');
+if (INJECT) {
+  await evalJs('console.error("probe: 判红用注入错误"); 1');
+  await sleep(300);
+}
 pass('页面渲染（旧引擎）', (await evalJs('!!document.querySelector(".page .wrap")')).result?.value === true, '');
 pass('零 JS 错误', errors.length === 0, errors.join(' | ') || '无');
 
