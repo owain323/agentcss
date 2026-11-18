@@ -23,7 +23,11 @@ const path = require('path');
  *   · 每条判据都要有**判别力验证**（注入缺陷 ⇒ 必须被抓到）。
  */
 
-const ROOT = '${REPO}';
+/* 🔴 0.27.18：这里原来是字面量 '${REPO}' —— 模板占位符从没被替换过，
+   path.join 对它 exists=false ⇒ 静态规则 ①②③（裁剪/标注/量程三铁律）
+   走进 `if (!css) continue;` 整体空跑，文件头写的"不许只看文本"恰好
+   被自己违反。用与 tooltip-check 同款的 __dirname 推导。 */
+const ROOT = path.resolve(__dirname, '..');
 let bad = 0;
 const out = [];
 const pass = (ok, what) => { out.push({ ok: !!ok, what }); if (!ok) bad++; };

@@ -383,7 +383,13 @@
   "reveal": {
    "rootClass": "reveal",
    "purpose": "入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见",
-   "printPolicy": []
+   "printPolicy": [
+    {
+     "selector": "[data-reveal-ready] [data-reveal]:not([data-reveal-done])",
+     "policy": "expand",
+     "why": "屏幕上的隐藏走 opacity:0（入场动效未跑到）；不放开就是纸上静默丢字——0.27.18 之前没有任何打印规则，真浏览器实测 -27% 文本 runs"
+    }
+   ]
   },
   "tooltip": {
    "rootClass": "tooltip",

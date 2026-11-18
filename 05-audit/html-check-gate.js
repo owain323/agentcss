@@ -324,6 +324,18 @@ const EXPECTED = [
         s.png.width + '×' + s.png.height);
       expect(fs.readFileSync(outA).equals(fs.readFileSync(outB)),
         '⑨ 同一台机器、同样参数，两次截图逐字节一致（可当判据用）');
+
+      /* 🔴 0.27.18 verdict 传导：EXIT 表与 ai/START-HERE.md 承诺
+         "1 = 判定不通过"，但 shot 曾渲染成功就 exit 0 —— verdict=fail
+         的坏页面在 CI 里照常放行（实测 true-overflow 夹具 EXIT=0），
+         且"给人类的判定结论"是死代码（读 r.verdict.summary 恒 undefined）。
+         这条判据把出口契约钉死：fail ⇒ 退出码 1 + 判定行可见。 */
+      const badRun = spawnSync(process.execPath, [usage, 'shot',
+        path.join(ROOT, '05-audit', 'fixtures', 'shot-verdict', 'true-overflow.html'),
+        '--out', path.join(TMP, 'shot-bad.png'), '--width=390'], { encoding: 'utf8' });
+      expect(badRun.status === 1 && /判定：/.test(badRun.stdout || ''),
+        '⑨ verdict=fail ⇒ 退出码 1 且人类输出带判定行（CI 拿得到信号）',
+        'exit=' + badRun.status + ' · ' + (badRun.stdout || '').split('\n')[0].trim());
       return finish();
     })().catch((e) => {
       bad('⑨ shot 流程抛异常', e && e.stack || String(e));

@@ -1,7 +1,9 @@
 # 打印与 PDF
 
 > 这份文件回答两件事：**打印时库自动做了什么**、**哪些还需要你自己做**。
-> 所有规则都在 `01-tokens/tokens.css` 的 `@media print` 块里，屏幕渲染零影响。
+> 库级规则在 `01-tokens/tokens.css` 的 `@media print` 块里，屏幕渲染零影响；
+> 少数组件级规则分布在各自组件的 CSS 里（overlay / tabs / report / table /
+> analysis-report / reveal / market / page），§四的表格逐处列明。
 
 ---
 
@@ -191,6 +193,10 @@ tr, img, figure, svg, .card, .metric, .sparkline, .splot { break-inside: avoid; 
    "给 `figure` 加 avoid 就安全" 是错觉。
 2. **混排文档里，卡片填进表格留下的空隙，不产生额外代价** —— 所以
    "长文档一定通胀" 也是错的。代价来自**块高与页高的比例**，不来自文档长度。
+
+⚠️ 这两条是**历史实测记录，不是有判据守着的契约**——夹具在库、结论挂在文档上，
+没有自动化复跑（分页标定工具 `print-pagination-cost.js` 是同一手段的可复跑版，
+但它不判红）。引用这两条结论时按"实测结论"对待，不要当门禁保证。
 
 ⇒ 判据应该是「块高 / 页高」，不是「文档页数」。
 
@@ -427,8 +433,9 @@ node 05-audit/print-gate.js
 node 05-audit/print-gate.js --pdf 某文件.pdf
 ```
 
-判据共 12 条：对比度、暗色一致性、页数、文字 run 数、横向溢出、结构类型覆盖、
-字体引用链闭合、每页文本算子存在性。9 个采样页 × 2 种屏幕配色 = 18 份 PDF。
+判据共 14 条（源码里 ①-⑮，⑩ 明示未实现、⑮ 为警告级）：对比度、暗色一致性、页数、
+文字 run 数、横向溢出、结构类型覆盖与强度、元自检、字体引用链闭合、每页文本算子存在性、
+页数预算（写死在源码）、位图 dpi 警告。9 个采样页 × 2 种屏幕配色 = 18 份 PDF。
 
 **屏幕不受影响**由另一道守着：`shot-baseline.py --check` 的 109 张截图逐字节比对。
 本目录所有规则改完，那 109 张必须一个字节都不变 —— 变了就是规则漏到屏幕了。
@@ -456,7 +463,7 @@ node 05-audit/print-gate.js --pdf 某文件.pdf
 | policy | 含义 | 断言（`print-policy-gate` L3） |
 |---|---|---|
 | `omit` | 内容不上纸 | 打印态 `display: none` |
-| `expand` | 放开屏幕上的限制（隐藏/收起/限高/固定定位） | `display≠none`、`visibility≠hidden`、`position≠fixed`、`max-height:none`、`overflow` 不裁、有文字时高度 > 0 |
+| `expand` | 放开屏幕上的限制（隐藏/收起/限高/固定定位/**透明**） | `display≠none`、`visibility≠hidden`、`position≠fixed`、`max-height:none`、`overflow` 不裁、`opacity≥0.05`（0.27.18 补：reveal 走 opacity 隐藏，旧断言量不到——纸上静默丢字而四条腿全绿）、有文字时高度 > 0 |
 | `reveal` | 只在纸上出现 | 屏幕 `display:none` 且打印态不是 `none` |
 | `keep-together` | 不跨页切断 | `break-inside: avoid` |
 | `allow-break` | 退出 `keep-together` | `break-inside: auto` |
@@ -625,15 +632,16 @@ npx agentcss ai check doc.json --medium=paper
 | | 底色 | 白字压深色块 |
 |---|---|---|
 | 浏览器打印对话框（默认不勾"背景图形"） | 丢弃 | 被压成 #ABABAB，看起来发灰 |
-| `agentcss pdf` | **保留** | 白字压深蓝，可读 |
+| `agentcss pdf` | **不印底色**（`printBackground:false`） | 深色块退成描边与墨阶文字 |
 
-两者不是谁错了，是两个产品。所以 `print-gate` 的对比度判据（对白纸量）
-只对对话框那一路成立；导出产物走的是 8.5 那套判据，不套用对比度。
+两条路径都不印背景色块（§5.3 的墨阶契约）；深色块的可读性靠
+`print` 媒体里的语义色压深，不靠底色。所以 `print-gate` 的对比度判据
+（对白纸量）对两路都成立；导出产物另有 §8.5 的导出专属判据。
 
 ### 8.5 这条路谁守着
 
 ```bash
-node 05-audit/pdf-export-gate.js            # E1–E20，不需要静态服务，约 40s
+node 05-audit/pdf-export-gate.js            # E1–E22（E21′ 为元反向），不需要静态服务，约 40s
 node 05-audit/pdf-export-gate.js --selftest # 旧文件保护 / 超时 / 崩溃结论 / 非法参数
 ```
 

@@ -77,6 +77,18 @@
   transition-delay: var(--reveal-delay, 0ms);
 }
 
+/* ---- 打印：隐藏态不许上纸 ----
+   引擎接管后未进视口的元素在屏幕上 opacity:0 是动效协议；
+   但纸上"没淡入完" = **静默丢字**（页数正常、对比度合格、内容少一半
+   ——print-content-audit ② 判据定义的那类失效）。打印媒体下全部直接
+   可见，与"无 JS 不白屏"是同一条哲学：任何一步不满足，内容就在。
+   （0.27.18：此前没有任何打印规则，真浏览器实测 -27% 文本 runs。） */
+@media print {
+  [data-reveal-ready] [data-reveal]:not([data-reveal-done]) {
+    opacity: 1;
+  }
+}
+
 /* ---- 分级降级 ---- */
 @media (prefers-reduced-motion: reduce) {
   [data-reveal] {

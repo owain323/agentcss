@@ -379,6 +379,38 @@ try {
   expect(miss.status !== 0 && missOK,
     '⑥″ 失败时 --json 输出 {ok:false,...} 且退出码非 0',
     'status=' + miss.status + ' stdout=' + String(miss.stdout).slice(0, 48));
+
+  /* 🔴 0.27.18 cmdIcons 专项：--group 曾是死开关（读 manifest 根上不存在的
+     groups 键，任何值都 die，帮助文本还在教）——0.27.17 修复后必须钉住：
+     分组推导 / 未知分组吵 / 空值吵 / 重复参数吵 / 查询定位到唯一条目。
+     每条都直接跑 CLI，防"帮助在教、实跑必炸"的家族病复发。 */
+  var iconBad = [];
+  var gJson = run(['icons', '--json', '--group=finance']);
+  var gDoc = null;
+  try { gDoc = JSON.parse(gJson.stdout); } catch (e) { /* 下面判 */ }
+  if (gJson.status !== 0 || !gDoc || !(gDoc.count > 0)) {
+    iconBad.push('--group=finance 应退出 0 且有结果（实测 ' + gJson.status + '）');
+  } else if (!gDoc.icons.every(function (ic) { return ic.groupId === 'finance'; })) {
+    iconBad.push('--group=finance 结果混入其他分组');
+  }
+  var gNope = run(['icons', '--json', '--group=nope-such-group']);
+  if (gNope.status !== 2 || !/未知分组/.test(gNope.stderr || gNope.stdout || '')) {
+    iconBad.push('未知分组应退出 2 且列出可用分组（实测 ' + gNope.status + '）');
+  }
+  var gEmpty = run(['icons', '--json', '--query=']);
+  if (gEmpty.status !== 2) iconBad.push('--query= 空值应退出 2（实测 ' + gEmpty.status + '）');
+  var gDup = run(['icons', '--json', '--group=finance', '--group=ui']);
+  if (gDup.status !== 2) iconBad.push('重复 --group 应退出 2（实测 ' + gDup.status + '）');
+  var gHit = run(['icons', '--json', '--query=profit']);
+  var gHitDoc = null;
+  try { gHitDoc = JSON.parse(gHit.stdout); } catch (e) { /* 下面判 */ }
+  if (gHit.status !== 0 || !gHitDoc || gHitDoc.count !== 1 ||
+      !gHitDoc.icons[0] || gHitDoc.icons[0].name !== 'profit') {
+    iconBad.push('--query=profit 应唯一命中 profit（实测 ' + gHit.status + '）');
+  }
+  expect(iconBad.length === 0,
+    '⑥⁵ cmdIcons 参数契约：分组推导 / 未知吵 / 空值吵 / 重复吵 / 查询唯一定位',
+    iconBad.join(' / '));
 })();
 
 // ---------------------------------------------------------------- ⑦ 翻车点：两份文件的口径

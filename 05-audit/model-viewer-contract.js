@@ -87,9 +87,15 @@ async function main() {
     await p.close();
   }
 
+  /* 🔴 0.27.18：五故障降级用例接进主流程 —— legacy() 定义后**从未被
+     调用**（module.exports 只有 main，check-all 也只跑 main），文件头
+     声称的"③四种故障全部降级"自写下的那天起就没有门禁守卫。
+     降级契约失败计入总账、参与判红。 */
+  const legacyBad = await legacy();
+
   await b.close();
   console.log('');
-  if (bad) { console.log('  ❌ ' + bad + ' 项不满足'); process.exit(1); }
+  if (bad + legacyBad) { console.log('  ❌ ' + (bad + legacyBad) + ' 项不满足'); process.exit(1); }
   console.log('  ✅ 3D 查看器契约全部满足');
 }
 if (require.main === module) main();
@@ -104,13 +110,14 @@ async function legacy() {
     ['loader 404',  '?gltf=vendor/NOPE.js'],
     ['控制器 404',  '?orbit=vendor/NOPE.js'],
   ];
+  let badL = 0;
   for (const [name, qs] of cases) {
     const p = await b.newPage();
     await p.setViewport({width:393,height:852,deviceScaleFactor:2,isMobile:true,hasTouch:true});
     await p.goto(B+qs,{waitUntil:'networkidle0'});
     await new Promise(r=>setTimeout(r,150));
     const btn = await p.$('.mv__btn');
-    if (!btn) { console.log('  【'+name+'】🔴 无按钮'); await p.close(); continue; }
+    if (!btn) { console.log('  【'+name+'】🔴 无按钮'); badL++; await p.close(); continue; }
     await btn.click();
     await new Promise(r=>setTimeout(r,3200));
     const r = await p.evaluate(()=>{
@@ -121,6 +128,7 @@ async function legacy() {
                retry: (n.querySelector('.mv__btn')||{}).textContent||'' };
     });
     const good = (r.state==='error' && r.err && r.retry) || (r.state==='ok' && r.cap);
+    if (!good) badL++;
     console.log('  【'+name+'】'+r.state+(good?' ✅':' ❌'));
     if (r.err) console.log('    提示: '+r.err.replace(/\s+/g,' ').trim().slice(0,58));
     if (r.cap) console.log('    '+r.cap.replace(/\s+/g,' ').trim().slice(0,58));
@@ -128,4 +136,5 @@ async function legacy() {
     await p.close();
   }
   await b.close();
+  return badL;
 }

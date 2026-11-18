@@ -42,7 +42,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE = os.path.join(ROOT, '05-audit', 'size-baseline.json')
 
 # 纳入统计的目录（vendor 第三方代码不算我们自己的体积）
-DIRS = ('01-tokens', '02-primitives', '03-patterns', '04-recipes')
+# 🔴 0.27.18：09-assets 纳入账本 —— 此前 940KB vendor+glb 与 35KB icons
+#    完全在体积账本外（vendor 有上面的排除规则，glb/svg 不在 EXTS，
+#    计入的是我们自己的 js/css：sparkline / model-viewer / bar /
+#    echarts-adapter / scientific-plot）。增长要能被看见。
+DIRS = ('01-tokens', '02-primitives', '03-patterns', '04-recipes', '09-assets')
 EXTS = ('.css', '.js')
 
 # ⭐ 单个改动允许的增长比例 —— 超过就要解释

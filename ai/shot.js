@@ -54,6 +54,7 @@ var PROBE_JS = [
   '  var over = [];',
   '  var overItems = [];',
   '  var all = document.querySelectorAll("body *");',
+  '  var overCapped = false;',
   '  for (var i = 0; i < all.length && over.length < 40; i++) {',
   '    var e = all[i], r = e.getBoundingClientRect();',
   '    if (r.width === 0 && r.height === 0) continue;',
@@ -79,6 +80,7 @@ var PROBE_JS = [
   '    viewport: vw, scrollWidth: d.scrollWidth, scrollHeight: d.scrollHeight,',
   '    pageOverflow: d.scrollWidth > vw + 1,',
   '    overflow: over.slice(0, 6), overflowCount: over.length,',
+  '    overflowCapped: i < all.length && over.length >= 40,',
   '    overflowItems: overItems',
   '  });',
   '})();',
@@ -190,7 +192,14 @@ async function shoot(o) {
           verdict: { status: 'fail', reasons: [{ code: 'capture-incomplete', severity: 'fail', where: 'w' + widths[w], detail: '页面加载失败——判定不可信' }], summary: '采集不完整，判定不可信' } };
       }
       await loaded;
-      if (o.wait) await new Promise(function (r) { setTimeout(r, o.wait); });
+      /* 🔴 0.27.18：默认等待必须真的生效 —— 旧代码 `if (o.wait)` 对
+         undefined 直接跳过，DEFAULT_WAIT=800 从未起作用，结果元数据
+         却上报 wait:800（采集保真度和元数据双输；实测 per-shot 179ms
+         却自称等了 800ms）。html-check §9 显式传 wait 绕开了它，门禁
+         一直抓不到。 */
+      await new Promise(function (r) {
+        setTimeout(r, o.wait === undefined ? DEFAULT_WAIT : o.wait);
+      });
 
       var probe = await cdp.send('Runtime.evaluate', {
         expression: PROBE_JS, returnByValue: true
@@ -213,8 +222,11 @@ async function shoot(o) {
       }, sid);
       var png = Buffer.from(shot.data, 'base64');
       if (png.length < 8 || png.readUInt32BE(0) !== 0x89504e47) {
+        /* 🔴 0.27.18：失败路径也带 verdict —— capture-incomplete 语义
+           统一（旧实现这里只回 code/message，JSON 契约有两个缺口）。 */
         return { ok: false, code: 'render', message: '产出的不是 PNG（' + png.length + ' 字节）',
-          chrome: chrome.path, shots: shots };
+          chrome: chrome.path, shots: shots,
+          verdict: { status: 'fail', reasons: [{ code: 'capture-incomplete', severity: 'fail', where: 'w' + width, detail: '截图产出不是合法 PNG——判定不可信' }], summary: '采集不完整，判定不可信' } };
       }
 
       var outFile = path.resolve(outTpl.replace(/\{width\}/g, slugWidth(width)));
@@ -231,6 +243,7 @@ async function shoot(o) {
         scrollHeight: info.scrollHeight === undefined ? null : info.scrollHeight,
         overflow: info.overflow || [],
         overflowCount: info.overflowCount || 0,
+        overflowCapped: info.overflowCapped === true,
         captureOk: info.viewport !== undefined,
         pageOverflow: info.pageOverflow === true,
         overflowItems: info.overflowItems || []
@@ -247,7 +260,10 @@ async function shoot(o) {
       ms: Date.now() - t0
     };
   } catch (e) {
-    return { ok: false, code: 'render', message: String(e && e.message || e), chrome: chrome.path, shots: shots };
+    /* 🔴 0.27.18：异常路径同样补 capture-incomplete verdict（与
+       timeout/nav 失败同语义——采集没跑成就不许留下"没有判定"的缺口）。 */
+    return { ok: false, code: 'render', message: String(e && e.message || e), chrome: chrome.path, shots: shots,
+      verdict: { status: 'fail', reasons: [{ code: 'capture-incomplete', severity: 'fail', where: '采集', detail: '探针异常——判定不可信：' + String(e && e.message || e).slice(0, 80) }], summary: '采集不完整，判定不可信' } };
   } finally {
     cdp.close();
     /* 清理必须**在进程退出前**做完：CLI 随后就 exit，挂 setTimeout 等于每截一张图

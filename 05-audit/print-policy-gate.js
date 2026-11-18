@@ -304,7 +304,7 @@ const REQUIRED = {
   'keep-together': (d) => d.some((x) => x.prop === 'break-inside' && x.value === 'avoid'),
   'allow-break': (d) => d.some((x) => x.prop === 'break-inside' && x.value === 'auto'),
   expand: (d) => d.some((x) => ['display', 'visibility', 'position', 'max-height',
-    'overflow', 'overflow-y', 'grid-template-rows'].indexOf(x.prop) >= 0),
+    'overflow', 'overflow-y', 'grid-template-rows', 'opacity'].indexOf(x.prop) >= 0),
 };
 
 /* L1：声明 → 实现 */
@@ -361,6 +361,7 @@ function readStates(arg) {
       display: cs.display,
       visibility: cs.visibility,
       position: cs.position,
+      opacity: cs.opacity,
       maxHeight: cs.maxHeight,
       overflowY: cs.overflowY,
       breakInside: cs.breakInside === '' ? 'auto' : cs.breakInside,
@@ -406,6 +407,12 @@ function judgeOne(policy, print, screen) {
   // expand：内容必须真的回到纸上的流里
   if (print.display === 'none') return 'print 态 display:none（没展开）';
   if (print.visibility === 'hidden') return 'print 态 visibility:hidden（展开了但一个字不印）';
+  /* 🔴 0.27.18 补 opacity 维度：reveal 的屏幕隐藏走的是 opacity:0（不是
+     display/visibility），旧断言量不到它 —— 未进视口的内容以 opacity:0
+     上纸，纸上静默丢字而四条腿全绿（真浏览器实测 -27% 文本 runs）。 */
+  if (parseFloat(print.opacity) < 0.05) {
+    return 'print 态 opacity=' + print.opacity + '（透明上纸 = 静默丢字）';
+  }
   if (print.position === 'fixed') return 'print 态 position:fixed（脱离文档流，会盖住正文）';
   if (print.maxHeight !== 'none' && print.maxHeight !== '') {
     return 'print 态 max-height=' + print.maxHeight + '（限高没放开，只印可视区）';

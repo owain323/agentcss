@@ -142,6 +142,12 @@ function scanInPage(CLAIMS) {
       if (cs.display === 'none') {
         return { el: n, why: n.hasAttribute('hidden') ? 'hidden 属性' : 'display:none' };
       }
+      /* 🔴 0.27.18 补 opacity 维度：reveal 这类组件的屏幕隐藏走 opacity:0，
+         旧判据只查 display/visibility/裁切 —— "打印态 opacity≈0" 属于
+         ② 静默消失，却结构性看不见（真浏览器实测 reveal 丢 27% runs）。 */
+      if (parseFloat(cs.opacity) < 0.05) {
+        return { el: n, why: 'opacity≈0（' + cs.opacity + '）' };
+      }
       n = n.parentElement;
     }
     /* visibility 会**继承**：子元素自己没写也是 hidden，所以「最近的那个」

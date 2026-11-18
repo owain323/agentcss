@@ -96,6 +96,11 @@ ws.onmessage = (ev) => {
   }
 };
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = () => rej(new Error('ws 连接失败')); });
+/* 🔴 0.27.18 必须显式启用 Runtime 域：裸 CDP 不发 Runtime.enable，
+   exceptionThrown / consoleAPICalled 事件**不会送达**——下方 errors
+   永远为空，"零 JS 错误"结构性恒真（0.27.17 加的 console.error 监听
+   就挂在这条死通道上）。对照 ai/shot.js:155 一直有 enable。 */
+ws.send(JSON.stringify({ id: ++msgId, method: 'Runtime.enable', params: {} }));
 await evalJs('1+1');   // 握手
 await evalJs('location.href = ' + JSON.stringify(URL_TO_TEST) + '; 1');
 for (let i = 0; i < 20; i++) {

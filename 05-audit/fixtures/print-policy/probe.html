@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-reveal-ready><!-- 无 reveal.js：隐藏态纯靠 CSS，打印规则必须真把它抬起来 -->
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -42,6 +42,7 @@
 <link rel="stylesheet" href="../../../03-patterns/nav/nav.css">
 <link rel="stylesheet" href="../../../03-patterns/overlay/overlay.css">
 <link rel="stylesheet" href="../../../03-patterns/pagination/pagination.css">
+<link rel="stylesheet" href="../../../03-patterns/reveal/reveal.css">
 <link rel="stylesheet" href="../../../03-patterns/tabs/tabs.css">
 <link rel="stylesheet" href="../../../03-patterns/tooltip/tooltip.css">
 <link rel="stylesheet" href="../../../04-recipes/analysis-report/analysis-report.css">
@@ -89,6 +90,15 @@
 
 <div class="fx"><b>.print-allow-break → allow-break</b>
   <div class="card print-allow-break"><div class="card__body">加了这个类的卡片允许跨页切断。</div></div>
+</div>
+
+<!-- ============ reveal ============ -->
+<div class="fx"><b>[data-reveal-ready] [data-reveal]:not([data-reveal-done]) → expand</b>
+  <!-- 页面没有引 reveal.js，html 上手打了 data-reveal-ready：
+       屏幕媒体下这条 CSS 就是 opacity:0（引擎没跑、没 data-reveal-done）；
+       声明 expand = 打印态必须真的可见。量的是"屏上规则漏进打印"
+       这一类失效——旧实现它看不见（opacity 维度缺失）。 -->
+  <section data-reveal="up">这段在屏幕上被入场动效藏住（opacity:0），纸上必须完整出现。</section>
 </div>
 
 <!-- ============ tabs ============ -->

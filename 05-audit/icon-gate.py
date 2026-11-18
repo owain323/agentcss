@@ -28,6 +28,8 @@ import sys
 import os
 import re
 import glob
+import io
+import json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -139,7 +141,50 @@ def main():
     if bad:
         print('%d 个图标规格不合规。' % bad)
         return 1
-    print('图标规格：%d 个全部通过。' % len(files))
+    # 🔴 0.27.18 错账修正：原来写 len(files)（含豁免的示意图）⇒
+    #    打印"36 个全部通过"而实际图标只有 35 个——汇总与明细对不上。
+    print('图标规格：%d 个全部通过。' % len(icon_files))
+
+    # 🔴 0.27.18 溯源在库复核：manifest.body ↔ SVG 本体逐条比对。
+    #    sha256 记的是**上游原文件**的哈希（本机离线重算不出），
+    #    但 body 是 manifest 与入仓文件**两边都有**的几何——
+    #    换版本/手改 SVG 没人报警的缺口就在这里堵上。
+    man_path = os.path.join(ROOT, '09-assets', 'icons', 'manifest.json')
+    if os.path.isfile(man_path):
+        man = json.load(io.open(man_path, encoding='utf-8'))
+        # 🔴 0.27.18 映射澄清：入仓文件名 = manifest 的 `name`（alert.svg），
+        #    `source` 是 lucide 上游原名（triangle-alert）——溯源链是
+        #    name.svg → (sha256) → lucide-static 的 source.svg。
+        by_name = {ic.get('name'): ic for ic in man.get('icons', [])}
+        prob = []
+        seen_name = set()
+        for f in icon_files:
+            rel = os.path.relpath(f, ROOT).replace(os.sep, '/')
+            if not rel.startswith('09-assets/icons/svg/'):
+                continue
+            name = os.path.splitext(os.path.basename(f))[0]
+            seen_name.add(name)
+            ic = by_name.get(name)
+            if not ic:
+                prob.append(rel + '：manifest.json 没有这一条（溯源断链）')
+                continue
+            want = re.sub(r'\s+', ' ', (ic.get('body') or '')).strip()
+            m = re.search(r'<svg[^>]*>(.*)</svg>', open(f, encoding='utf-8').read(), re.S)
+            got = re.sub(r'\s+', ' ', m.group(1)).strip() if m else ''
+            if not want:
+                prob.append(rel + '：manifest.body 为空')
+            elif want != got:
+                prob.append(rel + '：manifest.body 与 SVG 本体不一致（手改/换版本未同步）')
+        for name in sorted(set(by_name) - seen_name):
+            prob.append('manifest 有 %s 但 09-assets/icons/svg/%s.svg 缺失'
+                        % (name, name))
+        if prob:
+            print('溯源复核：%d 条不一致 ——' % len(prob))
+            for x in prob:
+                print('  ✗ ' + x)
+            return 1
+        print('溯源复核：manifest.body ↔ SVG 本体 %d/%d 一致。'
+              % (len(seen_name), len(by_name)))
     print('⚠ 规格合规 != 画得好 —— 语义清晰度必须人眼看。')
     return 0
 

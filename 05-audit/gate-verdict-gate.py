@@ -260,11 +260,13 @@ def selftest():
         if not ok:
             bad += 1
 
-        # ② 有判红路径 ⇒ 不许报
+        # ② 有判红路径（含被排除的 exit(0) 形状）⇒ 不许报
+        #    🔴 0.27.18：旧版本这里前一对 write 是死代码（写完立即被
+        #    覆盖），"exit(0) 不许误报"这个负向子方向从未被真正喂给判据。
+        #    现在一个夹具同时含两种形状：if bad: sys.exit(1)（真判红）
+        #    + 末尾 sys.exit(0)（必须被模式排除，不能当成没牙）。
         write_check_all('run "yes"   python3 05-audit/yes.py\n')
-        write_gate('yes.py', 'import sys\nsys.exit(0)\n')
-        write_check_all('run "yes"   python3 05-audit/yes.py\n')
-        write_gate('yes.py', 'import sys\nif bad:\n    sys.exit(1)\n')
+        write_gate('yes.py', 'import sys\nif bad:\n    sys.exit(1)\nsys.exit(0)\n')
         rc2 = main()
         ok2 = (rc2 == 0)
         print('  %s ② 有 sys.exit(1) ⇒ %s'
@@ -291,6 +293,14 @@ def selftest():
 
 
 if __name__ == '__main__':
+    # 🔴 0.27.18：本文件判据输出含中文与制表符——默认 GBK 管道下
+    # print 直接 UnicodeEncodeError（实测 selftest 崩在 ①，②③ 根本没跑）。
+    # 显式 reconfigure 成 UTF-8（带 replace 兜底），不依赖环境变量。
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
     if '--selftest' in sys.argv:
         sys.exit(selftest())
     sys.exit(main())

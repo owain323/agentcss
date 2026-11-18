@@ -1815,13 +1815,55 @@ async function adversarial() {
     '⑥ 超一页的块确实占了多页（若只有 1 页，说明内容被裁掉了）',
     'pages=' + unbreakable.pages);
 
+  /* ⑦ fixed 横幅：打印引擎会把它重复画在每一页。
+     断言：页数与对照组一致（横幅不加页）+ run 数**多于**对照
+     （多出来的正是每页一份的横幅）。Chromium 若某天不再重复，
+     run 数打平 ⇒ 这条红 —— 夹具腐化会被判据自己发现。 */
+  const fx = await shot('07-fixed-banner.html');
+  const fxCtl = await shot('07b-static-banner.html');
+  report(fx.pages === fxCtl.pages && fx.pages === 2,
+    '⑦ fixed 横幅不改变页数（2 页）', 'fixed=' + fx.pages + ' 对照=' + fxCtl.pages);
+  report(fx.runs > fxCtl.runs,
+    '⑦ fixed 横幅被重复画进每一页（run 数多于普通流对照）',
+    'fixed=' + fx.runs + ' 对照=' + fxCtl.runs);
+
+  /* ⑧ 屏上透明：**PDF 层对 opacity:0 是盲的** —— 文本 run 照常产出
+     （幽灵文本：在文本层里提取得到，纸面上看不见），run 数与对照**相等**
+     （实测）。这是"屏上规则漏进打印"最危险的形态：页数、run 数、对比度
+     三样 PDF 级度量全绿，纸上就是没有这个字。能抓它的只有运行时
+     computed-style 审计（print-content-audit 的 opacity 维度 /
+     print-policy-gate L3 的 opacity 断言，0.27.18 补）。
+     本夹具把盲区钉成断言：哪天 Chromium 改成剔除透明 run，
+     runs 打平被打破 ⇒ 这条红，我们重新审视提取层。 */
+  const gh = await shot('08-screen-hidden.html');
+  const ghCtl = await shot('08b-fully-visible.html');
+  report(gh.runs === ghCtl.runs && gh.pages === ghCtl.pages,
+    '⑧ PDF 层对 opacity:0 盲：run 数/页数与对照全等（幽灵文本在文本层，纸上不可见）',
+    'hidden=' + gh.runs + ' 对照=' + ghCtl.runs + '（相等 = 幽灵文本在文本层）');
+  const ghPrint = await withPage({ width: 794, height: 1123, deviceScaleFactor: 1 }, async (p) => {
+    await loadStyled(p, url('08-screen-hidden.html'));
+    await p.emulateMediaType('print');
+    return p.evaluate(() => ({
+      opacity: getComputedStyle(document.querySelector('.ghost')).opacity,
+    }));
+  });
+  report(ghPrint.opacity === '0',
+    '⑧ 夹具毒性确认：print 媒体下 ghost 的 computed opacity = 0',
+    'ghost=' + ghPrint.opacity);
+
   console.log(bad
     ? '  ❌ 对抗夹具 ' + bad + '/' + total + ' 条没通过'
-    : '  ✅ 对抗夹具全绿（' + total + ' 条 · 6 个面）');
+    : '  ✅ 对抗夹具全绿（' + total + ' 条 · 8 个面）');
   return bad ? 1 : 0;
 }
 
-main().then((rc) => process.exit(rc || 0)).catch((e) => {
-  console.error('  🔴 ' + ((e && e.friendly && e.message) || (e && e.stack) || e));
-  process.exit(2);
-});
+/* 0.27.18：入口守卫 + 导出内部件 —— 此前 require 本文件会直接执行 main()，
+   任何想复用 render/analyze 的脚本都会触发一次完整门禁（实测：探针刚
+   require 就撞上"浏览器已在跑"）。入口守卫与其他门禁同款。 */
+if (require.main === module) {
+  main().then((rc) => process.exit(rc || 0)).catch((e) => {
+    console.error('  🔴 ' + ((e && e.friendly && e.message) || (e && e.stack) || e));
+    process.exit(2);
+  });
+}
+module.exports = { analyze, render, withPage, loadStyled };

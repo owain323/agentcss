@@ -616,6 +616,12 @@ function cmdIcons(args) {
      这里自己拆一遍：连写式交给 flag()，两段式在这里收值并跳过；
      裸开关没值就吵（enumFlag 哲学：拼错不静默）。 */
   var HERE_FLAGS = { query: 1, group: 1 };
+  /* 🔴 0.27.18 重复参数与 enumFlag 同一纪律：给两次就吵，不静默取末值
+     （"给两次"到底是 AND 还是覆盖，读的人不该猜）。 */
+  ['query', 'group'].forEach(function (nm) {
+    var n = flagCount(nm);
+    if (n > 1) die('--' + nm + ' 给了 ' + n + ' 次。只认一个值 —— 想对比就分两次调用');
+  });
   var q = flag('query', null);
   var grp = flag('group', null);
   var positional = [];
@@ -679,7 +685,7 @@ function cmdIcons(args) {
       count: icons.length,
       total: total,
       source: manifest.source || null,
-      usage: '09-assets/icons/svg/<source>.svg（<img> 引用或 inline SVG；stroke=currentColor）',
+      usage: '09-assets/icons/svg/<name>.svg（<img> 引用或 inline SVG；stroke=currentColor）',
       icons: icons
     });
     process.exit(0);
@@ -693,13 +699,16 @@ function cmdIcons(args) {
     return;
   }
   icons.forEach(function (ic) {
-    var srcFile = ic.source || ic.name;
-    process.stdout.write('  ' + (ic.label || ic.name) + '  (' + srcFile + '.svg)\n');
+    /* 🔴 0.27.18 文件名 = manifest 的 `name`（revenue.svg），不是
+       `source`（coins，那是 lucide 上游原名）—— 旧输出教人引用
+       coins.svg / piggy-bank.svg，磁盘上不存在（帮助在教不存在的东西）。 */
+    process.stdout.write('  ' + (ic.label || ic.name) + '  (' + ic.name + '.svg'
+      + (ic.source && ic.source !== ic.name ? ' · 上游 ' + ic.source : '') + ')\n');
     if (ic.keywords && ic.keywords.length) {
       process.stdout.write('    关键词: ' + ic.keywords.join('、') + '\n');
     }
   });
-  process.stdout.write('\n  用法：<img src="…/icons/svg/<source>.svg" width="24" height="24" alt="…">\n');
+  process.stdout.write('\n  用法：<img src="…/icons/svg/<name>.svg" width="24" height="24" alt="…">\n');
 }
 
 function cmdPitfalls(args) {
@@ -1309,14 +1318,25 @@ function cmdShot(args) {
     }
     if (isJson()) {
       out(r);
-      process.exitCode = 0;
+      /* 🔴 0.27.18：verdict=fail 必须传导到退出码 —— EXIT 表写明
+         "1 = 判定不通过（页面确实有错）"，ai/START-HERE.md 也承诺
+         "退出码可以直接分支"。旧实现渲染成功就 exit 0，verdict=fail
+         的坏页面在 CI 里照常放行（实测 true-overflow 夹具 EXIT=0）。
+         warn 不是失败（verdict 语义：设计内滚动，不判失败）⇒ 仍 0。 */
+      if (r.verdict && r.verdict.status === 'fail') process.exitCode = EXIT.findings;
+      else process.exitCode = 0;
       return;
     }
     /* 🔴 0.27.15：verdict 是 agent 的行动信号（结构化判读），
-       这行是给人类的结论——修什么、要不要修，先看这里再看明细。 */
-    if (r.verdict && r.verdict.summary) {
-      var mark = r.verdict.status === 'pass' ? 'OK  ' : r.verdict.status.toUpperCase() + ' ';
-      process.stdout.write('  ' + mark + '判定：' + r.verdict.summary + '\n');
+       这行是给人类的结论——修什么、要不要修，先看这里再看明细。
+       🔴 0.27.18：summary 挂在结果**顶层**（shot.js 返回 {verdict, summary}），
+       verdict 对象本身只有 {status, reasons, perWidth} —— 旧代码读
+       r.verdict.summary 恒 undefined，这一行"给人类的判定结论"
+       从上线第一天就是死代码（真浏览器实测两次均无输出）。 */
+    if (r.verdict) {
+      var vst = r.verdict.status;
+      var mark = vst === 'pass' ? 'OK  ' : (vst === 'warn' ? 'WARN' : 'FAIL');
+      process.stdout.write('  ' + mark + ' 判定：' + (r.summary || '') + '\n');
     }
     r.shots.forEach(function (s) {
       process.stdout.write('  OK  ' + s.out + '\n');
@@ -1325,7 +1345,10 @@ function cmdShot(args) {
         + ' · ' + Math.round(s.bytes / 1024) + ' KB · ' + s.ms + ' ms'
         + (s.truncatedAt ? ' · 🔴 已截断到 ' + s.png.height + '（原 ' + s.truncatedAt + '）' : '') + '\n');
       if (s.overflowCount) {
-        process.stdout.write('      ⚠️ 这个宽度下横向溢出 ' + s.overflowCount + ' 处'
+        /* 🔴 0.27.18：探针的溢出采集有 40 处上限——达到上限时如实标注，
+           不把 40 当精确值（200 处溢出的页面旧输出只说"40 处"）。 */
+        process.stdout.write('      ⚠️ 这个宽度下横向溢出 ' +
+          (s.overflowCapped ? '40+（已达采集上限）' : s.overflowCount + ' 处')
           + '（页面宽 ' + s.scrollWidth + ' > 视口 ' + s.viewport + '）：' + s.overflow.join('、') + '\n');
       }
     });
@@ -1336,7 +1359,9 @@ function cmdShot(args) {
         process.stdout.write('     · ' + e + '\n');
       });
     }
-    process.exitCode = 0;
+    /* 🔴 0.27.18：与 JSON 路径同一条退出码契约——verdict=fail ⇒ 1。 */
+    if (r.verdict && r.verdict.status === 'fail') process.exitCode = EXIT.findings;
+    else process.exitCode = 0;
   }).catch(function (e) {
     fail('render', String(e && e.message || e));
   });

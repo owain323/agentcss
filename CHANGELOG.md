@@ -18,6 +18,104 @@
 
 ## [Unreleased]
 
+## [0.27.18] - 2026-11-19
+
+> 第四轮：三个子系统（打印/PDF、09-资产层、"看"的闭环）三路并行严审，
+> 30+ 条实锤全部修复。评分基线：print 7/10、资产层 6.5/10、视觉闭环 6/10。
+
+### Fixed — "看"的闭环（出口断裂与恒真通道）
+
+- **`ai shot` 的判定结论是死代码**：人类输出读 `r.verdict.summary`，而 summary
+  挂在结果**顶层**——上线以来这行从未输出过（真浏览器实测两次均无）。
+  改读顶层字段，`FAIL/WARN/OK 判定：` 行真的出现了。
+- **verdict=fail 退出码 0**：渲染成功就 exit 0，坏页面在 CI 里照常放行
+  （实测 true-overflow 夹具 EXIT=0），与 EXIT 表"1 = 判定不通过"的承诺冲突。
+  现在 fail ⇒ 退出码 1（warn 仍 0——verdict 语义是"设计内滚动不判失败"）；
+  html-check 新增判据把契约钉死（fail ⇒ 1 + 判定行可见）。
+- **old-engine"零 JS 错误"结构性恒真**：裸 CDP 从未发送 `Runtime.enable`，
+  报错事件不会送达——0.27.17 加的 console.error 监听挂在死通道上。
+  补 enable。真机鉴别力验证仍需台子（本轮无设备，诚实入档）。
+- **shot.js 默认等待从未生效**：`if (o.wait)` 对 undefined 跳过，
+  DEFAULT_WAIT=800 从未起作用，元数据却上报 800。修为真实等待。
+- **计数上限不诚实**：溢出采集 40 处封顶，200 处溢出的页面只报"40 处"；
+  新增 overflowCapped 标记，输出"40+（已达采集上限）"。
+- **两条失败路径无 verdict**：非 PNG / 探针异常只回 code，现在统一带
+  capture-incomplete 判定（采集没跑成不许留下判定缺口）。
+- **summarize 只列实际分型**：旧文案"2 处问题：真溢出 / JS 报错 / 采集不完整"
+  是全类别菜单——明明只有真溢出，读起来像三类都有。
+- **视觉指纹盲区**：css_fingerprint 不含 examples/ 与 esm/（.mjs 也不算）——
+  改这两处渲染产物不重录基线戳照样"新鲜"。已纳入。
+- **暗色/RTL 未验证静默清零**：shot-baseline 把非浅色套"截了没基线"清零，
+  新页面不录基线 visual 照绿。现在按各套预期集合如实报告并**判红**。
+- **gate-verdict selftest 两处假**：前一对写入是死代码（立即被覆盖），
+  "exit(0) 不许误报"负向子方向从未被测——现在一个夹具同喂两种形状；
+  selftest 在 GBK 管道下必崩（②③没跑）——reconfigure UTF-8 兜底。
+
+### Fixed — 09-资产层（被架空的门禁与三本账）
+
+- **chart-check 的静态规则整体空跑**：ROOT 常量写的是模板占位符的字面量
+  （REPO 字样加模板插值符，从未被替换——连描述这个 bug 的文字都触发了占位符判据）——裁剪/标注/量程三铁律走进 `if (!css) continue`，
+  文件头写的"不许只看文本"恰好被自己违反。focus-ring-check 同患同修。
+  复活后真规则全过（8 处 outline:none 全有替代样式）。
+- **model-viewer 五故障降级契约是死代码**：legacy()（正常/模型 404/引擎 404/
+  loader 404/控制器 404）定义后从未被调用，文件头声称的降级契约无门禁。
+  接进 main() 计入总账——实测五用例全过（对照 + 四故障）。
+- **assets-catalog selftest 恒真假牙**：在判据跑完之后才"删一条数一数"，
+  判据本体有没有牙从未被测。判据抽成纯函数 judge()，坏数据**真喂回**：
+  基准绿 + 抹条目 ① 红 + 清描述 ⑤ 红。
+- **icon-gate 错账**：汇总写 len(files)（含豁免示意图）报"36 个通过"，
+  实际图标 35 个。改按图标数。
+- **图标溯源在库复核**：sha256 记的是上游原文件哈希（离线不可重算），
+  但 manifest.body 与入仓 SVG **两边都有**几何——新增逐条一致性判据
+  （顺带纠正文件名映射：文件 = name 字段，source 是上游原名）。
+- **cmdIcons 使用引导教不存在的文件**：打印 `coins.svg`/`piggy-bank.svg`，
+  磁盘上是 `revenue.svg`/`profit.svg`（name 才是文件名）。修正 + 重复
+  参数按 enumFlag 纪律吵（给两次就 die，不静默取末值）；ai-layer 新增
+  ⑥⁵ 判据块钉住参数契约（分组推导/未知吵/空值吵/重复吵/查询唯一定位）。
+- **体积账本不含 09-assets**：940KB vendor+glb 与资产组件 js/css 完全在
+  账外。纳入（vendor 仍有排除规则，glb/svg 不在扩展名内）。
+- **许可台账虚指**：license-gate 注释称登记于 `06-vendor/协议台账.md`——
+  目录从未存在。补 `09-assets/model-viewer/vendor/THIRD-PARTY-NOTICES.md`
+  实台账（three.js r128 / GLTFLoader / OrbitControls，MIT）。
+- **09-README 残留旧立场**："本库不提供图标文件，也不设图标目录"与
+  35 个入库图标自相矛盾——改为如实描述两个来源。
+
+### Fixed — 打印/PDF（静默丢字实锤）
+
+- **reveal 打印丢字**（本轮最重的一条）：引擎接管后未进视口的
+  `[data-reveal]` 在纸上 opacity:0——页数正常、对比度合格、内容少 27%
+  （真浏览器实测 runs -27%）。修三层：reveal.css 补 `@media print`
+  兜底（与"无 JS 不白屏"同一哲学）；reveal 契约从 `printPolicy: []`
+  改为真实 `expand`（probe 页补标本——无 JS 手打 data-reveal-ready，
+  隐藏态纯靠 CSS，打印规则必须真把它抬起来）；**print-policy-gate L3
+  与 print-content-audit 补 opacity 维度**——旧断言只量
+  display/visibility/position/限高，"透明上纸"结构性不可见。
+- **对抗夹具补两面**（⑦ fixed 每页重复 / ⑧ 屏上透明）：
+  ⑦ 实测 fixed 横幅逐页重复（run 数多于对照），Chromium 行为变了会红；
+  ⑧ 揭示更危险的真相——**PDF 层对 opacity:0 是盲的**：透明文本的 run
+  照常进文本层（幽灵文本），页数/run 数/对比度三样全绿，纸上就是没有
+  这个字。只有运行时 computed-style 审计能抓——这条盲区现在钉成断言。
+- **PRINT.md 四处文档 rot**：开篇"所有规则都在 tokens.css"（实际 9 处）、
+  §8.4 底色"保留"（实现是 printBackground:false）、"判据 12 条"（实际 14）、
+  E1–E20（已有 E21/E22）；print-long 两条结论如实标注"历史实测、无守卫"。
+
+### Fixed — icon-forge 动画批次（WorkBuddy 交付物，工程侧审查后重建）
+
+- **undefined 属性污染**：manifest 根上没有 linecap/linejoin，解构得
+  undefined 被模板写进产物——140 SVG + 35 TSX 全中。显式缺省 round。
+- **stroke 硬编码 #1f2430**：140/140 破坏 currentColor 主题继承。改 currentColor。
+- **规格对齐**：width=1em + role="img" + aria-label 全量补齐。
+- **popin 静默失效**：keySplines 控制点 1.56 越界（SMIL 要求 [0,1]），
+  Chromium 整条拒绝该动画；且 scale 锚定原点、居中需改几何（违反铁律）。
+  改"浮入"（fade + 上升 2px，样条全在域内）。
+- **draw 永久隐形**：基础属性 dashoffset=100 = fail-closed，SMIL 缺位时
+  图标永久消失（违反"动画不是可见性的来源"不变量）。改 fail-open。
+- **reduced-motion 限制入档**：SMIL 不受 CSS 媒体查询与全局灭活控制——
+  agentcss 侧因此**不收 SMIL 批次**（动效走 CSS 路线，reduced-motion
+  自动生效），SMIL 批次留在 icon-forge 供其他消费方。
+
+---
+
 ## [0.27.17] - 2026-11-18
 
 ### Fixed

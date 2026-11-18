@@ -64,7 +64,7 @@
 | metric | `02-primitives/metric/metric.css` | 157 | — |  |
 | timeline | `02-primitives/timeline/timeline.css` | 152 | — | 有一串按时间排的事件（公告 / 大事记 / 版本记录）就要 |
 | upload | `02-primitives/upload/upload.css` | 490 | 可选 794 (`upload.js`，拖放 / 文件列表 / 校验；没有它基础形态照常工作) |  |
-| reveal | `03-patterns/reveal/reveal.css` | 93 | 可选 207 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
+| reveal | `03-patterns/reveal/reveal.css` | 105 | 可选 207 (`reveal.js`，入场动效，纯增强；没有它内容直接可见) |  |
 | analysis-report | `04-recipes/analysis-report/analysis-report.css` | 226 | — |  |
 | app-shell | `04-recipes/app-shell/app-shell.css` | 588 | **必需 289** (`shell-nav.js`) |  |
 | detail-page | `04-recipes/detail-page/detail-page.css` | 190 | — |  |

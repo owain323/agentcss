@@ -98,8 +98,10 @@ stroke-linecap  round
 stroke-linejoin round
 ```
 
-图标本体请自备：从 [lucide.dev](https://lucide.dev) 取（**ISC 协议**，商用无需署名），
-按上面规格内联进页面即可。本库不提供图标文件，也不设图标目录。
+图标本体两个来源：① 本库随包提供 35 个常用图标（`09-assets/icons/svg/`，
+从 lucide-static v1.73.0 原样搬运、sha256 溯源，ISC 协议商用无需署名）——
+`ai icons <查询词>` 可按 name/label/keywords/group 检索；② 更多图标从
+[lucide.dev](https://lucide.dev) 自取（同协议），按上面规格内联进页面即可。
 
 ## 一条已经做过的决定
 

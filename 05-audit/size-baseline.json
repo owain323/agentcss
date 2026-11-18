@@ -225,8 +225,8 @@
       "raw": 19492
     },
     "03-patterns/reveal/reveal.css": {
-      "gzip": 1770,
-      "raw": 4048
+      "gzip": 2084,
+      "raw": 4652
     },
     "03-patterns/reveal/reveal.js": {
       "gzip": 3478,
@@ -287,9 +287,45 @@
     "04-recipes/tierA-tokens.css": {
       "gzip": 2098,
       "raw": 5373
+    },
+    "09-assets/bar/bar.css": {
+      "gzip": 3249,
+      "raw": 6663
+    },
+    "09-assets/bar/bar.js": {
+      "gzip": 6910,
+      "raw": 16227
+    },
+    "09-assets/echarts-adapter/echarts-adapter.js": {
+      "gzip": 5574,
+      "raw": 13874
+    },
+    "09-assets/model-viewer/model-viewer.css": {
+      "gzip": 1748,
+      "raw": 4070
+    },
+    "09-assets/model-viewer/model-viewer.js": {
+      "gzip": 8441,
+      "raw": 21019
+    },
+    "09-assets/scientific-plot/scientific-plot.css": {
+      "gzip": 2515,
+      "raw": 6215
+    },
+    "09-assets/scientific-plot/scientific-plot.js": {
+      "gzip": 9716,
+      "raw": 26817
+    },
+    "09-assets/sparkline/sparkline.css": {
+      "gzip": 3574,
+      "raw": 7422
+    },
+    "09-assets/sparkline/sparkline.js": {
+      "gzip": 10051,
+      "raw": 24082
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 372971,
-  "total_raw": 942487
+  "total_gzip": 425063,
+  "total_raw": 1069480
 }

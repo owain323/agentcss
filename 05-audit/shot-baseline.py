@@ -876,12 +876,12 @@ def css_fingerprint():
     """
     import hashlib
     h = hashlib.sha256()
-    skip = {'.git', 'node_modules', '06-vendor', 'shots',
+    skip = {'.git', 'node_modules', 'shots',
             '_baseline', '_current', '_diff'}
-    exts = {'.css', '.js', '.html'}
+    exts = {'.css', '.js', '.mjs', '.html'}
     files = []
     for d in ('01-tokens', '02-primitives', '03-patterns', '04-recipes',
-              '09-assets', '10-review', 'adapters'):
+              '09-assets', '10-review', 'adapters', 'examples', 'esm'):
         base = os.path.join(ROOT, d)
         if not os.path.isdir(base):
             continue
@@ -1055,16 +1055,22 @@ def main():
               % (label, passed, compared, bytes_same, compared))
         # 🔴 诚实报告：截了但**没有基线可比**的页面 = 本轮**没被验证**。
         #    不写出来就会被当成"也通过了"（默认信任是最常见的假绿来源）。
-        unverified = [shot_name(r[0], r[1]) for r in managed()
+        #    🔴 0.27.18 两处修正：
+        #    ① 预期集合按套取——rtl 套只管 RTL_PAGES（旧代码对 rtl 也按
+        #       全量 PAGES 数，只好静默清零，掩盖了真实盲区）；
+        #    ② 不再静默清零、也**判红**：新增页面不录基线 = 覆盖名册与
+        #       基线脱节，visual 门禁整体必须红（visual-coverage 只查名册，
+        #       不查基线存在性——这里是唯一的守卫点）。
+        expected = RTL_PAGES if k == 'rtl' else PAGES
+        unverified = [shot_name(r[0], r[1]) for r in expected
                       if os.path.exists(os.path.join(ROOT, r[0], r[1]))
                       and shot_name(r[0], r[1]) not in set(allnames)]
-        if k != 'light':
-            unverified = []
         if unverified:
-            print('  ⚠️ %s：%d 个页面**截了但没有基线**，本轮未验证（跑 --update）：'
+            print('  %s [FAIL] %d 个页面**截了但没有基线** ⇒ 本轮未验证（跑 --update 补录）：'
                   % (label, len(unverified)))
             for u in unverified:
                 print('        %s' % u)
+            rc = 1
         for name, pct, why in failed:
             print('  %s FAIL  %-34s %s' % (label, name, why))
             print('        diff 图：%s' % os.path.relpath(

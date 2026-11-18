@@ -208,4 +208,55 @@ write(
     "  .breakable { border: 1px solid #c9ced6; padding: 10px; }",
 )
 
-print("完成，共 7 个文件（6 个对抗面）")
+# ---------------------------------------------------------------- ⑦ fixed 横幅
+# 打印引擎把 position:fixed 元素重复画在每一页：横幅不加页，但 run 数
+# 会比普通流对照组多（每页一份）。Chromium 若某天不再重复，
+# 判据 ⑦ 的 run 差打平 ⇒ 夹具腐化会被判据自己发现。
+paras_banner = "\n".join(
+    "    <p>第 %d 段：页内容保持一致，用来验证页数与 run 数的对照关系。</p>" % i
+    for i in range(1, 41)
+)
+write(
+    "07-fixed-banner.html",
+    "fixed 横幅",
+    '  <h1>fixed 横幅：打印引擎会把它重复画在每一页</h1>\n'
+    '  <div class="banner">FIXED-BANNER-MARKER：这张纸由 fixed 横幅盖章</div>\n'
+    + paras_banner + "\n",
+    '  .banner { position: fixed; top: 0; right: 0; font-size: 20px;\n'
+    '            border: 2px solid #15181c; padding: 4px 10px; background: #fff; }',
+)
+write(
+    "07b-static-banner.html",
+    "fixed 横幅（对照组：普通流）",
+    '  <h1>普通流横幅（对照）：打印引擎不会重复它</h1>\n'
+    '  <div class="banner banner--static">FIXED-BANNER-MARKER：这张纸的横幅在普通流里</div>\n'
+    + paras_banner + "\n",
+    '  .banner--static { border: 2px solid #15181c; padding: 4px 10px; margin-bottom: 10px; }',
+)
+
+# ---------------------------------------------------------------- ⑧ 屏上透明
+# opacity:0 的内容打印时整段从文本层消失（实测 Chromium 不产出这些 run）。
+# 与对照组的 run 差 = 被吃掉的 ghost —— "屏上规则漏进打印"这类失效的物证。
+write(
+    "08-screen-hidden.html",
+    "屏上透明",
+    '  <h1>屏上透明：opacity:0 的字在 PDF 文本层里还在不在？</h1>\n'
+    '  <p>下面这段文字在屏幕与打印媒体下都是 opacity:0 —— 模拟"屏上规则漏进打印"。'
+    '文本层的 run 数、对比度判据能不能看见它，就是这道夹具要回答的。</p>\n'
+    '  <div class="ghost">\n'
+    '    <p>GHOST-TEXT-MARKER：这一整段的字被透明度处理，打印文本层里还在不在就是问题本身。</p>\n'
+    '  </div>\n' + paras_banner + "\n",
+    "  .ghost { opacity: 0; }",
+)
+write(
+    "08b-fully-visible.html",
+    "屏上透明（对照组：全部可见）",
+    '  <h1>全部可见（对照）：这段字始终可见</h1>\n'
+    '  <p>下面这段文字始终可见。</p>\n'
+    '  <div class="ghost ghost--on">\n'
+    '    <p>GHOST-TEXT-MARKER：这一整段的字被透明度处理，打印文本层里还在不在就是问题本身。</p>\n'
+    '  </div>\n' + paras_banner + "\n",
+    "  .ghost--on { opacity: 1; }",
+)
+
+print("完成，共 11 个文件（8 个对抗面）")

@@ -13,8 +13,8 @@
   ],
   "totals": {
     "sourceFiles": 81,
-    "sourceBytes": 1068876,
-    "distGzip": 128108
+    "sourceBytes": 1069480,
+    "distGzip": 128118
   },
   "files": [
     {
@@ -825,15 +825,15 @@
     },
     {
       "source": "03-patterns/reveal/reveal.css",
-      "sourceSha256": "78eded01047bddf4584dd4b1c4bcfe27efaa7e556b48dcda0b01facc4128bf37",
-      "sourceBytes": 4048,
-      "sourceGzip": 1770,
+      "sourceSha256": "d94c1bf1975d497f794f865fd2ddbb5839e96ecda090a64a55281b3c96b06753",
+      "sourceBytes": 4652,
+      "sourceGzip": 2084,
       "outputs": [
         {
           "path": "dist/03-patterns/reveal/reveal.css",
           "kind": "minified",
-          "bytes": 1052,
-          "gzip": 343
+          "bytes": 1137,
+          "gzip": 353
         }
       ]
     },

@@ -66,7 +66,9 @@ def scan(roots=None):
     #   `09-assets/model-viewer/vendor/` 下是 three / GLTFLoader / OrbitControls，
     #   它们的英文注释是**上游源码**，一个字都不能改
     #   （改了就不是"引入"而是"分发改过的第三方代码"，协议上更危险）。
-    #   这些库已在 `06-vendor/协议台账.md` 登记。
+    #   这些库已在本目录 `09-assets/model-viewer/vendor/THIRD-PARTY-NOTICES.md`
+#   登记（0.27.18 修正：旧注释指到的 `06-vendor/协议台账.md` 从未存在——
+#   台账虚指和台账缺失一样是账目问题）。
     # ⭐ 豁免的是「逐字英文/版权声明」这类**改不得**的检查，
     #   不是"第三方可以随便带进来"—— 「外链资产」那类仍照查。
     files = [f for f in files

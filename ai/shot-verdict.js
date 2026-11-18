@@ -101,13 +101,24 @@ function computeShotVerdict(widthEntries, consoleErrors) {
   return { status: worst, reasons: all, perWidth: perWidth };
 }
 
-/** 一句话中文结论（给人类输出与 agent 的 summary 字段共用）。 */
+/** 一句话中文结论（给人类输出与 agent 的 summary 字段共用）。
+    🔴 0.27.18：fail 文案只列**实际出现**的分型，不再罗列全类别菜单
+    （旧文案"2 处问题：真溢出 / JS 报错 / 采集不完整"——明明只有
+    真溢出，读起来像三类都有）。 */
 function summarize(verdict, widthCount) {
   var s = verdict && verdict.status;
-  var n = (verdict && verdict.reasons || []).length;
+  var rs = (verdict && verdict.reasons || []);
+  var n = rs.length;
   if (s === 'pass') return widthCount + ' 个宽度全部通过：无溢出、无 JS 报错';
   if (s === 'warn') return '发现 ' + n + ' 处设计内滚动（warn，不判失败）——确认是契约行为即可';
-  return '发现 ' + n + ' 处必须处理的问题（fail）：真溢出 / JS 报错 / 采集不完整';
+  var seen = {};
+  var kinds = [];
+  var ORDER = { 'true-overflow': '真溢出', 'js-error': 'JS 报错',
+    'page-overflow': '页面级溢出', 'capture-incomplete': '采集不完整' };
+  rs.forEach(function (r) {
+    if (!seen[r.code]) { seen[r.code] = 1; kinds.push(ORDER[r.code] || r.code); }
+  });
+  return '发现 ' + n + ' 处必须处理的问题（fail）：' + kinds.join(' / ');
 }
 
 /* ---------------------------------------------------------------- 自检

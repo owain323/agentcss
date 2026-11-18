@@ -20,7 +20,10 @@ const { launch } = require('./browser.js');
  *   ⑥ 全库**没有裸的 outline:none**（有的话必须紧跟替代样式）
  */
 const PAGE = 'http://127.0.0.1:8000/01-tokens/focus-ring-demo.html';
-const LIB = '${REPO}';
+/* 🔴 0.27.18：同 chart-check —— 字面量占位符从没被替换，
+   以它拼出的库文件路径全不存在，⑥"全库无裸 outline:none"空跑。
+   __dirname 推导（剥引号，不用模板）。 */
+const LIB = require('path').resolve(__dirname, '..');
 
 function lum(hex) {
   const h = hex.trim().replace('#', '');
