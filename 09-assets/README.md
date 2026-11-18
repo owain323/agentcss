@@ -14,6 +14,7 @@
 | `09-assets/bar/` | 柱状图，含图表规范的裁剪铁律 |
 | `09-assets/echarts-adapter/` | 把令牌喂给 ECharts，按需引入；本库不含 ECharts |
 | `09-assets/icons/` | 35 个 Lucide 官方 SVG 图标（icon-forge 产出，sha256 溯源；AI 不碰图形） |
+| `09-assets/icons-anim/` | 图标动效：纯 CSS 四模式（draw/breathe/popin/spin），几何零改动、reduced 全灭、fail-open |
 | `09-assets/model-viewer/` | 惰性加载的 3D 模型查看器 |
 | `09-assets/scientific-plot/` | 二维科学绘图：坐标轴 / 误差棒 / 置信区间带 / 对数轴 |
 | `09-assets/sparkline/` | 迷你趋势线，没有坐标轴的走势提示 |

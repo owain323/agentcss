@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>icons-anim · 图标动效（CSS 路线） · agentcss</title>
+<meta name="description" content="图标动效：给 09-assets/icons 的静态图标加纯 CSS 动效（draw/breathe/popin/spin），几何零改动、reduced 全灭、fail-open">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231b4d8f%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%228%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%20opacity%3D%22.5%22%2F%3E%3Crect%20x%3D%2217%22%20y%3D%2217%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%221.6%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="../01-tokens/tokens.css">
+<link rel="stylesheet" href="../01-tokens/typography.css">
+<link rel="stylesheet" href="../01-tokens/page.css">
+<!-- 文档页里会出现 `data-market="intl"` 的示例（delta / 约定 / 索引）。
+     不引这个文件，示例就是"写了但没生效"—— 而 `dir-check.js` 判据 ⑧ 会拦住。
+     它是可选增强，0.2 KB，对没有该属性的页面零影响。 -->
+<link rel="stylesheet" href="../01-tokens/market.css">
+<link rel="stylesheet" href="../03-patterns/nav/nav.css">
+<link rel="stylesheet" href="../04-recipes/table/table.css">
+<link rel="stylesheet" href="guide.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a href="#main" class="skip">跳到主内容</a>
+<header class="g-top">
+  <div class="g-top__in">
+    <a class="g-brand" href="index.html">agentcss</a>
+    <span class="g-sep" aria-hidden="true">/</span>
+    <span class="g-where">icons-anim · 图标动效（CSS 路线）</span>
+    <a class="g-jump" href="../09-assets/icons-anim/demo.html">打开示例<span aria-hidden="true"> →</span></a>
+  </div>
+</header>
+<div class="g-layout">
+  <main id="main" class="g-main">
+    <p class="g-kicker">图表与资源 · stable</p>
+    <h1>icons-anim · 图标动效（CSS 路线）</h1>
+    <p class="lede">图标动效：给 09-assets/icons 的静态图标加纯 CSS 动效（draw/breathe/popin/spin），几何零改动、reduced 全灭、fail-open</p>
+    <ul class="g-meta"><li><a href="../09-assets/icons-anim/demo.html"><code>09-assets/icons-anim/demo.html</code></a></li><li><a href="../09-assets/icons-anim/icons-anim.css"><code>09-assets/icons-anim/icons-anim.css</code></a></li></ul>
+<figure class="g-live"><figcaption class="g-live__cap"><span class="g-live__tag">在这页里直接跑</span>下面是 icons-anim · 图标动效（CSS 路线） 的真实示例页，全套状态都在里面；<a href="../09-assets/icons-anim/demo.html">单独打开</a>可以看到完整尺寸。</figcaption><iframe class="g-live__frame" src="../09-assets/icons-anim/demo.html" title="icons-anim · 图标动效（CSS 路线） 的可运行示例" loading="lazy"></iframe></figure><script src="live.js" defer></script>
+    <article class="g-doc">
+<p>给 <code>09-assets/icons/</code> 的静态图标加<strong>纯 CSS</strong> 动效。0.27.18 的裁决兑现： SMIL 批次（WorkBuddy icon-forge 产出）不进本库——SMIL 时间线不受 <code>prefers-reduced-motion</code> 控制、也不受库内 <code>0.01ms</code> 全局灭活管； CSS 动画三个自动成立：media query 生效、motion.py 有管辖权、可被门禁审计。</p>
+<h2 id="s2">用法<a class="anchor" href="#s2" aria-label="本节直链">#</a></h2>
+<pre class="code" tabindex="0"><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;…/09-assets/icons-anim/icons-anim.css&quot;&gt;
+
+&lt;!-- 必须 inline SVG：&lt;img&gt; 外链不受页面 CSS 作用 --&gt;
+&lt;svg class=&quot;icon-anim icon-anim--draw&quot; role=&quot;img&quot; aria-label=&quot;…&quot; viewBox=&quot;0 0 24 24&quot; …&gt;
+  …官方 path（原样，不改几何）…
+&lt;/svg&gt;</code></pre>
+<div class="table" tabindex="0" role="region" aria-label="用法（可横向滚动）"><table>
+<thead><tr>
+<th>类</th><th>效果</th><th>时长</th><th>循环</th>
+</tr></thead>
+<tbody>
+<tr><td><code>icon-anim--draw</code></td><td>描边自绘（子形状依次画出）</td><td><code>--dur-slow</code> 280ms × 错峰</td><td>一次</td></tr>
+<tr><td><code>icon-anim--breathe</code></td><td>呼吸（透明度 0.35↔1，相邻形状反相）</td><td>2s</td><td>循环</td></tr>
+<tr><td><code>icon-anim--popin</code></td><td>浮入（上升 2px + 淡入）</td><td><code>--dur-base</code> 180ms</td><td>一次</td></tr>
+<tr><td><code>icon-anim--spin</code></td><td>旋转（加载态）</td><td>1.6s</td><td>循环</td></tr>
+</tbody>
+</table></div>
+<h2 id="s3">硬约束（门禁守着）<a class="anchor" href="#s3" aria-label="本节直链">#</a></h2>
+<ol><li><strong>几何零改动</strong>：动画层只碰 <code>stroke-dasharray/offset</code>、<code>opacity</code>、 <code>transform</code>——CSS 改不了几何属性；<code>09-assets/icons/</code> 的 SVG 与 manifest 由 icon-gate 守（sha256 + body 逐条比对），动画层对它们零 diff。</li><li><strong>fail-open</strong>：动画缺位（keyframes 剥离 / 本文件没引 / UA 不支持）时图标<strong>完整可见</strong>——动画不是可见性的来源。draw 基础态 offset=0。</li><li><strong>reduced-motion 全灭</strong>：<code>@media (prefers-reduced-motion: reduce)</code> 下四模式全部静止、图标完整可见。<strong>不登记</strong>进 motion-policy 的 keep 清单 ——图标动画纯装饰，reduced 应全灭。</li><li><strong>不进 AI 面</strong>：类名清单不写入 llms / components.json 语义段 / START-HERE——消费方是人，<code>ai-surface</code> 预算不受影响。（components.json 里只有本资产组件的登记条目本身。）</li></ol>
+<h2 id="s4">与 icon-forge 的关系<a class="anchor" href="#s4" aria-label="本节直链">#</a></h2>
+<ul><li>icon-forge 的 SMIL 批次（<code>dist/anim/*.svg</code> + <code>dist/react-anim/*.tsx</code>）已在 0.27.19 重建（undefined 污染 / 硬编码色 / popin 越界样条 / draw fail-closed 全修），<strong>供其他消费方使用</strong>；本目录的 CSS 路线是 agentcss 库内的唯一动效通道。</li></ul>
+    </article>
+    <nav class="g-pager" aria-label="上一页 / 下一页">
+      <a class="g-pager__link g-pager__link--prev" href="bar.html"><span>上一页</span>bar · 柱状图</a>
+      <a class="g-pager__link g-pager__link--next" href="model-viewer.html"><span>下一页</span>model-viewer — 惰性加载的 3D 模型查看器</a>
+    </nav>
+  </main>
+  <aside class="g-side">
+    <p class="g-side__title" id="toc-title">本页目录</p>
+    <ul class="g-toc"><li><a href="#s2">用法</a></li><li><a href="#s3">硬约束（门禁守着）</a></li><li><a href="#s4">与 icon-forge 的关系</a></li></ul>
+  </aside>
+</div>
+<footer class="g-foot">
+  <p>v0.27.19 · 零第三方运行时依赖 · 组件数 41</p>
+</footer>
+</body>
+</html>

@@ -95,6 +95,12 @@
    "purpose": "状态标签：计数、分类、结果标记",
    "printPolicy": []
   },
+  "icons-anim": {
+   "rootClass": "icon-anim",
+   "tier": "asset",
+   "purpose": "图标动效：给 09-assets/icons 的静态图标加纯 CSS 动效（draw/breathe/popin/spin），几何零改动、reduced 全灭、fail-open",
+   "printPolicy": []
+  },
   "bar": {
    "rootClass": "bar",
    "tier": "asset",

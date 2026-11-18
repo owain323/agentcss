@@ -38,7 +38,7 @@
     "tall": {
       "what": "分页必然发生",
       "metric": "docH",
-      "members": 39,
+      "members": 40,
       "pages": [
         "/02-primitives/button/demo.html",
         "/02-primitives/input/demo.html",
@@ -57,6 +57,7 @@
         "/03-patterns/form-validation/demo.html",
         "/03-patterns/nav/demo.html",
         "/03-patterns/overlay/demo.html",
+        "/03-patterns/tooltip/demo.html",
         "/02-primitives/popover/demo.html",
         "/02-primitives/progress/demo.html",
         "/02-primitives/skeleton/demo.html",
@@ -84,11 +85,12 @@
     "grid": {
       "what": "多栏栅格",
       "metric": "maxCols",
-      "members": 10,
+      "members": 11,
       "pages": [
         "/02-primitives/skeleton/demo.html",
         "/02-primitives/upload/demo.html",
         "/03-patterns/reveal/demo.html",
+        "/09-assets/icons-anim/demo.html",
         "/04-recipes/analysis-report/demo.html",
         "/04-recipes/app-shell/demo.html",
         "/04-recipes/report/demo.html",
@@ -110,13 +112,14 @@
     "media": {
       "what": "矢量/位图",
       "metric": "mediaCount",
-      "members": 12,
+      "members": 13,
       "pages": [
         "/02-primitives/button/demo.html",
         "/02-primitives/choice/demo.html",
         "/02-primitives/metric/demo.html",
         "/02-primitives/upload/demo.html",
         "/09-assets/sparkline/demo.html",
+        "/09-assets/icons-anim/demo.html",
         "/09-assets/bar/demo.html",
         "/04-recipes/analysis-report/demo.html",
         "/04-recipes/app-shell/demo.html",
@@ -180,46 +183,36 @@
     "root-index": {
       "light": {
         "pages": 5,
-        "runs": 712,
-        "worst": 8.38,
+        "runs": 734,
+        "worst": 21,
         "hist": {
-          "#000000": 20,
-          "#1F2328": 222,
-          "#1B4D8F": 470
+          "#000000": 734
         }
       },
       "dark": {
         "pages": 5,
-        "runs": 712,
-        "worst": 8.38,
+        "runs": 734,
+        "worst": 21,
         "hist": {
-          "#000000": 20,
-          "#1F2328": 222,
-          "#1B4D8F": 470
+          "#000000": 734
         }
       }
     },
     "guide-index": {
       "light": {
         "pages": 6,
-        "runs": 1041,
-        "worst": 8.38,
+        "runs": 1077,
+        "worst": 21,
         "hist": {
-          "#000000": 689,
-          "#1F2328": 284,
-          "#33383F": 26,
-          "#1B4D8F": 42
+          "#000000": 1077
         }
       },
       "dark": {
         "pages": 6,
-        "runs": 1041,
-        "worst": 8.38,
+        "runs": 1077,
+        "worst": 21,
         "hist": {
-          "#000000": 689,
-          "#1F2328": 284,
-          "#33383F": 26,
-          "#1B4D8F": 42
+          "#000000": 1077
         }
       }
     },
@@ -227,13 +220,9 @@
       "light": {
         "pages": 8,
         "runs": 2321,
-        "worst": 8.38,
+        "worst": 10.26,
         "hist": {
-          "#33383F": 336,
-          "#000000": 1461,
-          "#1F2328": 496,
-          "#1B4D8F": 6,
-          "#15181C": 18,
+          "#000000": 2317,
           "#7D1C11": 3,
           "#1C4526": 1
         }
@@ -241,13 +230,9 @@
       "dark": {
         "pages": 8,
         "runs": 2321,
-        "worst": 8.38,
+        "worst": 10.26,
         "hist": {
-          "#33383F": 336,
-          "#000000": 1461,
-          "#1F2328": 496,
-          "#1B4D8F": 6,
-          "#15181C": 18,
+          "#000000": 2317,
           "#7D1C11": 3,
           "#1C4526": 1
         }
@@ -259,9 +244,7 @@
         "runs": 1055,
         "worst": 10.26,
         "hist": {
-          "#000000": 683,
-          "#1F2328": 221,
-          "#33383F": 134,
+          "#000000": 1038,
           "#7D1C11": 3,
           "#1C4526": 14
         }
@@ -271,9 +254,7 @@
         "runs": 1055,
         "worst": 10.26,
         "hist": {
-          "#000000": 683,
-          "#1F2328": 221,
-          "#33383F": 134,
+          "#000000": 1038,
           "#7D1C11": 3,
           "#1C4526": 14
         }
@@ -285,9 +266,7 @@
         "runs": 984,
         "worst": 10.26,
         "hist": {
-          "#33383F": 98,
-          "#000000": 504,
-          "#1F2328": 357,
+          "#000000": 959,
           "#5A3A00": 1,
           "#7D1C11": 7,
           "#1C4526": 17
@@ -298,9 +277,7 @@
         "runs": 984,
         "worst": 10.26,
         "hist": {
-          "#33383F": 98,
-          "#000000": 504,
-          "#1F2328": 357,
+          "#000000": 959,
           "#5A3A00": 1,
           "#7D1C11": 7,
           "#1C4526": 17
@@ -313,9 +290,7 @@
         "runs": 1234,
         "worst": 10.29,
         "hist": {
-          "#33383F": 229,
-          "#000000": 861,
-          "#1F2328": 143,
+          "#000000": 1233,
           "#5A3A00": 1
         }
       },
@@ -324,9 +299,7 @@
         "runs": 1234,
         "worst": 10.29,
         "hist": {
-          "#33383F": 229,
-          "#000000": 861,
-          "#1F2328": 143,
+          "#000000": 1233,
           "#5A3A00": 1
         }
       }
@@ -337,10 +310,7 @@
         "runs": 1719,
         "worst": 10.26,
         "hist": {
-          "#000000": 874,
-          "#1F2328": 536,
-          "#33383F": 186,
-          "#15181C": 1,
+          "#000000": 1597,
           "#1C4526": 72,
           "#7D1C11": 50
         }
@@ -350,10 +320,7 @@
         "runs": 1719,
         "worst": 10.26,
         "hist": {
-          "#000000": 874,
-          "#1F2328": 536,
-          "#33383F": 186,
-          "#15181C": 1,
+          "#000000": 1597,
           "#1C4526": 72,
           "#7D1C11": 50
         }
@@ -363,12 +330,9 @@
       "light": {
         "pages": 3,
         "runs": 721,
-        "worst": 8.38,
+        "worst": 10.26,
         "hist": {
-          "#000000": 101,
-          "#1F2328": 168,
-          "#33383F": 426,
-          "#1B4D8F": 11,
+          "#000000": 706,
           "#101010": 2,
           "#7D1C11": 6,
           "#1C4526": 7
@@ -377,12 +341,9 @@
       "dark": {
         "pages": 3,
         "runs": 721,
-        "worst": 8.38,
+        "worst": 10.26,
         "hist": {
-          "#000000": 101,
-          "#1F2328": 168,
-          "#33383F": 426,
-          "#1B4D8F": 11,
+          "#000000": 706,
           "#101010": 2,
           "#7D1C11": 6,
           "#1C4526": 7
@@ -393,12 +354,9 @@
       "light": {
         "pages": 4,
         "runs": 516,
-        "worst": 8.38,
+        "worst": 10.26,
         "hist": {
-          "#000000": 77,
-          "#1F2328": 391,
-          "#33383F": 28,
-          "#1B4D8F": 5,
+          "#000000": 501,
           "#7D1C11": 12,
           "#1C4526": 3
         }
@@ -406,12 +364,9 @@
       "dark": {
         "pages": 4,
         "runs": 516,
-        "worst": 8.38,
+        "worst": 10.26,
         "hist": {
-          "#000000": 77,
-          "#1F2328": 391,
-          "#33383F": 28,
-          "#1B4D8F": 5,
+          "#000000": 501,
           "#7D1C11": 12,
           "#1C4526": 3
         }

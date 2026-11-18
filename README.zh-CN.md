@@ -52,7 +52,7 @@
   本库只在你确实缺一块时补上去。
 - 输出形态不是网页（PPT / 文档 / 邮件）时，本库的网页布局规则**不适用**。
 
-**给 AI 的发现层**：`llms.txt`（短，英文，含命令行用法）、`llms-full.txt`（一页看全 40 个组件
+**给 AI 的发现层**：`llms.txt`（短，英文，含命令行用法）、`llms-full.txt`（一页看全 41 个组件
 和各自的已知翻车点）、`AGENTS.md`（十行：契约在哪、怎么查、怎么验）。
 `ai/START-HERE.md` 是更长的中文导航；`START-HERE.md`（根目录）是给人类复用者的三步清单
 （组件表由脚本生成，不会漂移）。
@@ -103,7 +103,7 @@ npm install github:owain323/agentcss
 
 ## 组件一览
 
-共 **40** 个（stable 40 · 全部通过四条判据）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
+共 **41** 个（stable 41 · 全部通过四条判据）。每个组件目录下有 `README.md`（为什么这么做）和 `demo.html`（能直接抄的结构）。
 
 ### primitives · 基础件（17）
 
@@ -156,7 +156,7 @@ npm install github:owain323/agentcss
 | `report` | `rep` | 报告版式系统 v1：共享基础 + 三套版式（杂志/科研技术/金融研究），只换一个 … |
 | `table` | `table` | 数据表格：排序/加载/空/错误四态；三种用途预设（财务/学术/统计） |
 
-### assets · 可视化（4）
+### assets · 可视化（5）
 
 | 组件 | 根类名 | 用途 |
 |---|---|---|
@@ -164,6 +164,7 @@ npm install github:owain323/agentcss
 | `model-viewer` | `mv` | 3D 模型查看器：令牌驱动样式，不含渲染库本体 |
 | `scientific-plot` | `splot` | 二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖 |
 | `sparkline` | `sparkline` | 迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势 |
+| `icons-anim` | `icon-anim` | 图标动效：纯 CSS 四模式（draw/breathe/popin/spin），几何零改动、reduced 全灭、fail-open |
 ---
 
 ## 用法
@@ -581,7 +582,7 @@ npm run benchmark                        # 兼容性基准
 
 成熟度不是人写的，是 `ai/components.json` 里**四条机械判据**算出来的
 （有 demo + 有专属门禁 + 状态全在 `data-*` 上 + 行为零欠账）。
-当前 40 个全部满足，所以**没有 beta 组件** —— 但这四条量的是**机制完备度**，
+当前 41 个全部满足，所以**没有 beta 组件** —— 但这四条量的是**机制完备度**，
 不是"在多少个生产项目里跑过"。把 `stable` 读成"久经生产"是误读；
 真实采用证据在 `SUPPORT.md` 与 `docs/LAYER-BASELINE.md` 里，按行查。
 

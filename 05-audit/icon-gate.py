@@ -149,6 +149,27 @@ def main():
     #    sha256 记的是**上游原文件**的哈希（本机离线重算不出），
     #    但 body 是 manifest 与入仓文件**两边都有**的几何——
     #    换版本/手改 SVG 没人报警的缺口就在这里堵上。
+    # 🔴 0.27.19 锁值三方一致（质量门神 R3-4 指出的缺口）：此前
+    #    manifest.count / icons 数组长度 / svg 目录文件数三个数字
+    #    谁都不查——手加 svg 或手改 count 都没人报警。
+    man_path = os.path.join(ROOT, '09-assets', 'icons', 'manifest.json')
+    lock_probe = []
+    if os.path.isfile(man_path):
+        man0 = json.load(io.open(man_path, encoding='utf-8'))
+        svg_dir = os.path.join(ROOT, '09-assets', 'icons', 'svg')
+        svg_n = len([f for f in os.listdir(svg_dir) if f.endswith('.svg')])             if os.path.isdir(svg_dir) else -1
+        if man0.get('count') != len(man0.get('icons', [])):
+            lock_probe.append('manifest.count=%r 与 icons 数组长度 %d 不一致'
+                              % (man0.get('count'), len(man0.get('icons', []))))
+        if len(man0.get('icons', [])) != svg_n:
+            lock_probe.append('icons 数组 %d 条与 svg 文件数 %d 不一致'
+                              % (len(man0.get('icons', [])), svg_n))
+    if lock_probe:
+        print('锁值校验：三方不一致 ——')
+        for x in lock_probe:
+            print('  ✗ ' + x)
+        return 1
+    print('锁值校验：manifest.count = icons 数组 = svg 文件数，三方一致。')
     man_path = os.path.join(ROOT, '09-assets', 'icons', 'manifest.json')
     if os.path.isfile(man_path):
         man = json.load(io.open(man_path, encoding='utf-8'))

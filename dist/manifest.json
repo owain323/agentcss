@@ -12,9 +12,9 @@
     "gzip 长度随压缩器实现漂移（±若干字节）⇒ 它只是报表值，不进逐字节判据"
   ],
   "totals": {
-    "sourceFiles": 81,
-    "sourceBytes": 1069480,
-    "distGzip": 128118
+    "sourceFiles": 82,
+    "sourceBytes": 1075301,
+    "distGzip": 128599
   },
   "files": [
     {
@@ -1095,6 +1095,20 @@
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
+    },
+    {
+      "source": "09-assets/icons-anim/icons-anim.css",
+      "sourceSha256": "1b32ae42fdb946528a2794706f3a63ed8cadb99f1f0e5c883221a4f41a0fff22",
+      "sourceBytes": 5821,
+      "sourceGzip": 2437,
+      "outputs": [
+        {
+          "path": "dist/09-assets/icons-anim/icons-anim.css",
+          "kind": "minified",
+          "bytes": 1901,
+          "gzip": 481
+        }
+      ]
     },
     {
       "source": "09-assets/model-viewer/model-viewer.css",

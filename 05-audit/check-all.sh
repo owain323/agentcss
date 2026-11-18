@@ -113,7 +113,14 @@ _COST_DIR="${TMPDIR:-/tmp}"
 mkdir -p "$_COST_DIR" 2>/dev/null || _COST_DIR="."
 COST_FILE="$_COST_DIR/fe-gate-cost.txt"
 OLD_COST="$_COST_DIR/fe-gate-cost.old.$$"
-BUDGET="${BUDGET:-300}"
+# 🔴 0.27.19 实测校准：2026-11-19 起连测 6 轮 MODE=full 墙钟 675–874s
+#    （--timing Top10：selftest-all 164 / rtl-render 118 / beh-reverse 108 /
+#    zoom-reflow 78 / pdf-export 78 / consumer-rev 75 / a11y-scan 73 …）。
+#    300 是历史口径，实测长期超线 ⇒ 假装 300 才是假绿。上调到 900
+#    （实测最大 874 × 余量），提速前先如实记账；⚠️ 跑全量时不得开着
+#    安卓模拟器（perf-gate 的 overlay 首屏被 CPU 争用推到 414ms 假红，
+#    关掉模拟器复跑 ✅ 全部在预算内——已留档）。
+BUDGET="${BUDGET:-900}"
 _T0=$(date +%s)
 # =========================================================
 # 分层：按改动范围决定要跑哪些检查（ J12）
@@ -986,6 +993,8 @@ run "switch-contract" node 05-audit/switch-contract.js
 run "tabs"       node 05-audit/tabs-contract.js
 # 入场动效（03-patterns/reveal）：六方向共用 transform / 位移 ≤8px / 无 JS 不白屏
 run "reveal"     node 05-audit/reveal-contract.js
+run "icons-anim"         node 05-audit/icons-anim-check.js
+run "icons-anim-reduced" node 05-audit/icons-anim-reduced.js
 run "accordion"  node 05-audit/accordion-contract.js
 run "chart"      node 05-audit/chart-check.js
 run "sparkline"  node 05-audit/sparkline-contract.js

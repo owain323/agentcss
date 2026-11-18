@@ -1,6 +1,6 @@
 {
   "name": "agentcss",
-  "version": "0.27.18",
+  "version": "0.27.19",
   "description": "Mobile-web CSS component library with a machine-readable contract: 40 components, zero runtime deps, AI-agent CLI (check/shot/pdf). 移动 Web 组件库：CSS + 可选行为脚本，零第三方运行时依赖，内置 AI 契约与校验 CLI。",
   "keywords": [
     "css",

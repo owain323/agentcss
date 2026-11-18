@@ -300,6 +300,10 @@
       "gzip": 5574,
       "raw": 13874
     },
+    "09-assets/icons-anim/icons-anim.css": {
+      "gzip": 2437,
+      "raw": 5821
+    },
     "09-assets/model-viewer/model-viewer.css": {
       "gzip": 1748,
       "raw": 4070
@@ -326,6 +330,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 425063,
-  "total_raw": 1069480
+  "total_gzip": 427500,
+  "total_raw": 1075301
 }

@@ -342,6 +342,7 @@ try {
     ['components', []], ['assets', []], ['tokens', []], ['tree', []],
     ['profile', []], ['capabilities', []], ['pitfalls', ['--component=table']],
     ['icons', []],
+    ['icon-check', []],
     /* ⚠️ 文件名带 pid：`scaffold` 拒绝覆盖已存在的文件（防手滑），
        固定文件名会让**第二次运行**起就红 —— 一道只在干净机器上绿的门禁，
        等于把"跑过一遍"变成失败原因。 */
@@ -401,6 +402,16 @@ try {
   if (gEmpty.status !== 2) iconBad.push('--query= 空值应退出 2（实测 ' + gEmpty.status + '）');
   var gDup = run(['icons', '--json', '--group=finance', '--group=ui']);
   if (gDup.status !== 2) iconBad.push('重复 --group 应退出 2（实测 ' + gDup.status + '）');
+  /* icon-check：包装真源 + 冒烟的交付自检（0.27.19）——
+     正路径退出 0 且单一 JSON（gateExit=0 / smoke.ok=true） */
+  var icRun = run(['icon-check', '--json']);
+  var icDoc = null;
+  try { icDoc = JSON.parse(icRun.stdout); } catch (e) { /* 下面判 */ }
+  if (icRun.status !== 0 || !icDoc || icDoc.gateExit !== 0 ||
+      !(icDoc.smoke && icDoc.smoke.ok === true)) {
+    iconBad.push('icon-check 应退出 0 且单 JSON 含 gateExit=0 + smoke.ok=true' +
+      '（实测 ' + icRun.status + '）');
+  }
   var gHit = run(['icons', '--json', '--query=profit']);
   var gHitDoc = null;
   try { gHitDoc = JSON.parse(gHit.stdout); } catch (e) { /* 下面判 */ }

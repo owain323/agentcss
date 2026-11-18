@@ -1,6 +1,6 @@
 # agentcss — for coding agents
 
-- **Contract (machine-readable):** `ai/components.json` — 40 components with root class, slots, variants, states, ARIA, file paths, and **`printPolicy`** (what happens to this component on paper: `omit` / `expand` / `reveal` / `keep-together` / `allow-break`, plus a `pagination` flag). Query it; never guess class names — and never assume a component prints as it looks on screen.
+- **Contract (machine-readable):** `ai/components.json` — 41 components with root class, slots, variants, states, ARIA, file paths, and **`printPolicy`** (what happens to this component on paper: `omit` / `expand` / `reveal` / `keep-together` / `allow-break`, plus a `pagination` flag). Query it; never guess class names — and never assume a component prints as it looks on screen.
 - **Known failure modes:** `ai/pitfalls.json`, or `npx agentcss ai pitfalls --json --component=<id>`.
 - **Print / PDF:** `npx agentcss ai pdf <page.html> --out page.pdf [--paper=a3|a4|a5|letter|legal] [--margin="18mm 15mm"] [--max-pages=N] [--wait-ms=800] [--ready-selector="#report-ready"]`. Wait for load + fonts; use a visible ready selector for asynchronous content. A timeout or browser failure never replaces an existing PDF. `@page` belongs to the exporter, never to the library. For paper validation use `ai check <doc.json> --medium=paper` — it requires `pageBudget` and refuses `pagination:"server"` components.
 - **Query:** `npx agentcss ai components --json [--maturity=stable]` · `ai tokens --json [--set=dark]` · `ai tree --json`.

@@ -1,0 +1,12 @@
+# icons-anim — 图标动效：每个 specimen 的 role=img + aria-label 与静态图标同规
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "icons-anim · 图标动效 demo"
+  main
+    heading "icons-anim · 图标动效（CSS 路线）" [level=1]
+    paragraph "几何零改动：只加类名，不碰 SVG。SMIL 不进库（reduced-motion 不可控）。 重播动画"
+      button "重播动画"
+    image "警示 图标 draw 模式"
+    image "警示 图标 breathe 模式"
+    image "完成 图标 popin 模式"
+    image "刷新 图标 spin 模式"

@@ -711,6 +711,72 @@ function cmdIcons(args) {
   process.stdout.write('\n  用法：<img src="…/icons/svg/<name>.svg" width="24" height="24" alt="…">\n');
 }
 
+/* 🔴 icon-check：图标交付自检（0.27.19 · 软件工坊裁决的缩水版）。
+   职责边界：icon-gate.py 是唯一真源（规格 + 锁值三方 + 溯源复核），
+   本命令只是它的 **CLI 包装**——同一套判据不许有第二份实现（E31 教训），
+   加一条 `ai icons` 冒烟（清单里查得到的图标才叫交付完成）。
+   退出码沿用全局表：0 通过 / 1 判定不通过。 */
+function cmdIconCheck() {
+  var gate = path.join(ROOT, '05-audit', 'icon-gate.py');
+  if (!fs.existsSync(gate)) {
+    fail('internal', 'icon-gate.py 不在仓库里——icon-check 没有真源可调');
+    return;
+  }
+  var res = require('child_process').spawnSync(
+    process.env.PY || 'python', [gate],
+    { cwd: ROOT, encoding: 'utf8', timeout: 60000 });
+  var gateOut = String(res.stdout || '');
+  var doc = { command: 'icon-check',
+              gate: '05-audit/icon-gate.py', gateExit: res.status, smoke: null };
+  if (!isJson()) {
+    process.stdout.write(gateOut);
+  }
+  if (res.status !== 0) {
+    /* 🔴 --json 输出必须是**单一可解析文档**（ai-layer ⑥′）——
+       门禁结果与冒烟结果合并成一份再吐，不许 out() 两次。 */
+    if (isJson()) {
+      doc.ok = false;
+      doc.detail = gateOut.split('\n').filter(function (l) {
+        return /FAIL|✗|不一致|锁值|溯源/.test(l);
+      }).slice(0, 8);
+      out(doc);
+    }
+    process.exitCode = EXIT.findings;
+    return;
+  }
+  /* 冒烟：icon-gate 绿之后，`ai icons --json` 必须还能列出全部图标
+     ——门禁绿但查询端断供 = 交付没完成（帮助教死开关的家族病防线）。 */
+  var manifest = readJSON(path.join(ROOT, '09-assets', 'icons', 'manifest.json'));
+  var n = (manifest.icons || []).length;
+  var smoke = { expect: n };
+  try {
+    var listed = JSON.parse(spawnNode(['icons', '--json']).stdout);
+    smoke.listed = listed.count;
+    smoke.ok = listed.count === n;
+  } catch (e) {
+    smoke.ok = false;
+    smoke.error = String(e && e.message || e).slice(0, 80);
+  }
+  doc.smoke = smoke;
+  doc.ok = smoke.ok === true;
+  if (isJson()) {
+    out(doc);
+  } else {
+    process.stdout.write('  冒烟：ai icons 列出 ' + smoke.listed + ' / ' +
+      smoke.expect + ' ⇒ ' + (smoke.ok ? '一致' : '🔴 不一致') + '\n');
+    process.stdout.write('  OK  icon-check：门禁全绿 + 查询端冒烟通过。\n');
+  }
+  if (!smoke.ok) process.exitCode = EXIT.findings;
+}
+
+/* node 子进程跑当前 CLI 的辅助（icon-check 冒烟专用） */
+function spawnNode(args) {
+  var r = require('child_process').spawnSync(process.execPath,
+    [path.join(__dirname, 'cli.js')].concat(args),
+    { cwd: ROOT, encoding: 'utf8', timeout: 60000 });
+  return r;
+}
+
 function cmdPitfalls(args) {
   var doc = pitfallsDoc();
   var list = (doc.pitfalls || []).slice();
@@ -1389,6 +1455,7 @@ var FLAGS = {
   capabilities: [],
   pitfalls: ['component', 'scope', 'tag'],
   icons: ['query', 'group'],
+  'icon-check': [],
   pdf: ['out', 'paper', 'margin', 'max-pages', 'wait-ms', 'ready-selector',
     'chrome', 'network-policy'],
   scaffold: ['out', 'css-prefix'],
@@ -1419,6 +1486,7 @@ var CMDS = {
   capabilities: cmdCapabilities,
   pitfalls: cmdPitfalls,
   icons: cmdIcons,
+  'icon-check': cmdIconCheck,
   pdf: cmdPdf,
   scaffold: cmdScaffold,
   shot: cmdShot
@@ -1442,6 +1510,7 @@ function usage() {
       '  ai tree         [--set=light|dark] [--cat=color] [--json]\n' +
       '  ai pitfalls     [--component=<id>] [--scope=component|layout|process|writing] [--tag=<t>] [--json]\n' +
       '  ai icons        [查询词] [--group=<groupId>] [--json]\n' +
+      '  ai icon-check    [--json]  （icon-gate.py 的 CLI 包装 + 查询端冒烟）\n' +
       '  ai profile      [--json]   列出三档及其差异\n' +
       '  ai capabilities [--json]   列出可协商的能力\n' +
       '  ai pdf          <页面.html|URL> --out <file.pdf> [--paper=a4|letter|a5|a3|legal]\n' +

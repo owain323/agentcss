@@ -1,6 +1,6 @@
 # agentcss — full reference (one file)
 
-> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.27.18**.
+> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.27.19**.
 > Do not edit by hand: run `python 05-audit/gen-llms.py` (freshness is gated).
 > Short version: `llms.txt`. Machine contract: `ai/*.json`.
 
@@ -10,7 +10,7 @@ No build step, no framework, no third-party runtime dependency. Class names are 
 ## 1 · Query instead of guessing
 
 ```bash
-npx agentcss ai components --json                     # 40 components, joined with pitfalls
+npx agentcss ai components --json                     # 41 components, joined with pitfalls
 npx agentcss ai components --json --maturity=stable
 npx agentcss ai pitfalls --json --component=table
 npx agentcss ai tokens --json --set=dark
@@ -36,13 +36,14 @@ heading levels and the per-layout obligations in `ai/recipes.json`. `shot` drive
 installed Chrome over a debugging pipe: the viewport is exactly the width you asked for,
 and it reports horizontal overflow plus JS errors.
 
-## 2 · Components (40)
+## 2 · Components (41)
 
 `class` is the root class you put on the element; `js` is the behaviour script (`—` = CSS only).
 
 | id | class | tier | maturity | css | js | what it is | pitfalls |
 |---|---|---|---|---|---|---|---|
 | `bar` | `bar` | asset | stable | 6.5 KB | `bar.js` | 柱状图：堆叠/分组两种语义、超量程裁剪、图例 | `chart-multiline-label` |
+| `icons-anim` | `icon-anim` | asset | stable | 5.7 KB | — | 图标动效：给 09-assets/icons 的静态图标加纯 CSS 动效（d… | — |
 | `model-viewer` | `mv` | asset | stable | 4.0 KB | `model-viewer.js` | 3D 模型查看器：令牌驱动样式，不含渲染库本体 | — |
 | `scientific-plot` | `splot` | asset | stable | 6.1 KB | `scientific-plot.js` | 二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖 | `chart-multiline-label` |
 | `sparkline` | `sparkline` | asset | stable | 7.2 KB | `sparkline.js` | 迷你趋势图：无坐标轴、纯形状，适合表格内嵌的一行走势 | `chart-multiline-label` |

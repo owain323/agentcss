@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>icons-anim · 图标动效 demo</title>
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="icons-anim.css">
+<style>
+  /* 只声明非骨架选择器（body/h1 等骨架由 01-tokens 管，页面不许重抄） */
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-4);
+          max-width: 560px; }
+  .cell { border: 1px solid var(--border-decor); border-radius: 8px;
+          padding: var(--sp-4) var(--sp-3); text-align: center;
+          font-size: var(--fs-sm); color: var(--text-secondary); }
+  .cell svg { width: 32px; height: 32px; font-size: 32px; }
+  .cell b { display: block; margin-top: var(--sp-2); font-weight: 500; }
+</style>
+</head>
+<body class="page">
+<main class="wrap">
+
+  <h1>icons-anim · 图标动效（CSS 路线）</h1>
+  <p>几何零改动：只加类名，不碰 SVG。SMIL 不进库（reduced-motion 不可控）。
+    <button type="button" id="replay">重播动画</button></p>
+
+  <div class="grid" id="g">
+    <div class="cell"><svg class="icon-anim icon-anim--draw" role="img" aria-label="警示 图标 draw 模式" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><b>draw · 描边自绘</b></div>
+    <div class="cell"><svg class="icon-anim icon-anim--breathe" role="img" aria-label="警示 图标 breathe 模式" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><b>breathe · 呼吸</b></div>
+    <div class="cell"><svg class="icon-anim icon-anim--popin" role="img" aria-label="完成 图标 popin 模式" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><b>popin · 浮入</b></div>
+    <div class="cell"><svg class="icon-anim icon-anim--spin" role="img" aria-label="刷新 图标 spin 模式" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg><b>spin · 旋转</b></div>
+  </div>
+</main>
+<script>
+  /* 重播：摘类再挂回（retrigger CSS animation 的通用做法）。
+     无 JS 时四模式照样播——demo 的按钮只是评审便利。 */
+  document.getElementById('replay').addEventListener('click', function () {
+    document.querySelectorAll('.icon-anim').forEach(function (el) {
+      var cls = el.getAttribute('class');
+      el.setAttribute('class', 'icon-anim');
+      void el.offsetWidth;   /* 强制 reflow，让摘类生效 */
+      el.setAttribute('class', cls);
+    });
+  });
+</script>
+</body>
+</html>

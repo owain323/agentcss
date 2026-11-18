@@ -146,6 +146,8 @@ const PAGES = [
    '科学绘图：坐标轴刻度文本进入朗读序列，且不与图形名字重复'],
   ['sparkline', '09-assets/sparkline/demo.html',
    '迷你趋势线：role=img + 名字（无名字的趋势线等于没画）'],
+  ['icons-anim', '09-assets/icons-anim/demo.html',
+   '图标动效：每个 specimen 的 role=img + aria-label 与静态图标同规'],
   /* ---- 10-review ---- */
   ['composition', '10-review/composition/demo.html',
    '组合页：多个模式同处一页时不得出现无法区分的同名控件'],

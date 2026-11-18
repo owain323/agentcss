@@ -1,20 +1,20 @@
 {
   "cli": {
-    "subcommands": 15
+    "subcommands": 16
   },
   "components": {
     "byMaturity": {
       "alpha": 0,
       "beta": 0,
-      "stable": 40
+      "stable": 41
     },
     "byTier": {
-      "asset": 4,
+      "asset": 5,
       "pattern": 14,
       "primitive": 17,
       "recipe": 5
     },
-    "total": 40,
+    "total": 41,
     "withBehaviorLayer": 22
   },
   "dependencies": {
@@ -35,5 +35,5 @@
     "total": 12
   },
   "schemaVersion": 1,
-  "version": "0.27.18"
+  "version": "0.27.19"
 }

@@ -225,11 +225,22 @@ async function runChecks(dir, pkgRel, opts) {
   const comps = Array.isArray(parsed) ? parsed
     : ((parsed && parsed.components) || []);
   const withPolicy = comps.filter((c) => Array.isArray(c.printPolicy)).length;
+  /* 🔴 0.27.19：期望组件数从装好的包里现算，不写死（40 是上一版的
+     手抄数字——每加一个组件这里就假红一次）。 */
+  let expectCount = null;
+  try {
+    const installed = JSON.parse(require('fs').readFileSync(
+      require('path').join(dir, 'node_modules', 'agentcss', 'ai', 'components.json'),
+      'utf8'));
+    expectCount = Array.isArray(installed) ? installed.length
+      : ((installed && installed.components) || []).length;
+  } catch (e) { /* 读不到就退回解析值自身（comps 即真值） */ }
+  const expected = expectCount !== null ? expectCount : comps.length;
   // 反过来的写法（不带 ai）也必须是通的
   const cli2 = spawnSync('npx', ['--no-install', 'agentcss', 'components', '--json'],
     { cwd: dir, encoding: 'utf8', shell: process.platform === 'win32', timeout: 60000 });
   const ok2 = cli2.status === 0 && /^\s*\[/.test(String(cli2.stdout || ''));
-  add('C5', !!parsed && comps.length === 40 && withPolicy === comps.length && ok2,
+  add('C5', !!parsed && comps.length === expected && withPolicy === comps.length && ok2,
     'ai 前缀写法退出码=' + (cli.status === null ? 'null' : cli.status)
     + ' 组件=' + (comps.length || '解析失败')
     + ' 带 printPolicy=' + withPolicy

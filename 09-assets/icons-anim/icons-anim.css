@@ -1,0 +1,119 @@
+/* ============================================================================
+   icons-anim — 图标动效（CSS 路线 · 0.27.19）
+   ============================================================================
+   🔴 为什么是 CSS 而不是 SMIL（0.27.18 裁决的兑现）
+   ------------------------------------------------
+      WorkBuddy icon-forge 的 SMIL 批次不进库：SMIL 时间线不受
+      `prefers-reduced-motion` 控制、也不受库内 0.01ms 全局灭活管
+      （那只作用于 CSS 动画）。CSS 动画三个全部自动成立：
+      media query 生效、motion.py 有管辖权、keyframes 可被门禁审计。
+
+   🔴 几何零改动（硬线）
+   ------------------------------------------------
+      本文件只碰 stroke-dasharray / stroke-dashoffset / opacity /
+      transform —— CSS **改不了** d/cx/cy 等几何属性。
+      `09-assets/icons/` 的 35 个 SVG 与 manifest 由 icon-gate.py 守
+      （sha256 溯源 + body 逐条比对），动画层对它们零 diff。
+
+   🔴 fail-open：动画缺位时图标必须完整可见
+   ------------------------------------------------
+      draw 的基础态是 dashoffset=0（完整）；keyframes 缺位 / UA 不支持 /
+      本文件没被引 —— 图标就是普通图标。动画不是可见性的来源
+      （对齐 sparkline-contract 钉死的不变量；SMIL 批次的 draw 教训）。
+
+   🔴 时长纪律
+   ------------------------------------------------
+      入场类（draw/popin）走令牌：--dur-slow / --dur-base，≤280ms。
+      循环类（breathe/spin）是环境动效不是入场，周期 >300ms 属于
+      motion.py 的 MEDIUM 级（警告不判红）——这是有意的取舍，不是漏网。
+
+   用法（仅 inline SVG —— <img> 外链不受页面 CSS 作用）：
+      <svg class="icon-anim icon-anim--draw" …>…</svg>
+   不进 AI 面（llms/components.json/START-HERE）：消费方是人，
+      类名清单看本文件与 README。ai-surface 预算不受影响。
+   ========================================================================= */
+
+.icon-anim {
+  display: inline-block;
+  vertical-align: -0.125em;   /* 与文字基线的通用对齐微调 */
+}
+
+/* ---- draw：描边自绘 ------------------------------------------------------
+   dasharray 常数 120 > 35 图标任意子路径长度（最长 ≈ 57，圆周 r=9）：
+   offset=120 时可见窗口完全落在路径区间之外 ⇒ 不可见；
+   offset=0 时 dash 区间覆盖整条路径 ⇒ 完整。 sweeping 速度与路径长度
+   成正比，错峰后观感是"依次画出来"。 */
+.icon-anim--draw :is(path, circle, rect, line, polyline, polygon) {
+  stroke-dasharray: 120;
+  animation: icon-anim-draw var(--dur-slow) var(--ease-out) both;
+}
+/* 错峰：一个图标的第 n 个子形状延迟 n-1 个 0.25 单位（@keyframes 无法
+   索引，CSS 的标准写法就是枚举；Lucide 图标最多 6 个子形状）。 */
+.icon-anim--draw :is(path, circle, rect, line, polyline, polygon):nth-child(2) { animation-delay: calc(var(--dur-slow) * 0.35); }
+.icon-anim--draw :is(path, circle, rect, line, polyline, polygon):nth-child(3) { animation-delay: calc(var(--dur-slow) * 0.7); }
+.icon-anim--draw :is(path, circle, rect, line, polyline, polygon):nth-child(4) { animation-delay: calc(var(--dur-slow) * 1.05); }
+.icon-anim--draw :is(path, circle, rect, line, polyline, polygon):nth-child(5) { animation-delay: calc(var(--dur-slow) * 1.4); }
+.icon-anim--draw :is(path, circle, rect, line, polyline, polygon):nth-child(6) { animation-delay: calc(var(--dur-slow) * 1.75); }
+
+@keyframes icon-anim-draw {
+  from { stroke-dashoffset: 120; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* ---- breathe：呼吸（透明度起伏，循环） -------------------------------- */
+.icon-anim--breathe :is(path, circle, rect, line, polyline, polygon) {
+  animation: icon-anim-breathe 2s ease-in-out infinite;
+}
+/* 错峰用反向起点：相邻形状呼吸相位错开（比统一延迟更自然，也不加总量） */
+.icon-anim--breathe :is(path, circle, rect, line, polyline, polygon):nth-child(even) {
+  animation-direction: alternate-reverse;
+}
+
+@keyframes icon-anim-breathe {
+  from { opacity: 0.35; }
+  to   { opacity: 1; }
+}
+
+/* ---- popin：浮入（上升 2px + 淡入，入场一次） --------------------------
+   在 svg 元素上做 transform/opacity —— 不碰子形状。SMIL 版的教训：
+   scale 锚定在原点，居中要改几何（铁律不许）⇒ 浮入无锚点问题。 */
+.icon-anim--popin {
+  animation: icon-anim-popin var(--dur-base) var(--ease-out) both;
+}
+
+@keyframes icon-anim-popin {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- spin：旋转（加载态，循环） ---------------------------------------- */
+.icon-anim--spin {
+  animation: icon-anim-spin 1.6s linear infinite;
+}
+
+@keyframes icon-anim-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ---- 分级降级：reduced 下全部静止，图标完整可见 ------------------------
+   draw 重置 dasharray（避免任何 UA 在 offset=0 之外的解析差）；
+   循环类（breathe/spin）对前庭敏感用户是常驻动效 —— 必须全灭。
+   不登记进 motion-policy.json 的 keep 清单：图标动画纯装饰，
+   reduced 应全灭（motion-reduced 判据的口径）。 */
+@media (prefers-reduced-motion: reduce) {
+  .icon-anim--draw :is(path, circle, rect, line, polyline, polygon) {
+    animation: none;
+    stroke-dasharray: none;
+  }
+  .icon-anim--breathe :is(path, circle, rect, line, polyline, polygon) {
+    animation: none;
+    opacity: 1;
+  }
+  .icon-anim--popin,
+  .icon-anim--spin {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

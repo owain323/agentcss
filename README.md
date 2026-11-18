@@ -214,7 +214,7 @@ Three mistakes the template above already avoids:
 
 ## Components
 
-**40** components (stable 40 / beta 0). Each directory holds a `README.md` (why it is built this way) and a `demo.html` (markup you can copy).
+**41** components (stable 41 / beta 0). Each directory holds a `README.md` (why it is built this way) and a `demo.html` (markup you can copy).
 
 ### primitives (17)
 
@@ -267,7 +267,7 @@ Three mistakes the template above already avoids:
 | `report` | `rep` | Report layout system v1: shared base plus three layouts (magazine, scientific, financial research) |
 | `table` | `table` | Data table: sort / loading / empty / error states, three presets (financial, academic, statistical) |
 
-### assets (4)
+### assets (5)
 
 | Component | Root class | Purpose |
 |---|---|---|
@@ -275,6 +275,7 @@ Three mistakes the template above already avoids:
 | `model-viewer` | `mv` | 3D model viewer, token-driven — ships without the rendering library itself |
 | `scientific-plot` | `splot` | 2D scientific plotting: lines, bands, log axes, token-driven, zero dependencies |
 | `sparkline` | `sparkline` | Inline trend shape, no axes — for a one-line trend inside a table cell |
+| `icons-anim` | `icon-anim` | CSS-only icon motion (draw/breathe/popin/spin): zero geometry change, reduced-motion off, fail-open |
 
 ---
 
