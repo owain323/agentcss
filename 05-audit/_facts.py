@@ -345,6 +345,7 @@ CLAIMS = [
     ('components.total', 'README.md',        _num(r'components\b'),                    '英文 README 总数'),
     ('components.byMaturity.stable', 'README.md',        _labelled('stable'),                   '英文 README 成熟度'),
     ('components.byMaturity.beta',   'README.md',        _labelled('beta'),                     '英文 README 成熟度'),
+    ('components.total', 'README.md',        _num(r'currently'),                    '英文 README 成熟度全过句（0.27.21：这句漏登记，曾漂到 40 没人抓）'),
     ('components.total', 'README.zh-CN.md',  _num(r'个组件'),                          '中文 README 总数'),
     ('components.total', 'README.zh-CN.md',  r'共\s*' + _num(CN_TOTAL_TAIL),           '中文 README 概览'),
     ('components.byMaturity.stable', 'README.zh-CN.md',  _labelled('stable'),             '中文 README 成熟度'),

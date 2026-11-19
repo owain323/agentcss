@@ -335,7 +335,7 @@ Colour comes from tokens only. Component CSS never writes `@media (prefers-color
 
 ## Accessibility
 
-Every component carries a contract covering focus order, keyboard operation, ARIA state and contrast; the checks run in real browsers rather than only reading source text. Maturity is computed from four mechanical criteria (demo + dedicated gate + state on `data-*` + zero behaviour debt), not assigned by hand. All 40 currently pass, so there is no `beta` component — that measures **mechanism completeness**, not how many production projects have shipped it.
+Every component carries a contract covering focus order, keyboard operation, ARIA state and contrast; the checks run in real browsers rather than only reading source text. Maturity is computed from four mechanical criteria (demo + dedicated gate + state on `data-*` + zero behaviour debt), not assigned by hand. All 41 currently pass, so there is no `beta` component — that measures **mechanism completeness**, not how many production projects have shipped it.
 
 ## Development
 
@@ -347,6 +347,10 @@ npm run gate:fast         # static layer, no browser needed
 npm run gate              # full run: browsers, visual baselines, pack closure
 npm run dist              # rebuild dist/
 ```
+
+CI (GitHub Actions, `gate.yml`): PRs and pushes run the static layer (`MODE=fast`) plus unit tests; the nightly matrix runs the **component layer** (`MODE=component` — every component contract) on chromium / webkit / firefox. First nightly runs are expected to be red in places — red is the real state; triage each failure as product defect (fix), environment (documented in the Chinese README), or broken criterion (repair the criterion — never loosen it to get green).
+
+The gate system ships with the **source repository only**; an installed npm package carries the unit-test subset, so `npm test` works inside the package while `npm run gate` and friends intentionally do not (`05-audit/` is not part of the published package).
 
 ## License
 

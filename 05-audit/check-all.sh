@@ -1260,7 +1260,7 @@ run "coverage-rev" $PY 05-audit/coverage-gate.py --selftest
 #   这条不启动浏览器，秒级。
 run "fin-ties" $PY 05-audit/finance-example-ties.py
 run "visual-coverage" $PY 05-audit/visual-coverage-gate.py
-run "visual-stamp"    $PY 05-audit/visual-stamp-gate.py
+run "visual-stamp"    @serial $PY 05-audit/visual-stamp-gate.py   # 🔴 0.27.21（WO-15）：并发组里的 --selftest 会临时改写源码，visual-stamp 读到改到一半的树就假红 ⇒ 独占跑
 
 # 🔴 2026-10-29：这里原来按"装没装 Pillow"决定跑还是跳过。
 #   后果是：没装的机器上这两道门禁**永远 SKIP**，而本仓库的规矩是
