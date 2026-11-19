@@ -65,8 +65,8 @@
       "raw": 7113
     },
     "02-primitives/badge/badge.css": {
-      "gzip": 2805,
-      "raw": 6274
+      "gzip": 2813,
+      "raw": 6287
     },
     "02-primitives/button/button.css": {
       "gzip": 6517,
@@ -77,8 +77,8 @@
       "raw": 10621
     },
     "02-primitives/choice/choice.css": {
-      "gzip": 6412,
-      "raw": 17962
+      "gzip": 6416,
+      "raw": 17988
     },
     "02-primitives/combobox/combobox.css": {
       "gzip": 2895,
@@ -89,8 +89,8 @@
       "raw": 26326
     },
     "02-primitives/date-range/date-range.css": {
-      "gzip": 2249,
-      "raw": 6188
+      "gzip": 2254,
+      "raw": 6201
     },
     "02-primitives/date-range/date-range.js": {
       "gzip": 5705,
@@ -101,12 +101,12 @@
       "raw": 5627
     },
     "02-primitives/input/input.css": {
-      "gzip": 4037,
-      "raw": 11015
+      "gzip": 4040,
+      "raw": 11054
     },
     "02-primitives/metric/metric.css": {
       "gzip": 3278,
-      "raw": 6962
+      "raw": 6988
     },
     "02-primitives/popover/popover.css": {
       "gzip": 2610,
@@ -181,8 +181,8 @@
       "raw": 24256
     },
     "03-patterns/form-validation/form-validation.css": {
-      "gzip": 5031,
-      "raw": 12205
+      "gzip": 5038,
+      "raw": 12218
     },
     "03-patterns/form-validation/form-validation.js": {
       "gzip": 4512,
@@ -209,8 +209,8 @@
       "raw": 4652
     },
     "03-patterns/overlay/overlay.css": {
-      "gzip": 5628,
-      "raw": 13502
+      "gzip": 5632,
+      "raw": 13515
     },
     "03-patterns/overlay/overlay.js": {
       "gzip": 12650,
@@ -245,8 +245,8 @@
       "raw": 12324
     },
     "03-patterns/tooltip/tooltip.css": {
-      "gzip": 2173,
-      "raw": 4264
+      "gzip": 2179,
+      "raw": 4277
     },
     "03-patterns/tooltip/tooltip.js": {
       "gzip": 10784,
@@ -273,8 +273,8 @@
       "raw": 13840
     },
     "04-recipes/detail-page/detail-page.css": {
-      "gzip": 2326,
-      "raw": 5797
+      "gzip": 2336,
+      "raw": 5810
     },
     "04-recipes/report/report.css": {
       "gzip": 7790,
@@ -289,8 +289,8 @@
       "raw": 5495
     },
     "09-assets/bar/bar.css": {
-      "gzip": 3262,
-      "raw": 6696
+      "gzip": 3271,
+      "raw": 6709
     },
     "09-assets/bar/bar.js": {
       "gzip": 6910,
@@ -330,6 +330,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 432246,
-  "total_raw": 1086602
+  "total_gzip": 432302,
+  "total_raw": 1086784
 }
