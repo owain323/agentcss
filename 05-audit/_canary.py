@@ -15,7 +15,9 @@ import os
 import subprocess
 import sys
 
-BASE = 'http://127.0.0.1:8000'
+# 🔴 0.27.21：BASE 从环境变量来（_probe.py 独占空闲端口后传下来）；
+#    硬编码版本在 CI 上对不上探测实际用的那台服务（同 _canary.js）。
+BASE = os.environ.get('BASE') or 'http://127.0.0.1:8000'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
