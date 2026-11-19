@@ -399,7 +399,11 @@ def _gen_scan_files():
 SCAN_EXCLUDE = ('node_modules', '.git', '05-audit', '10-review',
                 'deliverables', '.wo-baseline', '.github',
                 '04-recipes', '03-patterns', '02-primitives', '01-tokens',
-                'adapters', 'esm', 'dist', 'ai', 'vendor')
+                'adapters', 'esm', 'dist', 'ai', 'vendor',
+                # 🔴 0.27.21：internal/ 是「只进本地、不进仓库」的工作文档
+                #   （.gitignore 同款语义）——git 视野里没有，磁盘视野也必须没有，
+                #   否则门禁会对着一堆永远不会发布的本地文件报数字漂移。
+                'internal')
 SCAN_EXCLUDE_FILES = {
     'CHANGELOG.md',
     'docs/FACTS.md',
@@ -408,9 +412,6 @@ SCAN_EXCLUDE_FILES = {
     'docs/BUDGET.md',
     'docs/RELEASE-PROCESS.md',
     'SUPPORT.md',
-    # 工单原文引用了漂移样本 "40 个组件 / 40 components"——那是**被审计的
-    # 历史错误值**，不是当前声称；登记成 41 反而是造假。整文件排除。
-    'WO-HANDOFF.md',
 }
 SCAN_RE = '|'.join([
     _num(r'(?:个组件|components\b)', group=False),
