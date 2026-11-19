@@ -352,8 +352,37 @@ CLAIMS = [
 
 # 「未登记扫描」的范围：这些文件里出现下列任一形态，必须被 CLAIMS 全部覆盖。
 # CHANGELOG 是历史记录，不在此列。
-SCAN_FILES = ['README.md', 'README.zh-CN.md', 'llms.txt', 'llms-full.txt', 'AGENTS.md',
-              'index.html', '404.html', 'guide/index.html']
+# 🔴 0.27.21（WO-04）：SCAN_FILES 从 8 文件白名单改为**排除清单**——
+#   白名单枚举一定会漏（新增 docs/*.md 就在视野外，FACTS.md:118 自己承认）。
+#   排除清单比白名单更难漏：新产品 .md 自动进视野。
+SCAN_FILES = None  # 由 _gen_scan_files() 在运行时生成
+SCAN_DIRS = ('.', 'docs')
+
+def _gen_scan_files():
+    seen = set()
+    for d in SCAN_DIRS:
+        base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), d) if d != '.' else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if not os.path.isdir(base):
+            continue
+        for dirpath, dirnames, filenames in os.walk(base):
+            dirnames[:] = [x for x in dirnames if x not in SCAN_EXCLUDE
+                           and not x.startswith('.')]
+            for fn in filenames:
+                if fn in SCAN_EXCLUDE_FILES:
+                    continue
+                if fn.endswith(('.md', '.html', '.json', '.txt')):
+                    _r = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    rel = os.path.relpath(os.path.join(dirpath, fn), _r)
+                    rel = rel.replace(os.sep, '/')
+                    if rel not in seen:
+                        seen.add(rel)
+    return sorted(seen)
+
+SCAN_EXCLUDE = ('node_modules', '.git', '05-audit', '10-review',
+                'deliverables', '.wo-baseline', '.github',
+                '04-recipes', '03-patterns', '02-primitives', '01-tokens',
+                'adapters', 'esm', 'dist', 'ai', 'vendor')
+SCAN_EXCLUDE_FILES = {'CHANGELOG.md'}  # 历史记录不在此列
 SCAN_RE = '|'.join([
     _num(r'(?:个组件|components\b)', group=False),
     r'共\s*' + _num(CN_TOTAL_TAIL, group=False),
@@ -408,7 +437,8 @@ def check_claims(root, facts):
         registered[rel].extend(m.span() for m in hits)
 
     # 未登记的数字声明：防止有人新写一句 "41 components" 而没人管
-    for rel in SCAN_FILES:
+    _scan = _gen_scan_files()
+    for rel in _scan:
         try:
             text = _text(root, rel)
         except FileNotFoundError:
