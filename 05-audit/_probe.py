@@ -193,8 +193,23 @@ def run_probe(js_rel_path, timeout=420):
         p = subprocess.run([node, js], cwd=ROOT, env=env,
                            capture_output=True, timeout=timeout)
     out = (p.stdout or b'').decode('utf-8', 'replace')
+    err = (p.stderr or b'').decode('utf-8', 'replace')
+
+    def _dump_why(stage):
+        # 🔴 0.27.21（可诊断性）：探测失败时把子进程的真实输出吐出来——
+        #    之前只返回 None，CI 上只剩一句「拿不到运行时形状」，
+        #    真正的 launch 错误被 capture_output 吞进黑洞（实测排障
+        #    花了一轮 CI）。有界输出，不刷屏。
+        tail = (out[-500:] + (chr(10) + '--- stderr ---' + chr(10) + err[-500:]
+                if err.strip() else '')).strip()
+        if tail:
+            print('  [probe] %s —— 子进程输出尾部：' % stage)
+            for ln in tail.split(chr(10))[-14:]:
+                print('    | %s' % ln[:110])
+
     i = out.find('{')
     if i < 0:
+        _dump_why('stdout 里没有 JSON')
         return None
     try:
         return json.loads(out[i:])
@@ -209,4 +224,5 @@ def run_probe(js_rel_path, timeout=420):
             return json.loads(chunk)
         except Exception:
             continue
+    _dump_why('stdout 有内容但解不出 JSON（rc=%s）' % getattr(p, 'returncode', '?'))
     return None
