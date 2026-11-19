@@ -36,7 +36,7 @@
 
 /* 必填标记。不要只靠星号颜色 —— 带上 required 属性让机器也能读。 */
 .field__req {
-  color: var(--danger);   /* 6.26 AA */
+  color: var(--danger);   /* 对比度由无障碍门禁实算（正文类 >= 4.5:1） */
   margin-inline-start: 2px;
 }
 
@@ -57,7 +57,7 @@
   color: var(--text-primary);
 
   background: var(--surface);
-  border: 1px solid var(--border-control);   /* 3.56 达标（UI 边界需 >= 3.0） */
+  border: 1px solid var(--border-control);   /* 对比度由无障碍门禁实算（UI 边界需 >= 3.0） */
   border-radius: var(--r-sm);
 
   transition: border-color var(--dur-fast) var(--ease-out),
@@ -172,7 +172,7 @@
   align-items: flex-start;
   gap: var(--sp-1);
   font-size: var(--fs-xs);
-  color: var(--danger);   /* 6.26 AA */
+  color: var(--danger);   /* 对比度由无障碍门禁实算（正文类 >= 4.5:1） */
   line-height: 1.5;
 }
 .field__error::before {

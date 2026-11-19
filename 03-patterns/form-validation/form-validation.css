@@ -87,7 +87,7 @@
   margin: 0;
   font-size: var(--fs-sm);
   font-weight: 500;
-  color: var(--danger);   /* 6.26 AA on danger-bg */
+  color: var(--danger);   /* 对比度由无障碍门禁实算（危险底配对 >= 4.5:1） */
   display: flex;
   align-items: center;
   gap: var(--sp-2);

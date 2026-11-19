@@ -10,7 +10,7 @@
 | 2 | **Wave 9（D1-D5）不碰**——那是作者决策，AI 改了只会让文档更假 | 工单建立者原话 |
 | 3 | **WO-11 让 CI 首跑 127 道 component 门禁，会红一大片——红是真实状态**。把红改成绿 = 最坏的结局 | 工单建立者粗体原话 |
 
-**DeepSeek API key**（用于 benchmark）：`sk-0e490f827b154123bee6696db4679de1`。
+**DeepSeek API key**（用于 benchmark）：（🔴 已从本文件抹除——0.27.21 修正：v2 曾把 key 明文写进这里并已推上公开仓，属泄漏事故；key 须在 DeepSeek 控制台吊销轮换，历史重写待作者决策）。
 🔴 **只走环境变量 `DEEPSEEK_API_KEY`，不写入任何提交文件**。已用于生成 `benchmark/models/deepseek-chat.json`（18/30 = 60%），`--check-records` 已通过。driver 脚本（`benchmark/t-driver.mjs`、`benchmark/deepseek-driver.mjs`）**不含密钥**。
 
 ---

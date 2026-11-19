@@ -490,9 +490,14 @@ def main():
         return False
 
     miss = []
+    # 🔴 0.27.21（WO-14 联动）：根级 .md ≠ 一律对外。工单/交接类的**内部
+    #    过程文档**不该进 npm 包（WO-HANDOFF.md 实测把 [9] 打红）。
+    #    豁免是显式枚举：新内部文档进这个元组时必须留一行"为什么"。
+    DOCS_SHIP_EXEMPT = ('WO-HANDOFF.md',)
     for name in sorted(os.listdir(ROOT)):
-        if name.endswith('.md') and os.path.isfile(
-                os.path.join(ROOT, name)) and not in_files(name):
+        if (name.endswith('.md') and name not in DOCS_SHIP_EXEMPT
+                and os.path.isfile(os.path.join(ROOT, name))
+                and not in_files(name)):
             miss.append(name)
     if os.path.isdir(os.path.join(ROOT, 'docs')) and not in_files('docs'):
         miss.append('docs/')
@@ -655,6 +660,15 @@ def main():
         print('  => 有 %d 项发布契约未闭环' % bad)
         return 1
     print('  OK 发布契约闭环')
+    # 🔴 0.27.21（WO-17）：三态判定尾——bad 与 unverified 分离。
+    #   「判据视野已空」（git 不可用等）不算产品合格也不算不合格，
+    #   走独立退出码 3（与 check-all 的 exit 3 立法对齐）。
+    #   ⚠️ 这一尾原来被误贴进 _selftest（NameError：UNVERIFIED 未定义），
+    #      main 到手的始终是无条件 return 0 —— 三态从未真正生效过。
+    if UNVERIFIED:
+        print('  [UNVERIFIED] %d 项判据视野已空（git 不可用等）—— '
+              '不算通过也不算产品不合格' % len(UNVERIFIED))
+        return 3
     return 0
 
 
@@ -1201,14 +1215,7 @@ def _selftest():
     print('')
     print('  ' + ('🔴 %d 条自检未通过' % bad if bad
                   else '自检全部通过 ⇒ 判据有鉴别力、也不误报'))
-    # 🔴 0.27.21（WO-17）：三态判定尾——bad 与 unverified 分离
-    if bad:
-        return 1
-    if UNVERIFIED:
-        print('  [UNVERIFIED] %d 项判据视野已空（git 不可用等）—— '
-              '不算通过也不算产品不合格' % len(UNVERIFIED))
-        return 3
-    return 0
+    return 1 if bad else 0
 
 
 if __name__ == '__main__':

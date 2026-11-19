@@ -177,7 +177,7 @@
    ------------------------------------------------------------------------ */
 .state--error .state__icon {
   background: var(--danger-bg);
-  color: var(--danger);   /* 6.26 AA */
+  color: var(--danger);   /* 对比度由无障碍门禁实算（正文类 >= 4.5:1） */
 }
 .state--error .state__title { color: var(--danger); }
 

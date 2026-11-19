@@ -439,6 +439,39 @@ def selftest():
                      '剥除后变红' if okf else '仍绿（剥离漏了）'))
             if not okf:
                 bad += 1
+
+        # 🔴 0.27.21（补足 9 用例）：三种**注册形态**各测一遍。
+        #    每例都配一道健康门禁垫底——否则注册解析退化时无牙门禁
+        #    直接从视野里消失，`checked == 0` 也判红，两种结局不可区分，
+        #    用例就退化成"怎么跑都绿"。垫底后：解析退化 ⇒ 只剩健康门禁
+        #    ⇒ rc==0 ⇒ 用例红；解析正常 ⇒ 无牙被点名 ⇒ rc==1 ⇒ 用例绿。
+        OK_PY = 'import sys' + NLQ + 'if bad:' + NLQ + '    sys.exit(1)' + NLQ \
+                + 'sys.exit(0)' + NLQ
+        NOVERDICT_PY = "print('looks real')" + NLQ + "return_ = 0" + NLQ
+        reg_cases = [
+            ('⑦ run_report 注册',
+             'run "ok"        python3 05-audit/ok.py' + NLQ +
+             'run_report "fx" python3 05-audit/fx.py' + NLQ),
+            ('⑧ VAR= 前缀注册（WO-02b）',
+             'run "ok"   python3 05-audit/ok.py' + NLQ +
+             'PY=python3 run "fx" python3 05-audit/fx.py' + NLQ),
+            ('⑨ 循环批量注册展开',
+             'run "ok" python3 05-audit/ok.py' + NLQ +
+             'for g in fx; do' + NLQ +
+             '  run "$g"    python3 "05-audit/$g.py"' + NLQ +
+             'done' + NLQ),
+        ]
+        for label, body in reg_cases:
+            write_check_all(body)
+            write_gate('ok.py', OK_PY)
+            write_gate('fx.py', NOVERDICT_PY)
+            rcr = main()
+            okr = (rcr == 1)
+            print('  %s %s ⇒ %s'
+                  % ('OK ' if okr else '🔴 ', label,
+                     '无牙被点名' if okr else '漏查（注册形态解析退化）'))
+            if not okr:
+                bad += 1
     finally:
         ROOT, CHECK_ALL = real
         shutil.rmtree(tmp, ignore_errors=True)

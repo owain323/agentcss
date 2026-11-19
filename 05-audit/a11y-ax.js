@@ -47,7 +47,7 @@ const ROOT = path.resolve(__dirname, '..');
 const BASE = process.env.FL_BASE || 'http://127.0.0.1:8000';
 const SNAP_DIR = path.join(ROOT, '10-review', 'a11y-tree');
 
-/* 要转录的页面 —— **全部 38 个 demo.html**，不是挑几张代表作。
+/* 要转录的页面 —— **全部 44 个 demo.html**，不是挑几张代表作。
  *
  * 🔴 0.11.16 之前这里只有 11 页（挑的是「交互语义各不相同」的那批）。
  *    当时的理由是"覆盖面 = 四类角色都出现过"，但那个理由经不起一句追问：

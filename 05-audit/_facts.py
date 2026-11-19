@@ -348,6 +348,17 @@ CLAIMS = [
     ('components.total', 'README.zh-CN.md',  _num(r'个组件'),                          '中文 README 总数'),
     ('components.total', 'README.zh-CN.md',  r'共\s*' + _num(CN_TOTAL_TAIL),           '中文 README 概览'),
     ('components.byMaturity.stable', 'README.zh-CN.md',  _labelled('stable'),             '中文 README 成熟度'),
+    # 🔴 0.27.21（WO-04）：扫描作用域扩展后新暴露的正确声称——全部登记
+    ('components.total', 'package.json',          r'contract: ' + _num(r'components'),  'npm description 组件数'),
+    # ARCHITECTURE.md 一条登记即覆盖全文件：check_claims 把一个条目的**全部**
+    # 命中都计入登记区间，规模段（14/74 行）与命令示例（104 行 `… 全部 41 个
+    # 组件`）同为「N 个组件」形态。曾有的 `_num(r'components')`「命令示例」
+    # 条目是死条目——文件里不存在「数字+components」形态，永远"找不到数字"。
+    ('components.total', 'docs/ARCHITECTURE.md',  _num(r'个组件'),                      'ARCHITECTURE 规模'),
+    ('components.total', 'docs/ACCESSIBILITY.md', _num(r'个组件'),                      'ACCESSIBILITY 采样页'),
+    ('components.total', 'docs/GUIDANCE.md',      _num(r'个组件'),                      'GUIDANCE 维护成本'),
+    ('components.total', 'docs/ROADMAP-DECISIONS.md', _num(r'个组件'),                  'ROADMAP 裁决卡'),
+    ('components.total', 'guide/accessibility.html', _num(r'个组件'),                    'guide 无障碍总览表'),
 ]
 
 # 「未登记扫描」的范围：这些文件里出现下列任一形态，必须被 CLAIMS 全部覆盖。
@@ -360,29 +371,46 @@ SCAN_DIRS = ('.', 'docs')
 
 def _gen_scan_files():
     seen = set()
+    _r = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     for d in SCAN_DIRS:
-        base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), d) if d != '.' else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base = os.path.join(_r, d) if d != '.' else _r
         if not os.path.isdir(base):
             continue
         for dirpath, dirnames, filenames in os.walk(base):
             dirnames[:] = [x for x in dirnames if x not in SCAN_EXCLUDE
                            and not x.startswith('.')]
             for fn in filenames:
-                if fn in SCAN_EXCLUDE_FILES:
+                if not fn.endswith(('.md', '.html', '.json', '.txt')):
                     continue
-                if fn.endswith(('.md', '.html', '.json', '.txt')):
-                    _r = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                    rel = os.path.relpath(os.path.join(dirpath, fn), _r)
-                    rel = rel.replace(os.sep, '/')
-                    if rel not in seen:
-                        seen.add(rel)
+                rel = os.path.relpath(os.path.join(dirpath, fn), _r)
+                rel = rel.replace(os.sep, '/')
+                # 🔴 0.27.21（WO-04 收尾）：排除清单按**相对路径**匹配。
+                #   之前拿文件名（basename）比对清单里的 'docs/FACTS.md' 这类
+                #   条目永远匹配不上，7 个历史文件的 22 处当时值全被误判为
+                #   未登记声称。改成 rel 精确匹配，根 CHANGELOG.md 与
+                #   docs/CHANGELOG.md（若有）也能区分开。
+                if rel in SCAN_EXCLUDE_FILES:
+                    continue
+                if rel not in seen:
+                    seen.add(rel)
     return sorted(seen)
 
 SCAN_EXCLUDE = ('node_modules', '.git', '05-audit', '10-review',
                 'deliverables', '.wo-baseline', '.github',
                 '04-recipes', '03-patterns', '02-primitives', '01-tokens',
                 'adapters', 'esm', 'dist', 'ai', 'vendor')
-SCAN_EXCLUDE_FILES = {'CHANGELOG.md'}  # 历史记录不在此列
+SCAN_EXCLUDE_FILES = {
+    'CHANGELOG.md',
+    'docs/FACTS.md',
+    'docs/VERIFY-RELEASE.md',
+    'docs/INVARIANT.md',
+    'docs/BUDGET.md',
+    'docs/RELEASE-PROCESS.md',
+    'SUPPORT.md',
+    # 工单原文引用了漂移样本 "40 个组件 / 40 components"——那是**被审计的
+    # 历史错误值**，不是当前声称；登记成 41 反而是造假。整文件排除。
+    'WO-HANDOFF.md',
+}
 SCAN_RE = '|'.join([
     _num(r'(?:个组件|components\b)', group=False),
     r'共\s*' + _num(CN_TOTAL_TAIL, group=False),
