@@ -202,7 +202,7 @@
 /* ============================================================================
    checkbox
    ========================================================================= */
-.choice--checkbox .choice__mark { border-radius: 5px; }
+.choice--checkbox .choice__mark { border-radius: var(--r-sm); }  /* WO-23：原字面 5px 归队（5→6px） */
 
 /* indeterminate（第三态）—— "全选"那个既没全选也没全不选的状态。
    🔴 不做这个态，"全选"复选框就没法正确表达中间状态。 */
@@ -220,7 +220,7 @@
   height: 2px;
   border: none;
   background: var(--accent);
-  border-radius: 1px;
+  border-radius: var(--r-pill);  /* WO-23：2px 高的横线用 pill（钳位到 1px，渲染同前） */
   transform: none;
 }
 

@@ -13,8 +13,8 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1080318,
-    "distGzip": 129454
+    "sourceBytes": 1086602,
+    "distGzip": 129592
   },
   "files": [
     {
@@ -209,29 +209,29 @@
     },
     {
       "source": "01-tokens/tokens.core.css",
-      "sourceSha256": "63db9b2915fde70eff0b779dceb98495bf2387b819210e1857ac9a8d14807cc7",
-      "sourceBytes": 50220,
-      "sourceGzip": 18661,
+      "sourceSha256": "a882114a9488f831394938f80e98d90c64e09920a401d8737a1cc641c3803f54",
+      "sourceBytes": 52210,
+      "sourceGzip": 19547,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.core.css",
           "kind": "minified",
-          "bytes": 10996,
-          "gzip": 2431
+          "bytes": 11112,
+          "gzip": 2464
         }
       ]
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "2d82ac0db9beeb67a46ec54fb502f4af3754367766db0ea49503a5fec6e62227",
-      "sourceBytes": 64558,
-      "sourceGzip": 24568,
+      "sourceSha256": "26c688d438019277ef52e6f5870df81f2417f9cc5b926c4672bc17163212c7d1",
+      "sourceBytes": 66548,
+      "sourceGzip": 25456,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
           "kind": "minified",
-          "bytes": 12806,
-          "gzip": 3134
+          "bytes": 12922,
+          "gzip": 3170
         }
       ]
     },
@@ -293,15 +293,15 @@
     },
     {
       "source": "02-primitives/choice/choice.css",
-      "sourceSha256": "c9a1db0301cacbff4d1022a948d2160c5d10fd4611958a31d8114de312ad9ee2",
-      "sourceBytes": 17821,
-      "sourceGzip": 6342,
+      "sourceSha256": "07a677b87db9782d0b0a059a9d4c09ad033b1b6ce2664d29f0d8d43f7db116a3",
+      "sourceBytes": 17962,
+      "sourceGzip": 6412,
       "outputs": [
         {
           "path": "dist/02-primitives/choice/choice.css",
           "kind": "minified",
-          "bytes": 4384,
-          "gzip": 1168
+          "bytes": 4402,
+          "gzip": 1160
         }
       ]
     },
@@ -407,9 +407,9 @@
     },
     {
       "source": "02-primitives/popover/popover.css",
-      "sourceSha256": "94470cdefd4a33ed48a545739571a4fea57faa72bf86d1dad57594aa3f019a2f",
-      "sourceBytes": 7960,
-      "sourceGzip": 2577,
+      "sourceSha256": "a929521217d41f387f79ac0d637c4fc69a901cb1b29985c09968524b85498c63",
+      "sourceBytes": 8018,
+      "sourceGzip": 2610,
       "outputs": [
         {
           "path": "dist/02-primitives/popover/popover.css",
@@ -450,15 +450,15 @@
     },
     {
       "source": "02-primitives/select/select.css",
-      "sourceSha256": "b4402fed3a9a60a1a3f50f1db6b691d620558dfd51d840b16017b7160b2de0b0",
-      "sourceBytes": 4540,
-      "sourceGzip": 2066,
+      "sourceSha256": "c96e3951966462e2a4a2b0b9b4189caa1f9cb93c6eba4f2ed0b7727fefb42e80",
+      "sourceBytes": 5827,
+      "sourceGzip": 2623,
       "outputs": [
         {
           "path": "dist/02-primitives/select/select.css",
           "kind": "minified",
-          "bytes": 2343,
-          "gzip": 865
+          "bytes": 2515,
+          "gzip": 907
         }
       ]
     },
@@ -593,29 +593,29 @@
     },
     {
       "source": "03-patterns/content/content.css",
-      "sourceSha256": "18ac3d8e6586a6c92bf6113fea5c2ae7675a98a3a20187a86f63ab856f0fac22",
-      "sourceBytes": 12395,
-      "sourceGzip": 5074,
+      "sourceSha256": "0bda995205b8802b0eb10539f37d0a1fc0589ab824d19c2132ffbd5844e02c6c",
+      "sourceBytes": 12462,
+      "sourceGzip": 5107,
       "outputs": [
         {
           "path": "dist/03-patterns/content/content.css",
           "kind": "minified",
-          "bytes": 3335,
+          "bytes": 3343,
           "gzip": 1037
         }
       ]
     },
     {
       "source": "03-patterns/drawer/drawer.css",
-      "sourceSha256": "0c47692b005f0d85f857e39b2884a0a7b501793c0ef700b9c9894ab1ecd84572",
-      "sourceBytes": 6016,
-      "sourceGzip": 2718,
+      "sourceSha256": "e948d3644326a8511d12a364140fbc321a9f37e7884fb9d5550b8a0100e5c8ff",
+      "sourceBytes": 6078,
+      "sourceGzip": 2759,
       "outputs": [
         {
           "path": "dist/03-patterns/drawer/drawer.css",
           "kind": "minified",
           "bytes": 2403,
-          "gzip": 819
+          "gzip": 818
         }
       ]
     },
@@ -665,15 +665,15 @@
     },
     {
       "source": "03-patterns/form-validation/form-validation.css",
-      "sourceSha256": "d0fa000db6b1c2fd387f248a3cbbae0530841f5ed8e7f502dca26eb8215944fc",
-      "sourceBytes": 12172,
-      "sourceGzip": 5017,
+      "sourceSha256": "2631f1c2d781f2dbd95dc41f7dce162ed1c1e5b6ce829a818f1e342c47450d64",
+      "sourceBytes": 12205,
+      "sourceGzip": 5031,
       "outputs": [
         {
           "path": "dist/03-patterns/form-validation/form-validation.css",
           "kind": "minified",
-          "bytes": 2452,
-          "gzip": 795
+          "bytes": 2461,
+          "gzip": 798
         }
       ]
     },
@@ -767,9 +767,9 @@
     },
     {
       "source": "03-patterns/overlay/overlay.css",
-      "sourceSha256": "134176c981fa44cfb61d5be3d096baf98db4ead14a8585b86b1be1ef1b64ac64",
-      "sourceBytes": 13402,
-      "sourceGzip": 5596,
+      "sourceSha256": "fd799e4713dc320771157c22e63db100d6492710f77b7a0d0781d3f8478473a8",
+      "sourceBytes": 13502,
+      "sourceGzip": 5628,
       "outputs": [
         {
           "path": "dist/03-patterns/overlay/overlay.css",
@@ -796,15 +796,15 @@
     },
     {
       "source": "03-patterns/pagination/pagination.css",
-      "sourceSha256": "4f07b35c4e6e0622d5509f7c1c5d8914dfb8e3b98cd84c6410edce3f707ca511",
-      "sourceBytes": 7899,
-      "sourceGzip": 3468,
+      "sourceSha256": "2afdd5f27684621e2613e5ee72f7c80210bd454213ce8115f8fcf7f57685e8f9",
+      "sourceBytes": 8250,
+      "sourceGzip": 3648,
       "outputs": [
         {
           "path": "dist/03-patterns/pagination/pagination.css",
           "kind": "minified",
-          "bytes": 2259,
-          "gzip": 774
+          "bytes": 2260,
+          "gzip": 776
         }
       ]
     },
@@ -854,14 +854,14 @@
     },
     {
       "source": "03-patterns/states/states.css",
-      "sourceSha256": "4af4f497d607dab73ca0e15a7ba26a85a776e245144ac3acf934b6b3dde92a9e",
-      "sourceBytes": 11235,
-      "sourceGzip": 4483,
+      "sourceSha256": "5addc03613238eb6850d4550a78a0e8b7c0bcadcf323ee3c0d734a7dfb5d414b",
+      "sourceBytes": 11285,
+      "sourceGzip": 4513,
       "outputs": [
         {
           "path": "dist/03-patterns/states/states.css",
           "kind": "minified",
-          "bytes": 2399,
+          "bytes": 2407,
           "gzip": 894
         }
       ]
@@ -1040,29 +1040,29 @@
     },
     {
       "source": "04-recipes/tierA-tokens.css",
-      "sourceSha256": "1dd0f1f3e2de85748ce5564ef2758ad66a65562350e32b8e8dba48c68185a76b",
-      "sourceBytes": 5373,
-      "sourceGzip": 2098,
+      "sourceSha256": "d78d8f4b82866e4dd370e241b98a5a56909ee6a5e540dbd3b8093f7bd8e1f709",
+      "sourceBytes": 5495,
+      "sourceGzip": 2137,
       "outputs": [
         {
           "path": "dist/04-recipes/tierA-tokens.css",
           "kind": "minified",
-          "bytes": 3360,
-          "gzip": 1353
+          "bytes": 3468,
+          "gzip": 1382
         }
       ]
     },
     {
       "source": "09-assets/bar/bar.css",
-      "sourceSha256": "f5ce5c838b3ab660e9562e9024fc48d98dfa9b32a6b0ee0a65e9241c4cce58ed",
-      "sourceBytes": 6663,
-      "sourceGzip": 3249,
+      "sourceSha256": "38d934a913f3e64c2ed4d6dd494dcc375dd4a1bc4e48123699d53e51236e36e8",
+      "sourceBytes": 6696,
+      "sourceGzip": 3262,
       "outputs": [
         {
           "path": "dist/09-assets/bar/bar.css",
           "kind": "minified",
-          "bytes": 1895,
-          "gzip": 713
+          "bytes": 1904,
+          "gzip": 715
         }
       ]
     },

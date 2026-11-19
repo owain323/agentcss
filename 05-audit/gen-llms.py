@@ -142,7 +142,10 @@ def build():
         js = files.get('js')
         pids = by_comp.get(c['id']) or []
         A('| `%s` | `%s` | %s | %s | %s KB | %s | %s | %s |' % (
-            c['id'], c.get('rootClass') or c['id'], c['tier'], c['maturity'],
+            c['id'],
+            ((c.get('rootClass') or c['id'])
+             + ('、' + '、'.join(c['rootClassAlso']) if c.get('rootClassAlso') else '')),
+            c['tier'], c['maturity'],
             kb(files['css']) if files.get('css') else '—',
             ('`%s`' % os.path.basename(js)) if js else '—',
             clip(c.get('purpose')), (' '.join('`%s`' % x for x in pids) or '—')))

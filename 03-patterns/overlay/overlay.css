@@ -56,7 +56,7 @@
   background: var(--surface);
   border: 1px solid var(--border-decor);
   border-radius: var(--r-sm);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--shadow-3);  /* WO-22：三级 = 最顶层页面级 chrome */
 
   /* 🔴 去掉 `border-left: 3px solid`。
      左侧竖条是纯装饰：3px 竖条在浅底上形成一条硬边，
@@ -168,7 +168,7 @@
 
   background: var(--surface);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--shadow-3);  /* WO-22：三级 = 最顶层页面级 chrome */
   padding: var(--sp-6);
 
   animation: dialog-in var(--dur-base) var(--ease-out);

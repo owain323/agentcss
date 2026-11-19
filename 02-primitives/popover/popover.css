@@ -44,7 +44,7 @@
    --------------------------------------------------------------------------- */
 .popover {
   position: absolute;
-  z-index: var(--z-popover, 60);
+  z-index: var(--z-popover, 25);                 /* 回退值与令牌一致（WO-24） */
   min-width: var(--popover-min-w, 200px);
   max-width: var(--popover-max-w, 320px);
   padding: var(--popover-p, var(--sp-3));
