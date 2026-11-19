@@ -265,7 +265,10 @@ jobs:
     # PR 不跑（省额度）；push 也不跑（只留 quick）；nightly / 手动跑全矩阵。
     if: github.event_name != 'pull_request' && github.event_name != 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 🔴 0.27.21（WO-11）：组件层 127 道首次进 CI（此前手挑 10 个）⇒
+    #    20 分钟是按手挑清单估的，换 MODE=component 后不够用，提到 45
+    #    （与 quick 同级；本地实测组件层分钟级，CI 加引擎安装余量）。
+    timeout-minutes: 45
     strategy:
       fail-fast: false          # 一个引擎挂不影响其它引擎的报告
       matrix:
@@ -307,23 +310,24 @@ jobs:
           FL_ENGINE: ${{ matrix.engine }}
 
       # 视觉基线是本机生成的，跨平台必然不一致 ⇒ nightly 只跑不依赖截图的
-      - name: 契约测试（${{ matrix.engine }}）
+      # 🔴 0.27.21（WO-11/12/13）：手挑 10 个文件换成 check-all 的**组件层**。
+      #   WO-11  127 道 component 门禁此前从未进过 CI（grep 全仓零命中）——
+      #          手挑清单是"另一份哪些门禁重要的表述"，与 check-all.sh 的
+      #          注册表必然漂移（E31 同源病，0.8.9 在静态层已经吃过一次）。
+      #          ⇒ 首跑预计红一片：**红是真实状态**，分类处置
+      #            （产品缺陷开修复单 / 环境写 README），不许为绿改判据。
+      #   WO-12  手挑清单里 accordion-check.js / tabs-check.js 根本不存在
+      #          （真名是 -contract.js），`if [ -f ]` 没有 else ⇒ **静默跳过
+      #          = 没查**，报告里还显示绿。
+      #   WO-13  `python3 -m http.server` 的 listen backlog=5 在浏览器并发
+      #          拉资源时被内核拒绝 ⇒ 工具门禁偶发假红（check-all.sh 立法
+      #          同源）。改由 check-all 自己起 http-serve.py：带
+      #          X-FL-Gate-Server 身份戳，backlog 足量，且复用判定与本地一致。
+      - name: 组件层门禁（${{ matrix.engine }}）
         env:
           # ⭐ 这一行就是"矩阵真的分引擎"的开关：没有它，三个作业跑同一个浏览器
           FL_ENGINE: ${{ matrix.engine }}
-        run: |
-          set -e
-          python3 -m http.server 8000 &
-          SRV=$!
-          sleep 2
-          trap "kill $SRV" EXIT
-          for c in select combobox date-range overlay accordion tabs \
-                   tree dropdown popover tooltip; do
-            if [ -f "05-audit/${c}-check.js" ]; then
-              echo "--- ${c}"
-              node "05-audit/${c}-check.js"
-            fi
-          done
+        run: MODE=component bash 05-audit/check-all.sh
 
       - name: 上传失败截图
         if: failure()
