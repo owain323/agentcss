@@ -42,7 +42,7 @@ and it reports horizontal overflow plus JS errors.
 
 | id | class | tier | maturity | css | js | what it is | pitfalls |
 |---|---|---|---|---|---|---|---|
-| `bar` | `bar` | asset | stable | 6.5 KB | `bar.js` | 柱状图：堆叠/分组两种语义、超量程裁剪、图例 | `chart-multiline-label` |
+| `bar` | `bar` | asset | stable | 6.6 KB | `bar.js` | 柱状图：堆叠/分组两种语义、超量程裁剪、图例 | `chart-multiline-label` |
 | `icons-anim` | `icon-anim` | asset | stable | 5.7 KB | — | 图标动效：给 09-assets/icons 的静态图标加纯 CSS 动效（d… | — |
 | `model-viewer` | `mv` | asset | stable | 4.0 KB | `model-viewer.js` | 3D 模型查看器：令牌驱动样式，不含渲染库本体 | — |
 | `scientific-plot` | `splot` | asset | stable | 6.1 KB | `scientific-plot.js` | 二维科学绘图：折线/区间带/对数轴，纯令牌驱动、零依赖 | `chart-multiline-label` |
@@ -64,9 +64,9 @@ and it reports horizontal overflow plus JS errors.
 | `badge` | `badge` | primitive | stable | 6.1 KB | — | 状态标签：计数、分类、结果标记 | — |
 | `button` | `btn` | primitive | stable | 15.7 KB | — | 动作触发：主/次/危险/纯文字四档 | — |
 | `card` | `card` | primitive | stable | 10.4 KB | — | 内容容器：媒体+正文+操作区三段 | — |
-| `choice` | `choice` | primitive | stable | 17.5 KB | — | 单选/多选/原生 select 外观的统一控件 | — |
+| `choice` | `choice` | primitive | stable | 17.6 KB | — | 单选/多选/原生 select 外观的统一控件 | — |
 | `combobox` | `combo` | primitive | stable | 7.0 KB | `combobox.js` | 可搜索 + 可多选标签的输入控件 | — |
-| `date-range` | `drange` | primitive | stable | 6.0 KB | `date-range.js` | 日期区间选择，含预设快捷范围 | — |
+| `date-range` | `drange` | primitive | stable | 6.1 KB | `date-range.js` | 日期区间选择，含预设快捷范围 | — |
 | `delta` | `delta` | primitive | stable | 5.5 KB | — | 变化量：涨跌方向 + 符号 + 颜色。只描述往哪边变，不判断好坏（等于好恶是 … | — |
 | `input` | `field` | primitive | stable | 10.8 KB | — | 文本输入及其标签/帮助/错误三件套 | — |
 | `metric` | `metric` | primitive | stable | 6.8 KB | — | 指标块：一个标签 + 一个值 + 一句上下文。数字等宽、单位分离、缺数是一等状态 | — |

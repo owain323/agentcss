@@ -13,8 +13,8 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1086602,
-    "distGzip": 129592
+    "sourceBytes": 1086784,
+    "distGzip": 129629
   },
   "files": [
     {
@@ -251,15 +251,15 @@
     },
     {
       "source": "02-primitives/badge/badge.css",
-      "sourceSha256": "879b860df6089cf23a13be9fceac26304438b15ef309d7562c62063fa94acdfc",
-      "sourceBytes": 6274,
-      "sourceGzip": 2805,
+      "sourceSha256": "b103858de6fb15e7361340be540d6838296f97839d7f6ead708a744d9ffbcef0",
+      "sourceBytes": 6287,
+      "sourceGzip": 2813,
       "outputs": [
         {
           "path": "dist/02-primitives/badge/badge.css",
           "kind": "minified",
-          "bytes": 1578,
-          "gzip": 494
+          "bytes": 1591,
+          "gzip": 498
         }
       ]
     },
@@ -293,15 +293,15 @@
     },
     {
       "source": "02-primitives/choice/choice.css",
-      "sourceSha256": "07a677b87db9782d0b0a059a9d4c09ad033b1b6ce2664d29f0d8d43f7db116a3",
-      "sourceBytes": 17962,
-      "sourceGzip": 6412,
+      "sourceSha256": "e09e15aa86146a417d41d2625d4eba6f37409e216d291308006f4d26e5114c8e",
+      "sourceBytes": 17988,
+      "sourceGzip": 6416,
       "outputs": [
         {
           "path": "dist/02-primitives/choice/choice.css",
           "kind": "minified",
-          "bytes": 4402,
-          "gzip": 1160
+          "bytes": 4428,
+          "gzip": 1163
         }
       ]
     },
@@ -336,15 +336,15 @@
     },
     {
       "source": "02-primitives/date-range/date-range.css",
-      "sourceSha256": "30a745e44aaafbcfa50f23e0b7c9551101ff3402da3a04ab7b96ecafbd933f48",
-      "sourceBytes": 6188,
-      "sourceGzip": 2249,
+      "sourceSha256": "bac23bd1f80a32cb7fa52d1c86ccf7aa1e4c07598d5c2403c72615af31af83e5",
+      "sourceBytes": 6201,
+      "sourceGzip": 2254,
       "outputs": [
         {
           "path": "dist/02-primitives/date-range/date-range.css",
           "kind": "minified",
-          "bytes": 3419,
-          "gzip": 847
+          "bytes": 3432,
+          "gzip": 852
         }
       ]
     },
@@ -379,29 +379,29 @@
     },
     {
       "source": "02-primitives/input/input.css",
-      "sourceSha256": "9d445e539ed0f7ce023c1860743c72d7e9e85130c6f39bec135e3257773d0fcf",
-      "sourceBytes": 11015,
-      "sourceGzip": 4037,
+      "sourceSha256": "1589736eda59d27575e722f39b3b99be7391e210dbe277f8d528384bf2a2f4d1",
+      "sourceBytes": 11054,
+      "sourceGzip": 4040,
       "outputs": [
         {
           "path": "dist/02-primitives/input/input.css",
           "kind": "minified",
-          "bytes": 3346,
-          "gzip": 1075
+          "bytes": 3385,
+          "gzip": 1079
         }
       ]
     },
     {
       "source": "02-primitives/metric/metric.css",
-      "sourceSha256": "61b6143c0328d02b23094140203333feab2bd598fd496d03ab52268d55f31e6f",
-      "sourceBytes": 6962,
+      "sourceSha256": "76e3a004e32dc5e03817e9fd65e4815633cc62f6698c520bba078fb378b9599d",
+      "sourceBytes": 6988,
       "sourceGzip": 3278,
       "outputs": [
         {
           "path": "dist/02-primitives/metric/metric.css",
           "kind": "minified",
-          "bytes": 1294,
-          "gzip": 479
+          "bytes": 1320,
+          "gzip": 477
         }
       ]
     },
@@ -665,15 +665,15 @@
     },
     {
       "source": "03-patterns/form-validation/form-validation.css",
-      "sourceSha256": "2631f1c2d781f2dbd95dc41f7dce162ed1c1e5b6ce829a818f1e342c47450d64",
-      "sourceBytes": 12205,
-      "sourceGzip": 5031,
+      "sourceSha256": "b0469d769e1e98497b508756dd208211dbd0055d8b7587d957ee31ba75a1435d",
+      "sourceBytes": 12218,
+      "sourceGzip": 5038,
       "outputs": [
         {
           "path": "dist/03-patterns/form-validation/form-validation.css",
           "kind": "minified",
-          "bytes": 2461,
-          "gzip": 798
+          "bytes": 2474,
+          "gzip": 803
         }
       ]
     },
@@ -767,15 +767,15 @@
     },
     {
       "source": "03-patterns/overlay/overlay.css",
-      "sourceSha256": "fd799e4713dc320771157c22e63db100d6492710f77b7a0d0781d3f8478473a8",
-      "sourceBytes": 13502,
-      "sourceGzip": 5628,
+      "sourceSha256": "3349b5e3d185e45ed04f76f99069b567f46ec9be13c09c2ff62e3bb9ffef0ceb",
+      "sourceBytes": 13515,
+      "sourceGzip": 5632,
       "outputs": [
         {
           "path": "dist/03-patterns/overlay/overlay.css",
           "kind": "minified",
-          "bytes": 3577,
-          "gzip": 1217
+          "bytes": 3590,
+          "gzip": 1219
         }
       ]
     },
@@ -897,15 +897,15 @@
     },
     {
       "source": "03-patterns/tooltip/tooltip.css",
-      "sourceSha256": "c37668b501e71cd247265d721d9972663ed3b4fffee7b0a15eb2470db095e5cb",
-      "sourceBytes": 4264,
-      "sourceGzip": 2173,
+      "sourceSha256": "107dd5f48f2d82d933993f9744290afdf008204a4618b91014cafe6561ecf2e3",
+      "sourceBytes": 4277,
+      "sourceGzip": 2179,
       "outputs": [
         {
           "path": "dist/03-patterns/tooltip/tooltip.css",
           "kind": "minified",
-          "bytes": 1260,
-          "gzip": 507
+          "bytes": 1273,
+          "gzip": 510
         }
       ]
     },
@@ -998,15 +998,15 @@
     },
     {
       "source": "04-recipes/detail-page/detail-page.css",
-      "sourceSha256": "9f543d6317f3e77fd3363e1283a1aeff6f10d9118c51641e18780c15ad14f2de",
-      "sourceBytes": 5797,
-      "sourceGzip": 2326,
+      "sourceSha256": "524762c00b6ee66a70c6a9c66eb61c253aecf25fc8d45b1264bf96b161068f33",
+      "sourceBytes": 5810,
+      "sourceGzip": 2336,
       "outputs": [
         {
           "path": "dist/04-recipes/detail-page/detail-page.css",
           "kind": "minified",
-          "bytes": 2270,
-          "gzip": 677
+          "bytes": 2283,
+          "gzip": 685
         }
       ]
     },
@@ -1054,15 +1054,15 @@
     },
     {
       "source": "09-assets/bar/bar.css",
-      "sourceSha256": "38d934a913f3e64c2ed4d6dd494dcc375dd4a1bc4e48123699d53e51236e36e8",
-      "sourceBytes": 6696,
-      "sourceGzip": 3262,
+      "sourceSha256": "ef0e48b54b2621dfae1b83f0c38e690ff91b101927ba9bc6239188b2da44df33",
+      "sourceBytes": 6709,
+      "sourceGzip": 3271,
       "outputs": [
         {
           "path": "dist/09-assets/bar/bar.css",
           "kind": "minified",
-          "bytes": 1904,
-          "gzip": 715
+          "bytes": 1917,
+          "gzip": 720
         }
       ]
     },
