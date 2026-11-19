@@ -83,6 +83,11 @@ jobs:
           set -eu
           npm install -g npm@11.5.1
           npm ci --no-audit --no-fund
+      # 🔴 0.27.21（WO-11 修复单）：publish:check 的 fast 层含 api-contract，
+      #   要真浏览器——不装则发布资格在 CI 上永远假红（实测）。
+      - name: 安装 Chromium（api-contract 的运行时形状需要）
+        run: npx playwright install --with-deps chromium
+
       - name: 发布前门禁（与 prepublishOnly / release.yml 同一套）
         run: npm run publish:check
   # ==================================================================
@@ -91,7 +96,7 @@ jobs:
   quick:
     name: 快门禁（静态 + 视觉，Linux）
     runs-on: ubuntu-latest
-    timeout-minutes: 10 # 兜底：卡住就掐掉，不烧额度（视觉那三套跑完约 40s）
+    timeout-minutes: 15 # 兜底：卡住就掐掉，不烧额度（含 Chromium 安装 ≈ 6-8 分钟）
     steps:
       - uses: actions/checkout@v4
         with:
@@ -127,6 +132,12 @@ jobs:
       #   而那正是它设计上**不许判通过**的情形（视野为空 ≠ 没问题）。
       - name: 补齐远端分支引用（tag 锚点判据需要）
         run: git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+
+      # 🔴 0.27.21（WO-11 修复单）：fast 层含 api-contract（运行时 ↔ 类型），
+      #   它要真浏览器——此前靠 runner 镜像预装 Chrome，镜像换版本后首推
+      #   假红。装上，同时把「纯静态零浏览器」的旧声明作废。
+      - name: 安装 Chromium（api-contract 的运行时形状需要）
+        run: npx playwright install --with-deps chromium
 
       # 🔴 必须装依赖：否则 lockfile 的可复现性从未被验证
       - name: 按锁文件安装（验证 lockfile 真能装）
