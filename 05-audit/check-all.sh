@@ -357,6 +357,8 @@ _print() { # _print <idx> —— 按注册顺序打印，诊断逻辑与旧版�
   [ -n "$TIMING" ] && echo "$dtv $name" >> "$TIMING"
 
   # 🔴 2026-10-30（E153）：第三态 —— 「跑了但判不了」不许冒充 PASS。
+  #   0.27.21（WO-01）码位表：0=全绿 / 1=有失败 / 2=用法或环境 / 3=有未判定
+  #   且无失败 / 4=既有失败又有未判定（fail 只进日志，不再兼当退出码）。
   #   约定：门禁退出码 **3 = SKIP / UNVERIFIED**（环境不具备、数据为空，但本身无错）。
   #   之前只有 PASS / FAIL 两态 ⇒ 任何"我没跑"只能 return 0 ⇒ 日志里显示 PASS。
   #   实测两例：engine-gate 机器上可用引擎 < 2 时、benchmark 零模型记录时。
@@ -1588,4 +1590,12 @@ if [ "$_el" -gt "$BUDGET" ]; then
   echo "   ⚠️ 超出预算 $(( _el - BUDGET ))s —— 看上面耗时最高的几道，别加门禁加在这一层。"
 fi
 
-exit $fail
+# 🔴 0.27.21（WO-01）：退出码三态的**互斥码位**——fail 是计数，不能兼当退出码
+#   （"3 道失败"与"未判定"撞码；_nojudge>0 时旧实现 exit 0 = 假绿总闸）。
+#   码位表：0=全部执行且全部通过 / 1=有判据失败 / 2=用法或环境不可用 /
+#           3=有未判定且无失败 / 4=既有失败又有未判定。
+if   [ "$fail" -gt 0 ] && [ "$_nojudge" -gt 0 ]; then exit 4
+elif [ "$fail" -gt 0 ]; then                      exit 1
+elif [ "$_nojudge" -gt 0 ]; then                  exit 3
+else                                              exit 0
+fi

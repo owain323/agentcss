@@ -121,8 +121,10 @@ def git_anchor_problems(cwd, tag, ver_now, min_version=MIN_SOURCE_COMMIT):
             return None
 
     if g('rev-parse', '--git-dir') in (None, ''):
-        return ['git 不可用 ⇒ 「tag 锚点」这条判据**视野已空**，'
-                '不许判通过（也不能判"没有 tag"）']
+        # 🔴 0.27.21（WO-17）：git 不可用 = **视野已空**，不是产品不合格。
+        #   哨兵前缀由 main() 归入 unverified 通道（退出码 3），不进 bad。
+        return ['[视野已空] git 不可用 ⇒ 「tag 锚点」这条判据无法执行'
+                '（zip/tarball 解压出来的树没有 .git 是正常场景）']
 
     kind = g('cat-file', '-t', tag)
     if not kind:
@@ -243,6 +245,7 @@ def files_path_problems(files, root=ROOT):
 
 
 def main():
+    UNVERIFIED = []   # 🔴 0.27.21（WO-17）：「视野已空」走这里，退出码 3
     print('  === 发布契约门禁 ===')
     print('')
     bad = 0
@@ -309,8 +312,8 @@ def main():
                 bad += 1
             # 🔴 没有 node_modules 也要能判（锁文件是**提交物**，不是安装产物）
             if lock_root is None and lock_v is None:
-                print('      X package-lock.json 里找不到根包版本 ⇒ 判据视野已空')
-                bad += 1
+                print('      ⚠️ package-lock.json 里找不到根包版本 ⇒ 判据视野已空')
+                UNVERIFIED.append('package-lock 根版本：数据缺席')
 
     # ---------- ② repository ----------
     print('  [2] repository')
@@ -520,7 +523,13 @@ def main():
         bad += 1
     else:
         probs = git_anchor_problems(ROOT, tag, ver_now)
-        if probs and ALLOW_MISSING_TAG and _only_missing_tag(probs, tag):
+        # 🔴 0.27.21（WO-17）：[视野已空] 哨兵 → unverified 通道（退出码 3），
+        #   不进 bad（"判据没跑起来"不是"产品不合格"——与 check-all 的 exit 3 立法对齐）
+        if probs and probs[0].startswith('[视野已空]'):
+            for pp in probs:
+                print('      ⚠️ %s' % pp)
+            UNVERIFIED.append('tag 锚点：git 不可用')
+        elif probs and ALLOW_MISSING_TAG and _only_missing_tag(probs, tag):
             print('      ⚠️  %s 尚未打（bump 阶段的预期中间态，仅豁免本条）' % tag)
             print('         打完 tag 后必须**不带本开关**再跑一次，否则不算闭环')
         elif probs:
@@ -563,8 +572,8 @@ def main():
             bad += 1
         hs = _changelog.headings(cl)
         if not hs:
-            print('      X 一个版本条目都没认出来 ⇒ 这条判据视野已空')
-            bad += 1
+            print('      ⚠️ 一个版本条目都没认出来 ⇒ 判据视野已空')
+            UNVERIFIED.append('CHANGELOG：无可解析版本条目')
         else:
             vers = [tuple(int(x) for x in h[0].split('.')) for h in hs]
             if vers != sorted(vers, reverse=True):
@@ -1192,7 +1201,14 @@ def _selftest():
     print('')
     print('  ' + ('🔴 %d 条自检未通过' % bad if bad
                   else '自检全部通过 ⇒ 判据有鉴别力、也不误报'))
-    return 1 if bad else 0
+    # 🔴 0.27.21（WO-17）：三态判定尾——bad 与 unverified 分离
+    if bad:
+        return 1
+    if UNVERIFIED:
+        print('  [UNVERIFIED] %d 项判据视野已空（git 不可用等）—— '
+              '不算通过也不算产品不合格' % len(UNVERIFIED))
+        return 3
+    return 0
 
 
 if __name__ == '__main__':
