@@ -113,7 +113,7 @@
   width: 20px;
   height: 20px;
   background: var(--surface);
-  border: 1px solid var(--border-control);   /* 3.56 达标（UI 边界需 >= 3.0） */
+  border: 1px solid var(--border-control);   /* 对比度由无障碍门禁实算（UI 边界需 >= 3.0） */
   transition: background-color var(--dur-fast) var(--ease-out),
               border-color     var(--dur-fast) var(--ease-out);
 }

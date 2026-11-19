@@ -13,7 +13,7 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1080059,
+    "sourceBytes": 1080318,
     "distGzip": 129454
   },
   "files": [
@@ -265,9 +265,9 @@
     },
     {
       "source": "02-primitives/button/button.css",
-      "sourceSha256": "53587b1593f072b4971070ff357e30d90f1e9029adb3e55e8a6599d6f31f3066",
-      "sourceBytes": 16028,
-      "sourceGzip": 6511,
+      "sourceSha256": "c67211fc5099ee6103e4b7b2c15e5366910709362909bf44b1c8d92accbb8e20",
+      "sourceBytes": 16050,
+      "sourceGzip": 6517,
       "outputs": [
         {
           "path": "dist/02-primitives/button/button.css",
@@ -293,9 +293,9 @@
     },
     {
       "source": "02-primitives/choice/choice.css",
-      "sourceSha256": "63a101e5213fba9f5143cc49b37d020546caa64189d2096d1436dd5c1809e0b4",
-      "sourceBytes": 17799,
-      "sourceGzip": 6333,
+      "sourceSha256": "c9a1db0301cacbff4d1022a948d2160c5d10fd4611958a31d8114de312ad9ee2",
+      "sourceBytes": 17821,
+      "sourceGzip": 6342,
       "outputs": [
         {
           "path": "dist/02-primitives/choice/choice.css",
@@ -379,9 +379,9 @@
     },
     {
       "source": "02-primitives/input/input.css",
-      "sourceSha256": "ace82abb2bb6fba2bf3fa23ce582e99de701d915f919710267be56c6ababcb84",
-      "sourceBytes": 10893,
-      "sourceGzip": 4018,
+      "sourceSha256": "9d445e539ed0f7ce023c1860743c72d7e9e85130c6f39bec135e3257773d0fcf",
+      "sourceBytes": 11015,
+      "sourceGzip": 4037,
       "outputs": [
         {
           "path": "dist/02-primitives/input/input.css",
@@ -665,9 +665,9 @@
     },
     {
       "source": "03-patterns/form-validation/form-validation.css",
-      "sourceSha256": "900d067345a3f04e6882dd17bcb38c67a7f1120f02b1b8e255a7c2f53a984622",
-      "sourceBytes": 12129,
-      "sourceGzip": 4979,
+      "sourceSha256": "d0fa000db6b1c2fd387f248a3cbbae0530841f5ed8e7f502dca26eb8215944fc",
+      "sourceBytes": 12172,
+      "sourceGzip": 5017,
       "outputs": [
         {
           "path": "dist/03-patterns/form-validation/form-validation.css",
@@ -854,9 +854,9 @@
     },
     {
       "source": "03-patterns/states/states.css",
-      "sourceSha256": "7650cb6d0bd56115eb0a782f7c470b3ccafa92d3aa3bdf13b454f445bb9f3782",
-      "sourceBytes": 11185,
-      "sourceGzip": 4455,
+      "sourceSha256": "4af4f497d607dab73ca0e15a7ba26a85a776e245144ac3acf934b6b3dde92a9e",
+      "sourceBytes": 11235,
+      "sourceGzip": 4483,
       "outputs": [
         {
           "path": "dist/03-patterns/states/states.css",
