@@ -153,6 +153,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash 05-audit/release-run.sh probe >> "$GITHUB_OUTPUT"
 
+      # 🔴 0.27.21：装 Chromium 必须在**发布前门禁之前**——publish:check
+      #    的 fast 层含 api-contract（运行时 ↔ 类型），它要真浏览器。
+      #    此前依赖 runner 镜像预装 Chrome，镜像换到不带 Chrome 的版本后
+      #    整条发布流在这里假红（0.27.21 首推实测卡死在发布前门禁）。
+      - name: 安装 Chromium（api-contract 与 dist 语义比对都需要）
+        run: npx playwright install --with-deps chromium
+
       - name: 发布前门禁（与 prepublishOnly 同一套）
         run: npm run publish:check
 
@@ -160,9 +167,6 @@ jobs:
       #   如果它们与 npm 发布共用同一个 if，恢复一次半完成的发布时
       #   会在**没跑 dist 校验**的情况下继续建 Release —— 那等于把发布验证
       #   变成了可跳过的装饰。所以：dist 校验无条件执行。
-      - name: 安装 Chromium（dist 语义比对需要）
-        run: npx playwright install --with-deps chromium
-
       - name: dist 语义比对（CSSOM / JS 行为）
         run: |
           # ⚠️ 必须套 with-server.sh：这两道是**浏览器**判据，要 :8000 上有
