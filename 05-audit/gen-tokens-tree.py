@@ -121,7 +121,7 @@ SCALE = [
 ALLOWED = {
     'color': ('color',),
     'space': ('dimension',),
-    'radius': ('dimension',),
+    'radius': ('dimension', 'alias'),   # WO-27 m1：--r-full 是 --r-pill 的公开别名
     'size': ('dimension', 'alias'),
     'fontSize': ('dimension',),
     'lineHeight': ('number',),

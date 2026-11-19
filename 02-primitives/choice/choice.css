@@ -191,7 +191,7 @@
 .choice__hint {
   font-size: var(--fs-xs);
   color: var(--text-tertiary);
-  line-height: 1.5;
+  line-height: var(--lh-normal);
   /* 独占一行，并与标签**文字**左对齐：
      缩进 = 勾选框 20px + label 内 gap（--sp-2）。
      （20px 与 `.choice__mark` 的 width 是同一个值，改一处要连着改。） */
@@ -302,7 +302,7 @@
   font-family: inherit;
   /* 🔴 16px 硬下限：iOS Safari 小于此字号会自动放大整个页面 */
   font-size: 16px;
-  line-height: 1.5;
+  line-height: var(--lh-normal);
   color: var(--text-primary);
   background: var(--surface);
 

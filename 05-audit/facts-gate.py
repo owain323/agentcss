@@ -196,6 +196,9 @@ def _mk_root(tmp, n=3):
     w('VERSION', '1.2.3\n')
     w('package.json', _dump({
         'name': 'demo', 'version': '1.2.3', 'bin': {'agentcss': './ai/cli.js'},
+        # 🔴 0.27.21：CLAIMS 有「contract: N components」判据（WO-04 收尾），
+        #    description 必须含同款句式。
+        'description': 'contract: %d components' % n,
         'files': ['ai/'], 'dependencies': {},
         'devDependencies': {'x': '^1', 'y': '^2'},
     }))
@@ -226,11 +229,22 @@ def _mk_root(tmp, n=3):
     w('index.html', '<p>%d 个组件</p>\n' % n)
     w('404.html', '<p>—— %d 个组件</p>\n' % n)
     w('guide/index.html', '<p>%d 个组件</p>\n' % n)
-    w('README.md', '# demo\n\n**%d** components (stable %d / beta %d).\n\n%s\n'
-      % (n, stable, beta, _listing(comps)))
+    # 🔴 0.27.21：CLAIMS 新增了 README.md 的 currently 句判据（WO-04 收尾），
+    #    夹具必须含同款句式，否则 S19/S28 在「找不到数字」上假红。
+    w('README.md', '# demo\n\n**%d** components (stable %d / beta %d).\n\n'
+      'All %d currently pass.\n\n%s\n'
+      % (n, stable, beta, n, _listing(comps)))
     w('README.zh-CN.md', '# demo\n\n一页看全 %d 个组件\n\n'
                          '共 **%d** 个（stable %d · 全部通过四条判据）。\n\n%s\n'
       % (n, n, stable, _listing(comps)))
+    # 🔴 0.27.21：CLAIMS 登记的 docs / guide 文件，夹具必须真的存在且含
+    #    同款句式（文件不存在 = S19「声明清单登记了…」假红）。
+    w('docs/ARCHITECTURE.md', '# 架构\n\n规模：%d 个组件。\n\n'
+                              'npx agentcss ai components --json   # 列出全部 %d 个组件\n' % (n, n))
+    w('docs/ACCESSIBILITY.md', '# 无障碍\n\n采样页覆盖 %d 个组件。\n' % n)
+    w('docs/GUIDANCE.md', '# 指南\n\n维护成本按 %d 个组件计。\n' % n)
+    w('docs/ROADMAP-DECISIONS.md', '# 裁决\n\n冻结卡覆盖 %d 个组件。\n' % n)
+    w('guide/accessibility.html', '<p>总览表：%d 个组件 demo。</p>\n' % n)
     return tmp
 
 

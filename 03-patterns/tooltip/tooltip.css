@@ -21,7 +21,7 @@
   background: var(--tooltip-bg);          /* 深色气泡（浅色作用域下） */
   color: var(--tooltip-fg);
   font-size: var(--fs-xs);
-  line-height: 1.5;
+  line-height: var(--lh-normal);
   border-radius: var(--r-sm);
   /* 描边用 inset 环而不用 border：同色时零像素，暗色下正好贴在原边线上。
      `--shadow-2` 是公开令牌，不写兜底字面量（兜底 = 第二份真值，见 I-7）。 */

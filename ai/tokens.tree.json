@@ -248,6 +248,10 @@
           "value": "1.85",
           "type": "number"
         },
+        "normal": {
+          "value": "1.5",
+          "type": "number"
+        },
         "tight": {
           "value": "1.25",
           "type": "number"
@@ -376,9 +380,13 @@
         }
       },
       "radius": {
-        "full": {
-          "value": "999px",
+        "2xs": {
+          "value": "2px",
           "type": "dimension"
+        },
+        "full": {
+          "value": "var(--r-pill)",
+          "type": "alias"
         },
         "lg": {
           "value": "14px",
@@ -408,6 +416,10 @@
         },
         "2": {
           "value": "0 2px 4px rgba(31, 29, 25, 0.05), 0 6px 16px rgba(31, 29, 25, 0.08)",
+          "type": "shadow"
+        },
+        "3": {
+          "value": "0 4px 8px rgba(31, 29, 25, 0.06), 0 12px 32px rgba(31, 29, 25, 0.14)",
           "type": "shadow"
         }
       },
@@ -473,7 +485,7 @@
           "type": "number"
         },
         "popover": {
-          "value": "60",
+          "value": "25",
           "type": "number"
         },
         "raised": {
@@ -668,6 +680,7 @@
     "--info-bg": "color/info-bg",
     "--lh-base": "lineHeight/base",
     "--lh-loose": "lineHeight/loose",
+    "--lh-normal": "lineHeight/normal",
     "--lh-tight": "lineHeight/tight",
     "--lift-lg": "lift/lg",
     "--lift-md": "lift/md",
@@ -689,6 +702,7 @@
     "--progress-dur": "duration/progress",
     "--progress-h": "size/progress-h",
     "--progress-num": "number/progress-num",
+    "--r-2xs": "radius/2xs",
     "--r-full": "radius/full",
     "--r-lg": "radius/lg",
     "--r-md": "radius/md",
@@ -708,6 +722,7 @@
     "--serif": "fontFamily/serif",
     "--shadow-1": "shadow/1",
     "--shadow-2": "shadow/2",
+    "--shadow-3": "shadow/3",
     "--skeleton-bg": "color/skeleton-bg",
     "--skeleton-duration": "duration/skeleton",
     "--skeleton-h": "size/skeleton-h",
@@ -751,7 +766,7 @@
     "--z-toast": "zIndex/toast"
   },
   "meta": {
-    "lightCount": 113,
+    "lightCount": 116,
     "darkCount": 35,
     "categories": [
       "breakpoint",
