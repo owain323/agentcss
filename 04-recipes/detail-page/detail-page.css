@@ -162,7 +162,7 @@
 .detail-null__reason {
   margin: 0;
   font-size: var(--fs-sm);
-  line-height: 1.5;
+  line-height: var(--lh-normal);
   color: var(--text-secondary);
 }
 

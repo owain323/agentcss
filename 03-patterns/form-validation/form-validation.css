@@ -58,7 +58,7 @@
   background: var(--danger-bg);
   border-radius: var(--r-sm);
   font-size: var(--fs-sm);
-  line-height: 1.5;
+  line-height: var(--lh-normal);
 }
 
 /* 🔴 去掉 `border: 1px solid danger` + `border-left: 4px solid`。

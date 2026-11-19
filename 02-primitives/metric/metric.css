@@ -56,7 +56,7 @@
   margin: 0;
   font-size: var(--fs-xs);
   font-weight: 500;
-  line-height: 1.5;
+  line-height: var(--lh-normal);
   color: var(--text-secondary);
   letter-spacing: var(--tracking-normal);   /* 小字号中文给一点字距更清；令牌在暗色段有另一档 */
 }
@@ -108,7 +108,7 @@
   flex-wrap: wrap;
   gap: var(--sp-2);
   font-size: var(--fs-xs);
-  line-height: 1.5;
+  line-height: var(--lh-normal);
   color: var(--text-tertiary);
 }
 
