@@ -53,12 +53,12 @@
       "raw": 4647
     },
     "01-tokens/tokens.core.css": {
-      "gzip": 18661,
-      "raw": 50220
+      "gzip": 19547,
+      "raw": 52210
     },
     "01-tokens/tokens.css": {
-      "gzip": 24568,
-      "raw": 64558
+      "gzip": 25456,
+      "raw": 66548
     },
     "01-tokens/typography.css": {
       "gzip": 3384,
@@ -69,16 +69,16 @@
       "raw": 6274
     },
     "02-primitives/button/button.css": {
-      "gzip": 6511,
-      "raw": 16028
+      "gzip": 6517,
+      "raw": 16050
     },
     "02-primitives/card/card.css": {
       "gzip": 4193,
       "raw": 10621
     },
     "02-primitives/choice/choice.css": {
-      "gzip": 6333,
-      "raw": 17799
+      "gzip": 6412,
+      "raw": 17962
     },
     "02-primitives/combobox/combobox.css": {
       "gzip": 2895,
@@ -101,16 +101,16 @@
       "raw": 5627
     },
     "02-primitives/input/input.css": {
-      "gzip": 4018,
-      "raw": 10893
+      "gzip": 4037,
+      "raw": 11015
     },
     "02-primitives/metric/metric.css": {
       "gzip": 3278,
       "raw": 6962
     },
     "02-primitives/popover/popover.css": {
-      "gzip": 2577,
-      "raw": 7960
+      "gzip": 2610,
+      "raw": 8018
     },
     "02-primitives/popover/popover.js": {
       "gzip": 5558,
@@ -121,8 +121,8 @@
       "raw": 11338
     },
     "02-primitives/select/select.css": {
-      "gzip": 2066,
-      "raw": 4540
+      "gzip": 2623,
+      "raw": 5827
     },
     "02-primitives/select/select.js": {
       "gzip": 11324,
@@ -161,12 +161,12 @@
       "raw": 18415
     },
     "03-patterns/content/content.css": {
-      "gzip": 5074,
-      "raw": 12395
+      "gzip": 5107,
+      "raw": 12462
     },
     "03-patterns/drawer/drawer.css": {
-      "gzip": 2718,
-      "raw": 6016
+      "gzip": 2759,
+      "raw": 6078
     },
     "03-patterns/drawer/drawer.js": {
       "gzip": 8635,
@@ -181,8 +181,8 @@
       "raw": 24256
     },
     "03-patterns/form-validation/form-validation.css": {
-      "gzip": 4979,
-      "raw": 12129
+      "gzip": 5031,
+      "raw": 12205
     },
     "03-patterns/form-validation/form-validation.js": {
       "gzip": 4512,
@@ -209,16 +209,16 @@
       "raw": 4652
     },
     "03-patterns/overlay/overlay.css": {
-      "gzip": 5596,
-      "raw": 13402
+      "gzip": 5628,
+      "raw": 13502
     },
     "03-patterns/overlay/overlay.js": {
       "gzip": 12650,
       "raw": 34137
     },
     "03-patterns/pagination/pagination.css": {
-      "gzip": 3468,
-      "raw": 7899
+      "gzip": 3648,
+      "raw": 8250
     },
     "03-patterns/pagination/pagination.js": {
       "gzip": 7773,
@@ -233,8 +233,8 @@
       "raw": 8499
     },
     "03-patterns/states/states.css": {
-      "gzip": 4455,
-      "raw": 11185
+      "gzip": 4513,
+      "raw": 11285
     },
     "03-patterns/tabs/tabs.css": {
       "gzip": 2799,
@@ -285,12 +285,12 @@
       "raw": 18560
     },
     "04-recipes/tierA-tokens.css": {
-      "gzip": 2098,
-      "raw": 5373
+      "gzip": 2137,
+      "raw": 5495
     },
     "09-assets/bar/bar.css": {
-      "gzip": 3249,
-      "raw": 6663
+      "gzip": 3262,
+      "raw": 6696
     },
     "09-assets/bar/bar.js": {
       "gzip": 6910,
@@ -330,6 +330,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 429330,
-  "total_raw": 1080059
+  "total_gzip": 432246,
+  "total_raw": 1086602
 }

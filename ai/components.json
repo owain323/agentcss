@@ -787,6 +787,9 @@
       "tier": "pattern",
       "purpose": "吐司提示与模态遮罩",
       "rootClass": "toast",
+      "rootClassAlso": [
+        "dialog"
+      ],
       "maturity": "stable",
       "maturityReasons": {
         "hasDemo": true,
@@ -823,6 +826,9 @@
         }
       ],
       "slots": [
+        "dialog__actions",
+        "dialog__desc",
+        "dialog__title",
         "toast__body",
         "toast__close",
         "toast__desc",
@@ -853,11 +859,7 @@
           "hidden"
         ]
       },
-      "usesOtherNamespaces": [
-        "dialog__actions",
-        "dialog__desc",
-        "dialog__title"
-      ],
+      "usesOtherNamespaces": [],
       "global": "Overlay",
       "globalAlso": [],
       "behaviorRef": "API.md#overlay"
@@ -1924,6 +1926,7 @@
           "expanded",
           "haspopup",
           "hidden",
+          "invalid",
           "label",
           "labelledby",
           "selected"

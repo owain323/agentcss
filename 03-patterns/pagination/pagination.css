@@ -116,7 +116,11 @@
   background: var(--accent);
   border-color: var(--accent);
   font-weight: 600;
-  box-shadow: var(--lift-sm);          /* 轻微浮起 ⇒ "被选中"的实体感 */
+  box-shadow: var(--shadow-1);         /* 轻微浮起 ⇒ "被选中"的实体感 */
+  /* 🔴 0.27.21（WO-21）：这里原写 var(--lift-sm)——那是**位移令牌**（1px，
+     给 translateY 用的），不是阴影值 ⇒ box-shadow: 1px 是非法值，
+     整条声明被浏览器静默丢弃（与"引用未定义变量"同族陷阱），
+     "实体感"从来没渲染出来过。一级阴影 = card 悬停同级。 */
   cursor: default;
   opacity: 1;                            /* 🔴 必须显式覆盖禁用态的 opacity:.5 */
   z-index: var(--z-raised);

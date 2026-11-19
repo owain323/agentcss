@@ -219,6 +219,7 @@
   },
   "overlay": {
    "rootClass": "toast",
+    "rootClassAlso": ["dialog"],
    "purpose": "吐司提示与模态遮罩",
    "printPolicy": [
     {

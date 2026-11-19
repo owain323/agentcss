@@ -28,11 +28,16 @@ deps.py — 令牌 → 组件的影响图
 """
 import sys
 import os
+import io
 import re
 import glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LIB = ('01-tokens', '02-primitives', '03-patterns')
+# 🔴 0.27.21（WO-27）：视野从 3 个目录扩到 5 —— 04-recipes / 09-assets 的
+#    组件 CSS 此前在影响图与 --missing 判据里**双双缺席**（table 的
+#    --table-max-h、sparkline 的 --spark-* 系列根本没被看过）。
+LIB = ('01-tokens', '02-primitives', '03-patterns',
+       '04-recipes', '09-assets')
 
 
 def read(p):
@@ -135,22 +140,37 @@ def main():
         #    （panel.style.setProperty('--acc-h', h + 'px')），
         #    收起后清掉。有 fallback 时**永远不会静默失效**。
         #    ⇒ 只查"CSS 里有没有定义这个变量"会误报。
+        #
+        # 🔴 0.27.21（WO-27）：这一段曾经是**双重死代码**——
+        #    ① 本文件头部漏了 `import io`，而 `except Exception: continue`
+        #       把 NameError 一起吞掉 ⇒ 每个文件都被静默跳过、豁免永远为空
+        #       （E41 同型：守卫"看起来在工作"）；
+        #    ② 豁免集合存**带杠**名字（--acc-h），引用集合存**无杠**（acc-h）
+        #       ⇒ 就算 ① 修了，两个集合也永远不相交。
+        #    ⇒ 补 import + except 收窄到 OSError + lstrip('-') 统一命名。
+        # 🔴 视野同时扩到 demo.html / index.html（WO-27 m3：demo 教错令牌名，
+        #    复用者抄走就是静默失效）。
         import glob as _glob
         import re as _re
         fallback_ok = set()
         runtime_ok = set()
-        for _f in _glob.glob('**/*.css', recursive=True) + _glob.glob('**/*.js', recursive=True):
-            if 'vendor' in _f:
+        for _f in (_glob.glob('**/*.css', recursive=True)
+                   + _glob.glob('**/*.js', recursive=True)
+                   + _glob.glob('**/demo.html', recursive=True)
+                   + ['index.html']):
+            if 'vendor' in _f or _f.startswith(('node_modules', 'dist',
+                                               'esm', 'adapters', 'internal',
+                                               '.git', '05-audit')):
                 continue
             try:
                 _t = io.open(_f, encoding='utf-8').read()
-            except Exception:
+            except OSError:
                 continue
-            # var(--x, fallback)  ⇒ 有 fallback
-            fallback_ok |= set(m.group(1) for m in
+            # var(--x, fallback)  ⇒ 有 fallback（统一无杠命名）
+            fallback_ok |= set(m.group(1).lstrip('-') for m in
                                _re.finditer(r'var\(\s*(--[a-z0-9-]+)\s*,', _t))
             # setProperty('--x'  ⇒ JS 运行时写入
-            runtime_ok |= set(m.group(1) for m in
+            runtime_ok |= set(m.group(1).lstrip('-') for m in
                               _re.finditer(r'setProperty\(\s*[\'"](--[a-z0-9-]+)', _t))
         exempt = fallback_ok | runtime_ok
 
@@ -161,8 +181,41 @@ def main():
             if undef:
                 bad.append((c, undef))
                 print('  🔴 %-18s 引用了未定义令牌: %s' % (c, ' '.join('--' + t for t in undef)))
+
+        # 🔴 0.27.21（WO-27）：demo.html 的 <style>、guide/*.css、index.html
+        #    也在"教人用令牌"——只扫 <style> 块，<pre><code> 里的教学示例
+        #    （如 conventions.html 教复用者自定义 --brand-accent）不算引用。
+        extra_srcs = sorted(
+            set(_glob.glob(os.path.join(ROOT, '**', 'demo.html'), recursive=True))
+            | {os.path.join(ROOT, 'index.html')}
+            | set(_glob.glob(os.path.join(ROOT, 'guide', '*.css'))))
+        for _f in extra_srcs:
+            rel = os.path.relpath(_f, ROOT).replace(os.sep, '/')
+            if rel.startswith(('node_modules', 'dist', 'esm', 'adapters',
+                               'vendor', 'internal', '05-audit')):
+                continue
+            try:
+                _t = io.open(_f, encoding='utf-8', errors='replace').read()
+            except OSError:
+                continue
+            if _f.endswith('.html'):
+                _blocks = _re.findall(r'<style[^>]*>(.*?)</style>', _t, _re.S)
+                _src = '\n'.join(_blocks)
+                if not _src.strip():
+                    continue
+            else:
+                _src = _t
+            _refs = set(_re.findall(r'var\(\s*--([a-z0-9-]+)', _src))
+            _local = {t.lstrip('-') for t in _re.findall(r'(--[a-z0-9-]+)\s*:', _src)}
+            _undef = sorted(t for t in _refs
+                            if t not in usable and t not in exempt
+                            and t not in _local)
+            if _undef:
+                bad.append((rel, _undef))
+                print('  🔴 %-24s 引用了未定义令牌: %s' % (rel, ' '.join('--' + t for t in _undef)))
+
         if not bad:
-            print('  ✅ 所有组件引用的令牌都在 tokens.css / typography.css 里有定义')
+            print('  ✅ 所有组件 / demo / guide 引用的令牌都有定义（或带 fallback / 运行时写入）')
         return 1 if bad else 0
 
     # 默认：全表

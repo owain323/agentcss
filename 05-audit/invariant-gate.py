@@ -67,6 +67,8 @@ def component_names():
         names.add(c['id'])
         if c.get('rootClass'):
             names.add(c['rootClass'])
+        for rc in (c.get('rootClassAlso') or []):   # 🔴 WO-25：多根类组件
+            names.add(rc)
         for s in c.get('slots', []):
             names.add(s)
     return {n for n in names if n}

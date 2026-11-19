@@ -26,7 +26,7 @@
            font-size: var(--fs-xs); }
 /* 反例的关键：这里**不能**写 overflow:hidden —— 一写，min-content 就变 0，
    那个"列被长内容撑开"的毛病就被自己抹平了（第一版就是这么写坏的） */
-.ar-long { font-family: var(--font-mono, monospace); white-space: nowrap; }
+.ar-long { font-family: var(--mono, monospace); white-space: nowrap; }
 .ar-g--ok .ar-long { overflow: hidden; text-overflow: ellipsis; }
 /* 🔴 对照块里的栅格宽度钉住：断言量的是"列宽有没有被长串顶开"，
    而列宽本身随栏宽变 —— 宽屏下两栏都变宽，绝对阈值就失去意义。

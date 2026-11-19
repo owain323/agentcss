@@ -139,6 +139,8 @@ def current_surface():
     for c in load(COMPONENTS)['components']:
         if c.get('rootClass'):
             cls.add(c['rootClass'])
+        for rc in (c.get('rootClassAlso') or []):   # 🔴 WO-25：多根类组件
+            cls.add(rc)
         for v in (c.get('variants') or []):
             cls.add(v)
         for s in (c.get('slots') or []):

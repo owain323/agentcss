@@ -335,18 +335,28 @@ def scan_component(cid, cdir, tier, meta, layer_dir, claimed):
     if not root:
         raise SystemExit('[FAIL] %s 在 components.meta.json 里没有 rootClass' % cid)
 
-    # 🔴 双向验证：人声明的根类必须真的在 CSS 里出现
-    if not re.search(r'\.' + re.escape(root) + r'(?![\w-])', css):
-        raise SystemExit(
-            '[FAIL] %s 声明的根类 .%s 在其 CSS 里不存在 —— '
-            '声明与源码已经漂移' % (cid, root))
+    # 🔴 0.27.21（WO-25）：一个组件可以有**多个公开根类**（overlay = toast +
+    #    dialog）。原实现只认 rootClass 一个 ⇒ .dialog 的部件/变体被归进
+    #    foreign，契约里看不见它的解剖结构。meta 用 rootClassAlso 显式声明，
+    #    与 rootClass 同一判据：声明了就必须真的在 CSS 里（双向验证的
+    #    声明→CSS 这半边），CSS→声明那半边由 contract-gates 看住。
+    roots_also = list(meta.get('rootClassAlso') or [])
+    roots = [root] + roots_also
 
+    # 🔴 双向验证：人声明的根类必须真的在 CSS 里出现
+    for r in roots:
+        if not re.search(r'\.' + re.escape(r) + r'(?![\w-])', css):
+            raise SystemExit(
+                '[FAIL] %s 声明的根类 .%s 在其 CSS 里不存在 —— '
+                '声明与源码已经漂移' % (cid, r))
+
+    roots_set = set(roots)
     elements, foreign = [], []
     for pre, el in sorted(set(RE_ELEMENT.findall(css))):
-        (elements if pre == root else foreign).append(pre + '__' + el)
+        (elements if pre in roots_set else foreign).append(pre + '__' + el)
 
     variants = sorted({'--'.join(m) for m in RE_VARIANT.findall(css)
-                       if m[0] == root})
+                       if m[0] in roots_set})
 
     enum_states, bool_states = {}, set()
     for attr, val in RE_STATE_VAL.findall(css):
@@ -426,6 +436,7 @@ def scan_component(cid, cdir, tier, meta, layer_dir, claimed):
         'tier': meta.get('tier', tier),
         'purpose': meta.get('purpose', ''),
         'rootClass': root,
+        **({'rootClassAlso': roots_also} if roots_also else {}),
         'maturity': maturity,
         'maturityReasons': {
             'hasDemo': has_demo,
