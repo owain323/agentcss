@@ -20,9 +20,72 @@
 
 ## [0.27.21] - 2026-11-20
 
-### TODO · 这一版改了什么
+> WO 工单 27 条执行完成（Wave 4 收尾 → Wave 8），全部走「改代码或加判据」，
+> 没有一条阈值被放宽。本轮另抓出并修复了三枚「看起来在工作」的门禁
+> （deps 豁免死代码 / overlay-host-reverse 缺 import / release-gate 三态尾贴错函数）
+> 与一起 key 泄漏事故（见 Security）。
 
-（写清楚「改了什么 / 为什么」，有反向控制就写上）
+### Fixed — 事实链与数字漂移（WO-04 收尾）
+- facts-gate 排除清单按**相对路径**匹配（旧代码拿文件名比对，7 个历史文件的
+  22 处当时值全被误判未登记声称）；guide/accessibility.html 登记进 CLAIMS；
+  a11y 扫描对象 40/38 → 真实 44（demo.html 与朗读快照实数）。
+- 英文 README「All 40 currently pass」是门禁盲区里的真漂移 → 41，并新增
+  `currently` 句式判据，这句从此可抓漂移。
+- CSS 硬编码对比度快照清零：`/* 6.26 AA */` 实测 5.07/4.82、`/* 3.56 达标 */`
+  实测 3.19/3.42——注释在说谎，7 处替换为「无障碍门禁实算」机制引用。
+
+### Added — CI 覆盖（WO-11/12/13/15）
+- 127 道组件层门禁首次进 CI（nightly 三引擎矩阵）——此前 CI 手挑 10 个文件，
+  其中 2 个名字根本不存在、`[ -f ]` 静默跳过。首跑红按三类处置协议分类
+  （README「CI 覆盖」一节），**红是真实状态，不为绿改判据**。
+- `python3 -m http.server` 退场（listen backlog 5 的立法同源），服务由
+  check-all 自起（身份戳 + 足量 backlog）；visual-stamp 补 @serial。
+
+### Fixed — npm 包可用性（WO-14）
+- 包内 `npm test` 从 ENOENT 变为可用：单元测试子集（unit.test /
+  behavior-cores.test / mini-dom.mjs）以**真文件原地**进 files 白名单，
+  不复制不出第二份；实测空目录安装 71/71 全绿。门禁体系仍只随源码仓分发。
+
+### Fixed — 元门禁（WO-16/17b）
+- gate-selfcheck 四判据重写：①可达性改「最后 exit 词元 + 裸顶层 exit 截断」
+  双腿（旧实现被函数内缩进 exit 覆盖，把 198 条正常注册误判永不执行）；
+  ②重名检测解析单源到 _gateindex.py；③set -u 判据**有了牙**（旧实现只打印
+  不进 bad）——修完发现旧报告的 8 条全是扫描器误报；--selftest 六夹具。
+- selftest-all 候选扩到 .sh/.mjs：bash case 分支实现 --selftest 的
+  release-run.sh 立刻被捞进视野。
+- 顺藤摸出三枚假活门禁：deps.py 的 fallback 豁免是**双重死代码**
+  （缺 import io 被 except Exception 吞 + 豁免集合带杠/无杠永不相交）、
+  overlay-host-reverse.py 缺 import io（整个变异反向控制从未跑过）、
+  release-gate 三态尾贴进了 _selftest（NameError，main 始终无条件 return 0）。
+
+### Added — 台账索引（WO-18）
+- docs/ERRORS-INDEX.md（93 条：编号 / 一句话 / CHANGELOG 首提版本 / 关联判据）
+  + error-ref-gate.py：代码里每个 E### 必须可解析（306 处引用 / 90 编号），
+  编号边界与 terms.INTERNAL_ID_RE 同课。
+
+### Fixed — 设计系统七条（WO-21…27）
+- pagination 选中项 `box-shadow: var(--lift-sm)` 是非法值（位移令牌被当
+  阴影用，整条声明被静默丢弃）→ --shadow-1。
+- 阴影三级制：--shadow-3 给最顶层页面级 chrome（dialog/toast/drawer），
+  锚定浮层留二级；圆角阶梯补 --r-2xs，6 处字面值归队；--z-popover 60 与
+  注释「低于 dialog」相反 → 25；overlay 双根类（rootClassAlso 声明 dialog）；
+  select 补 aria-invalid 钩子与强制色 Highlight；--r-full/--r-pill 双轨
+  → 别名单源；--lh-normal 未定义被引 3 处 → 定义 1.5 并让 14 处硬编码
+  1.5 的组件采纳；demo 教错令牌名（--font-mono/--sp-9/--border-subtle/
+  --radius-*）归位。三基线（token-resolved / shot / size）按流程重录。
+
+### Fixed — 发布链（0.27.21 首推实测）
+- api-contract 在 CI 上必红的真凶：_canary.js/_canary.py 把 BASE 硬编码
+  :8000，而探测服务独占空闲端口——canary 敲的端口上没有探测那台服务。
+  改读 BASE 环境变量（共享库各一行）；_probe 探测失败时吐出子进程真实
+  输出（排障不再黑洞）；release.yml / quick / release-qualify 显式装
+  Chromium（不再依赖 runner 镜像预装）。
+
+### Security
+- 🔴 交接文档（WO-HANDOFF.md v2）曾把 DeepSeek API key 明文提交并推上
+  公开仓——本版已从树中抹除并把该文档挪入 gitignore 的 internal/。
+  **该 key 必须在 DeepSeek 控制台吊销轮换**（git 历史中的 key 不因
+  本版修复而失效）；历史重写待作者决策。
 
 ---
 
