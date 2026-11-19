@@ -114,7 +114,7 @@ def registered_gates():
     """
     txt = io.open(CHECK_ALL, encoding='utf-8').read()
     out = {}
-    for m in re.finditer(r'^\s*(run|run_report)\s+"([^"]+)"\s+(.+?)\s*$',
+    for m in re.finditer(r'^\s*(?:\w+=\S+\s+)*(run|run_report)\s+"([^"]+)"\s+(.+?)\s*$',
                          txt, re.M):
         # ⚠️ 跳过 `run "$g" ...`（那是**循环体内部**的模板，不是注册）
         #    第一版没跳 ⇒ 解析出一个叫 `$g` 的"门禁"，
@@ -151,6 +151,133 @@ def script_of(cmdline):
     return None
 
 
+def _strip_py(src):
+    """py：注释/docstring/字符串**原位替换为空格** + AST 常量假 If 折为空行。
+
+    🔴 0.27.21（WO-02）：不能用 token join——join 会把 `sys.exit(1)` 变成
+    `sys . exit ( 1 )`，`sys\\.exit\\(` 这类多 token 模式全部失配
+    （实测：join 版把 100+ 道有牙的 py 门禁误报成"不可能失败"）。
+    正解：保持字节偏移不变，只把剥掉的内容换成等长空格。"""
+    # 先做 AST 常量假 If 折叠（按行置空，保留换行结构）
+    try:
+        import ast as _ast
+        tree = _ast.parse(src)
+        drop = []
+        for node in _ast.walk(tree):
+            if isinstance(node, _ast.If):
+                t = node.test
+                if isinstance(t, _ast.Constant) and t.value in (False, 0):
+                    drop.append((node.lineno, node.end_lineno))
+        lines = src.split('\n')
+        for (a, b) in drop:
+            for i in range(a - 1, min(b, len(lines))):
+                lines[i] = ""
+        src = '\n'.join(lines)
+    except Exception:
+        pass
+    # tokenize 定位注释/字符串区间 → 原位替换为空格
+    # 🔴 0.27.21（WO-02）：跨行 STRING（docstring）需要按 (row, col) 换算
+    #   绝对偏移量覆写——只用 start[1]/end[1]（col）会漏掉跨行区间。
+    try:
+        import io as _io
+        import tokenize as _tk
+        src_lines = src.split('\n')
+        line_starts = [0]  # 每行首字符在 src 中的绝对偏移
+        for ln in src_lines:
+            line_starts.append(line_starts[-1] + len(ln) + 1)
+        chars = list(src)
+        for tok in _tk.generate_tokens(_io.StringIO(src).readline):
+            if tok.type in (_tk.COMMENT, _tk.STRING):
+                a_off = line_starts[tok.start[0] - 1] + tok.start[1]
+                b_off = line_starts[tok.end[0] - 1] + tok.end[1]
+                for j in range(a_off, min(b_off, len(chars))):
+                    if chars[j] != '\n':
+                        chars[j] = ' '
+        return ''.join(chars)
+    except Exception:
+        return src
+
+
+
+
+def _strip_js(src):
+    """js/mjs：状态机剥注释与字符串字面量 + 删 if(false)/if(0) 死块。"""
+    out = []
+    i, n = 0, len(src)
+    while i < n:
+        c = src[i]
+        nxt = src[i + 1] if i + 1 < n else ''
+        if c == '/' and nxt == '/':
+            while i < n and src[i] != '\n':
+                i += 1
+            continue
+        if c == '/' and nxt == '*':
+            j = src.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        if c in ('"', "'", '`'):
+            q = c
+            i += 1
+            while i < n:
+                if src[i] == '\\':
+                    i += 2
+                    continue
+                if src[i] == q:
+                    i += 1
+                    break
+                if q != '`' and src[i] == '\n':
+                    break
+                i += 1
+            out.append('""')
+            continue
+        out.append(c)
+        i += 1
+    r = ''.join(out)
+    for lit in ('if (false)', 'if(false)', 'if (0)', 'if(0)'):
+        while True:
+            j = r.find(lit)
+            if j < 0:
+                break
+            k = r.find('{', j)
+            if k < 0:
+                break
+            depth = 0
+            e = k
+            while e < len(r):
+                if r[e] == '{':
+                    depth += 1
+                elif r[e] == '}':
+                    depth -= 1
+                    if depth == 0:
+                        break
+                e += 1
+            r = r[:j] + r[e + 1:]
+    return r
+
+
+def _strip_sh(src):
+    """sh：整行注释剥除（.sh 判据形态简单：exit/return 非零，行级够用；
+    行尾注释与 $# 一类不剥——避免误伤 $ 位变量，宁可保守）。"""
+    out = []
+    for ln in src.split('\n'):
+        if ln.lstrip().startswith("#"):
+            continue
+        out.append(ln)
+    return '\n'.join(out)
+
+
+
+
+def _evidence_text(ext, src):
+    if ext == '.py':
+        return _strip_py(src)
+    if ext in ('.js', '.mjs'):
+        return _strip_js(src)
+    if ext == '.sh':
+        return _strip_sh(src)
+    return src
+
+
 def main():
     gates = registered_gates()
     if not gates:
@@ -182,9 +309,13 @@ def main():
             continue
 
         src = io.open(p, encoding='utf-8', errors='replace').read()
+        # 🔴 0.27.21（WO-02 第 1+3 步）：在**剥除注释/字符串/死分支后的证据
+        #    文本**上匹配——全文匹配让注释里的 `# return 1`、docstring、
+        #    `if False:` 死分支都"看起来有牙"（六用例矩阵实测 5 类绕过全绿）。
+        ev = _evidence_text(ext, src)
         hit = None
         for pat in VERDICT_PATTERNS[ext]:
-            if re.search(pat, src):
+            if re.search(pat, ev):
                 hit = pat
                 break
         checked += 1
@@ -221,6 +352,7 @@ def main():
 
 
 def selftest():
+    NLQ = chr(10)
     """反向控制：证明这道门禁会红，且不误报。
 
     ⚠️ 在**临时目录**里构造（P0-1 的教训：反向控制有副作用，
@@ -282,6 +414,31 @@ def selftest():
               % ('OK ' if ok3 else '🔴 ', '正确报红' if ok3 else '静默通过'))
         if not ok3:
             bad += 1
+
+        # 🔴 0.27.21（WO-02 六用例矩阵）：注释/docstring/死分支里的判红
+        # 不许冒充有牙——剥除后必须变红。反例三连 + 阳性对照已在 ①②。
+        cases_456 = [
+            ('④ in_comment',
+             "print('looks real')" + NLQ + "# return 1" + NLQ +
+             "print('still no verdict')"),
+            ('⑤ in_docstring',
+             "print('looks real')" + NLQ + '"""' + NLQ + "return 1" + NLQ +
+             '"""' + NLQ + "print('still')"),
+            ('⑥ dead_branch',
+             "import sys" + NLQ + "print('looks')" + NLQ +
+             "if False:" + NLQ + "    sys.exit(1)" + NLQ +
+             "print('no verdict')"),
+        ]
+        for label, code in cases_456:
+            write_check_all('run "fx"   python3 05-audit/fx.py' + NLQ)
+            write_gate('fx.py', code + NLQ)
+            rcf = main()
+            okf = (rcf == 1)
+            print('  %s %s ⇒ %s'
+                  % ('OK ' if okf else '🔴 ', label,
+                     '剥除后变红' if okf else '仍绿（剥离漏了）'))
+            if not okf:
+                bad += 1
     finally:
         ROOT, CHECK_ALL = real
         shutil.rmtree(tmp, ignore_errors=True)
