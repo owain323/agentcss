@@ -41,13 +41,13 @@ types/index.d.ts 声明；package.json description 已含 machine-readable contr
 
 | 项 | 终态 | 理由（含触发条件） |
 |---|---|---|
-| benchmark-records 真实跑批 | **冻结待条件** | 机制全就位且诚实（UNVERIFIED / RC=3 / "不编数字"）。缺的唯一东西是模型 API 权限【事实：README 原话】。给了 key：10 任务 × 20 attempts × 2 模型 ≈ 400 次调用，1 天出记录；不给：UNVERIFIED 是满分形态，再动它只会把"诚实"搅浑 |
-| 工作流文章 | **冻结改形** | 0 star/0 issue ⇒ "下一个使用者"不存在，文章读者为零。改形为"一次真实便宜模型跑通 START-HERE 三步"（喂 R4 首条记录 + 上手路径验收）——同样等模型 API。两事一源 |
+| benchmark-records 真实跑批 | **✅ 已完成** | DeepSeek-chat 2026-11-20：T 组 18/30 (60%)，30 次调用零错误，benchmark/models/deepseek-chat.json 通过 --check-records。4 个 0% 任务（T01/T04/T06/T07）待归因（判据 vs 模型）。后续可加第二个模型对照 | 机制全就位且诚实（UNVERIFIED / RC=3 / "不编数字"）。缺的唯一东西是模型 API 权限【事实：README 原话】。给了 key：10 任务 × 20 attempts × 2 模型 ≈ 400 次调用，1 天出记录；不给：UNVERIFIED 是满分形态，再动它只会把"诚实"搅浑 |
+| 工作流文章 | **✅ 素材已实测** | DeepSeek-chat 走通 T 组 benchmark（60% pass rate），冷启动数据已采集——文章素材从"假设"变为"实测" | 0 star/0 issue ⇒ "下一个使用者"不存在，文章读者为零。改形为"一次真实便宜模型跑通 START-HERE 三步"（喂 R4 首条记录 + 上手路径验收）——同样等模型 API。两事一源 |
 | Firefox/WebKit 基线 | **砍** | 桌面引擎假绿已两次更正修完（SUPPORT.md 四档体系）；agentcss 实际消费场景是 Android WebView / 微信 XWEB——仓库自己写着"Android WebView 是最大空白"，补基线该去真机（0.27.19 已跑一轮），不是桌面 Firefox |
 | icon catalog（2359 全量索引） | **冻结在 icon-forge** | ai-surface 余量仅 9.3 KB（0.27.19 实测 93054/102400）；全量索引必爆账。数据源与 SOURCE-LOCK 在 icon-forge 侧齐备，`ai icons` 查询 35 个已覆盖真实查询频率。触发条件：作者真实工作流中出现"锁外图标"需求 ≥ 2 次 |
 | icon-add（门禁生成） | **冻结在 icon-forge** | 生成管线与数据源（_vendor 2359 + SOURCE-LOCK）都在 icon-forge 侧；agentcss 纪律"只放消费产出、改图形回 icon-forge"。agentcss 侧已交付 `ai icon-check`（唯一真源 icon-gate.py 的 CLI 包装 + 查询端冒烟） |
 | announcement recipe | **冻结** | 无一次真实消费事件；新 recipe = 组件级全套成本（2-3 天起）。触发条件：真实页面需求出现 |
-| LVGL kiosk 变体 | **冻结待实测** | 全仓零 lvgl/kiosk 前科；LVGL 是 C 嵌入式 GUI，CSS 库是否够得着取决于"项目里哪一块真的渲染 HTML"——待 作者实测确认渲染环境后再谈（若确认有 webview，升为全场最高价值项） |
+| LVGL kiosk 变体 | **永久冻结** | LVGL 是 C 嵌入式 GUI 库，不渲染 HTML/CSS——agentcss（CSS 库）对它无直接通路。这不是"待实测"而是"类别不匹配"。如果未来 LVGL 项目出现配套 Web UI（如设置面板），届时重新评估 | 全仓零 lvgl/kiosk 前科；LVGL 是 C 嵌入式 GUI，CSS 库是否够得着取决于"项目里哪一块真的渲染 HTML"——待 作者实测确认渲染环境后再谈（若确认有 webview，升为全场最高价值项） |
 | md-render 图片内联 | **冻结待触发** | md-render 是 MANUAL-ONLY 工具；AC 已备（字节预算/回退开关/内联正确性三判据）。触发条件：一次真实的"md 里有本地图片导致产物离线打不开"事件 |
 | MODE=full 提速 | **记账了结** | Top10 建账（selftest-all 164 / rtl-render 118 / beh-reverse 108 …）；BUDGET 300→900（0.27.19 实测 6 轮 675-874s，带日期注释）。worktree 并行化（1 天）挂在"门禁慢到被跳过"的真实事件上——当前是分钟级疼，不是天级疼 |
 
