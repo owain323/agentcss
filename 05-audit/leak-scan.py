@@ -256,6 +256,12 @@ def main():
             # 改写历史才是篡改；但新写的条目不许再引内部编号。
             if name == '内部台账编号' and rel == 'CHANGELOG.md':
                 src = terms.changelog_future(t)
+            elif name == '内部台账编号' and rel == 'docs/ERRORS-INDEX.md':
+                # 🔴 0.27.21（WO-18）：这个文件**就是**台账索引 —— 编号在
+                #    这里不是「指向不随仓分发的死索引」（E123 的病根），
+                #    而是随包分发的解析物；对它判内部台账泄漏 = 判据咬自己。
+                #    豁免仅限这一个文件：别处再写 E### 照样红。
+                continue
             found = pat.findall(src)
             # ⭐ 过滤合法前缀（软件安装位置）——
             #    正则没法可靠表达「排除含空格的目录名」，只能在匹配后判断。

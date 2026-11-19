@@ -1407,6 +1407,10 @@ run "md-links-rev"  $PY 05-audit/md-links.py --selftest
 #   每条都能被注入证伪（`--selftest` 四类注入 + 正例 + 隐藏区域不误报）。
 run "prose"         $PY 05-audit/prose-gate.py
 run "prose-rev"     $PY 05-audit/prose-gate.py --selftest
+# 🔴 0.27.21（WO-18）：代码里每个 E### 引用必须在 docs/ERRORS-INDEX.md 里
+#   可解析 —— 台账不随仓分发，编号悬空 = 外部读者拿到死索引。
+run "error-ref"      $PY 05-audit/error-ref-gate.py
+run "error-ref-rev"  $PY 05-audit/error-ref-gate.py --selftest
 # 🔴 pack-hygiene（2026-11-04 新增）：上面那道看的是**仓库这一棵树**，
 #   而装包的人只拿到 `files` 白名单里的文件。实测 0.25.5 真包里
 #   4 份文档共 8 个链接指向 05-audit/budget.json、10-review/webview/*，

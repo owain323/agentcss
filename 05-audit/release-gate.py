@@ -490,14 +490,9 @@ def main():
         return False
 
     miss = []
-    # 🔴 0.27.21（WO-14 联动）：根级 .md ≠ 一律对外。工单/交接类的**内部
-    #    过程文档**不该进 npm 包（WO-HANDOFF.md 实测把 [9] 打红）。
-    #    豁免是显式枚举：新内部文档进这个元组时必须留一行"为什么"。
-    DOCS_SHIP_EXEMPT = ('WO-HANDOFF.md',)
     for name in sorted(os.listdir(ROOT)):
-        if (name.endswith('.md') and name not in DOCS_SHIP_EXEMPT
-                and os.path.isfile(os.path.join(ROOT, name))
-                and not in_files(name)):
+        if name.endswith('.md') and os.path.isfile(
+                os.path.join(ROOT, name)) and not in_files(name):
             miss.append(name)
     if os.path.isdir(os.path.join(ROOT, 'docs')) and not in_files('docs'):
         miss.append('docs/')

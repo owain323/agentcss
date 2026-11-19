@@ -12,12 +12,12 @@ const require2 = createRequire(import.meta.url);
 const patchMod = require2(join(ROOT_ESM, 'ai', 'patch.js'));
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const KEY = process.env.DEEPSEEK_API_KEY;
-if (!KEY) { console.error('❌ 设 DEEPSEEK_API_KEY'); process.exit(2); }
+const apiKey = process.env.DEEPSEEK_API_KEY;
+if (!apiKey) { console.error('❌ 设 DEEPSEEK_API_KEY'); process.exit(2); }
 
 const MODEL = 'deepseek-chat';
 const API_URL = 'https://api.deepseek.com/chat/completions';
-const ATTEMPTS = parseInt(process.argv.find(a => a.startsWith('--attempts='))?.split('=')[1] || '3');
+const attemptCount = parseInt(process.argv.find(a => a.startsWith('--attempts='))?.split('=')[1] || '3');
 const TASK_FILTER = process.argv.find(a => a.startsWith('--tasks='))?.split('=')[1]?.split(',') || null;
 
 const SYSTEM = `你是一个 JSON patch 生成器。给定一个文档结构和一条编辑意图，输出一个 JSON patch。
@@ -31,7 +31,7 @@ const SYSTEM = `你是一个 JSON patch 生成器。给定一个文档结构和�
 async function callDeepSeek(messages) {
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEY}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: MODEL,
       messages,
@@ -53,7 +53,7 @@ const tasks = TASK_FILTER ? TASKS.filter(t => TASK_FILTER.includes(t.id)) : TASK
 const runs = [];
 let ok = 0, fail = 0, apiErr = 0;
 
-console.log(`=== T 组 benchmark：${tasks.length} 任务 × ${ATTEMPTS} attempts ===\n`);
+console.log(`=== T 组 benchmark：${tasks.length} 任务 × ${attemptCount} attempts ===\n`);
 
 for (const task of tasks) {
   const userMsg = `编辑意图：${task.intent}\n\n文档结构：\n${JSON.stringify(task.doc, null, 2)}\n\n输出 JSON patch：`;
@@ -62,7 +62,7 @@ for (const task of tasks) {
     { role: 'user', content: userMsg },
   ];
 
-  for (let a = 1; a <= ATTEMPTS; a++) {
+  for (let a = 1; a <= attemptCount; a++) {
     const label = `${task.id}-a${a}`;
     process.stdout.write(`  ${label} … `);
     try {
@@ -111,7 +111,7 @@ const record = {
   model: 'DeepSeek',
   modelVersion: MODEL,
   recordedAt: new Date().toISOString(),
-  attemptsPerTask: ATTEMPTS,
+  attemptsPerTask: attemptCount,
   runs: runs,
 };
 

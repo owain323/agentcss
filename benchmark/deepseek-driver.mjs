@@ -18,8 +18,8 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const KEY = process.env.DEEPSEEK_API_KEY;
-if (!KEY) {
+const apiKey = process.env.DEEPSEEK_API_KEY;
+if (!apiKey) {
   console.error('❌ 请设 DEEPSEEK_API_KEY 环境变量。');
   process.exit(2);
 }
@@ -38,7 +38,7 @@ const TASKS = [
   { id: 'P10', prompt: '做一个含 tooltip 提示和 badge 标签的数据展示页', libs: 'tooltip badge' },
 ];
 
-const ATTEMPTS = parseInt(process.argv.find(a => a.startsWith('--attempts='))?.split('=')[1] || '3');
+const attemptCount = parseInt(process.argv.find(a => a.startsWith('--attempts='))?.split('=')[1] || '3');
 const TASK_FILTER = process.argv.find(a => a.startsWith('--tasks='))?.split('=')[1]?.split(',') || null;
 const MODEL = 'deepseek-chat';
 const API_URL = 'https://api.deepseek.com/chat/completions';
@@ -57,7 +57,7 @@ async function callDeepSeek(prompt) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: MODEL,
@@ -91,10 +91,10 @@ const tasks = TASK_FILTER ? TASKS.filter(t => TASK_FILTER.includes(t.id)) : TASK
 const runs = [];
 let apiErrors = 0;
 
-console.log(`=== DeepSeek benchmark：${tasks.length} 任务 × ${ATTEMPTS} attempts ===\n`);
+console.log(`=== DeepSeek benchmark：${tasks.length} 任务 × ${attemptCount} attempts ===\n`);
 
 for (const task of tasks) {
-  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= attemptCount; attempt++) {
     const label = `${task.id}-a${attempt}`;
     process.stdout.write(`  ${label} … `);
     try {
@@ -146,7 +146,7 @@ const record = {
   model: 'DeepSeek',
   modelVersion: MODEL,
   recordedAt: new Date().toISOString(),
-  attemptsPerTask: ATTEMPTS,
+  attemptsPerTask: attemptCount,
   runs: runs.map(r => ({
     task: r.task,
     attempt: r.attempt,

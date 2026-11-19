@@ -99,7 +99,11 @@ def candidates():
     out = []
     me = os.path.basename(os.path.abspath(__file__))
     for f in sorted(os.listdir(AUDIT)):
-        if not (f.endswith('.py') or f.endswith('.js')):
+        # 🔴 0.27.21（WO-17b）：候选不再只认 .py/.js —— .sh（bash 也能实现
+        #    --selftest）与 .mjs（node 一样跑）同样进视野。谁哪天给 .sh/.mjs
+        #    加了 --selftest 分支，这里看不见就是静默漏检。
+        if not (f.endswith('.py') or f.endswith('.js')
+                or f.endswith('.mjs') or f.endswith('.sh')):
             continue
         # 🔴 必须排除自己：本文件里也出现了 `--selftest` 这个字面量，
         #    而它**不支持** --selftest ⇒ 一旦被选进来就会跑 main() ⇒ **递归**。
@@ -108,10 +112,20 @@ def candidates():
         p = os.path.join(AUDIT, f)
         txt = io.open(p, encoding='utf-8', errors='replace').read()
         # 只认"真的实现了 --selftest 分支"的（不是注释里提一句）：
-        #   Python 走 `'--selftest' in sys.argv`；JS 走 `argv.indexOf('--selftest')`
+        #   Python 走 `'--selftest' in sys.argv`；
+        #   JS/MJS 走 `argv.indexOf('--selftest')` / `argv.includes(...)`；
+        #   bash 走 case 分支 `--selftest)` 或 glob `*--selftest*`。
         #   ⇒ 判据落在**调用点**上，而不是文档里出现过这个词。
+        #   ⚠️ .sh 的检测必须先剥整行注释：check-all.sh 的注释里就写着
+        #      `--selftest`（0.11.15 的立法段落）⇒ 不剥会把它选进来，
+        #      然后跑 main() 直接把全量门禁又跑一遍。
         if f.endswith('.py'):
             hit = re.search(r"['\"]--selftest['\"]\s*(?:in|not in)", txt)
+        elif f.endswith('.sh'):
+            code = '\n'.join(l for l in txt.split('\n')
+                             if not l.lstrip().startswith('#'))
+            hit = re.search(r'--selftest\s*\)|\*\s*--selftest'
+                            r'|--selftest[\'"]?\s*(?:==|=~)', code)
         else:
             hit = re.search(
                 r"argv\.(?:indexOf|includes)\(\s*['\"]--selftest['\"]", txt)
@@ -202,9 +216,15 @@ def stop_server():
 
 def run_one(fname):
     p = os.path.join(AUDIT, fname)
-    # 解释器按扩展名选：JS 的自检必须用 node 跑（用 python 跑 JS 会 RC=1，
-    # 看起来像"自检失败"，实际是跑错了语言 —— 那种红会让人怀疑整个清单）
-    exe = 'node' if fname.endswith('.js') else sys.executable
+    # 解释器按扩展名选：JS/MJS 的自检必须用 node 跑（用 python 跑 JS 会 RC=1，
+    # 看起来像"自检失败"，实际是跑错了语言 —— 那种红会让人怀疑整个清单）；
+    # .sh 用 bash（WO-17b：.sh 也能实现 --selftest）。
+    if fname.endswith(('.js', '.mjs')):
+        exe = 'node'
+    elif fname.endswith('.sh'):
+        exe = 'bash'
+    else:
+        exe = sys.executable
     t0 = time.time()
     try:
         r = subprocess.run([exe, p, '--selftest'],

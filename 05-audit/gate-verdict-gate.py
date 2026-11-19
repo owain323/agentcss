@@ -101,54 +101,19 @@ ALLOW_NO_VERDICT = [
 def registered_gates():
     """从 check-all.sh 解析出注册的门禁（名字 → 命令行）。
 
-    ⚠️ 两类注册都要认：
-      ① 逐条：`run "名字" 命令...`
-      ② **循环批量**：
-             for g in tierA-gate icon-gate ...; do
-               run "$g"    $PY "05-audit/$g.py" --dir $DIR_ARGS
-             done
-         第一版我只展开出了名字，命令行还是 `run "$g" ... "$g.py"`，
-         ⇒ `script_of()` 从中取到的是 **字面 `$g`**（不是真名）
-         ⇒ 17 道被「跳过」，而跳过意味着**没查**。
-         ⇒ 现在把模板里的 `$g` 用每个真名替换，得到真实路径。
+    🔴 0.27.21（WO-16 ②）：解析器抽到 `_gateindex.py` 单源（E31）——
+       gate-selfcheck 的重名检测也曾各写一份正则，只认字面 `run`，
+       run_report / VAR= 前缀 / 循环批量注册的门禁对它全部隐形。
+       认法明细见 `_gateindex.registered_pairs` 的 docstring。
     """
-    txt = io.open(CHECK_ALL, encoding='utf-8').read()
-    out = {}
-    for m in re.finditer(r'^\s*(?:\w+=\S+\s+)*(run|run_report)\s+"([^"]+)"\s+(.+?)\s*$',
-                         txt, re.M):
-        # ⚠️ 跳过 `run "$g" ...`（那是**循环体内部**的模板，不是注册）
-        #    第一版没跳 ⇒ 解析出一个叫 `$g` 的"门禁"，
-        #    然后它被当成"找不到脚本路径"跳过 —— 又是一次静默漏查。
-        #    真正的展开由下面的循环解析负责。
-        if '$' in m.group(2):
-            continue
-        out[m.group(2)] = m.group(3)
-    # 循环批量注册
-    for m in re.finditer(r'^\s*for g in ([^;]+); do\s*\n(.*?)\n\s*done',
-                         txt, re.M | re.S):
-        names = [x.strip().strip('"\'') for x in m.group(1).split()]
-        body = m.group(2)
-        for run_m in re.finditer(r'^\s*run\s+"\$g"\s+(.+?)\s*$', body, re.M):
-            tpl = run_m.group(1)
-            for name in names:
-                if name:
-                    out[name] = tpl.replace('$g', name)
-    return out
+    import _gateindex
+    return _gateindex.registered_gates(CHECK_ALL)
 
 
 def script_of(cmdline):
-    """从命令行里找出 .py/.js/.sh 脚本路径。
-
-    ⚠️ 必须**先剥引号**：循环注册的模板展开后会带引号
-       （`run "$g" $PY "05-audit/$g.py"` ⇒ token 是 `"05-audit/tierA-gate.py"`），
-       而 `endswith('.py')` 对带引号的 token 是 False
-       ⇒ 13 道门禁被静默跳过（跳过=没查，但报告里只写"不适用"，很隐蔽）。
-    """
-    for tok in cmdline.split():
-        tok = tok.strip('"\'')
-        if tok.endswith(('.py', '.js', '.mjs', '.sh')):
-            return tok
-    return None
+    """从命令行里找出脚本路径 —— 单源在 `_gateindex.script_of`。"""
+    import _gateindex
+    return _gateindex.script_of(cmdline)
 
 
 def _strip_py(src):
