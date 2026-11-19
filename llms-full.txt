@@ -1,6 +1,6 @@
 # agentcss — full reference (one file)
 
-> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.27.19**.
+> Generated from `ai/components.json` + `ai/pitfalls*.json` + `ai/behaviors.json` at version **0.27.20**.
 > Do not edit by hand: run `python 05-audit/gen-llms.py` (freshness is gated).
 > Short version: `llms.txt`. Machine contract: `ai/*.json`.
 
@@ -59,8 +59,8 @@ and it reports horizontal overflow plus JS errors.
 | `reveal` | `reveal` | pattern | stable | 4.5 KB | `reveal.js` | 入场动效：一个 data-reveal 属性六个方向，无 JS 时内容全可见 | — |
 | `states` | `state` | pattern | stable | 10.9 KB | — | 空/加载/错误/成功四种整块状态 | `empty-state-no-decoration` `text-injection-xss` |
 | `tabs` | `tabs` | pattern | stable | 6.1 KB | `tabs.js` | 选项卡切换 | — |
-| `tooltip` | `tooltip` | pattern | stable | 3.9 KB | `tooltip.js` | 悬停/聚焦提示 | `popover-measure-after-render` `fixed-element-inventory` |
-| `tree` | `tree` | pattern | stable | 4.0 KB | `tree.js` | 可展开树形结构 | — |
+| `tooltip` | `tooltip` | pattern | stable | 4.2 KB | `tooltip.js` | 悬停/聚焦提示 | `popover-measure-after-render` `fixed-element-inventory` |
+| `tree` | `tree` | pattern | stable | 4.2 KB | `tree.js` | 可展开树形结构 | — |
 | `badge` | `badge` | primitive | stable | 6.1 KB | — | 状态标签：计数、分类、结果标记 | — |
 | `button` | `btn` | primitive | stable | 15.7 KB | — | 动作触发：主/次/危险/纯文字四档 | — |
 | `card` | `card` | primitive | stable | 10.4 KB | — | 内容容器：媒体+正文+操作区三段 | — |

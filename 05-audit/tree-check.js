@@ -16,7 +16,7 @@ const REPO = path.resolve(__dirname, '..');
     url: 'http://127.0.0.1:8000/03-patterns/tree/demo.html',
     dir: REPO + '/03-patterns/tree',
     primary: '.tree',
-    interactive: '.tree__node',
+    interactive: '#t1 li[role="treeitem"]',
     skipFocusRing: true,
     note: 'tree 容器不聚焦（焦点在节点上，roving tabindex）',
     /* 🔴 树节点用 **32px**（不是 44px），这是**有意的**：
@@ -56,7 +56,7 @@ const REPO = path.resolve(__dirname, '..');
       /* ⭐ Roving tabindex：整棵树只占一个 Tab 位 */
       'roving tabindex（只一个 tabindex=0）': async (p) => {
         const r = await p.evaluate(() => {
-          const nodes = [...document.querySelectorAll('#t1 .tree__node')]
+          const nodes = [...document.querySelectorAll('#t1 li[role="treeitem"]')]
             .filter((n) => n.offsetParent !== null);
           if (!nodes.length) return { ok: true, note: '无可见节点（跳过）' };
           const zeros = nodes.filter((n) => n.getAttribute('tabindex') === '0');
@@ -79,7 +79,7 @@ const REPO = path.resolve(__dirname, '..');
       'roving tabindex（走一遍键盘 + 收起再展开后仍只一个 0）': async (p) => {
         /* ① 自己准备前提：焦点落到第一个节点 */
         await p.evaluate(() => {
-          const n = document.querySelector('#t1 .tree__node');
+          const n = document.querySelector('#t1 li[role="treeitem"]');
           if (n) n.focus();
         });
         /* ② 移动 → 收起 → 再移动 → 再展开：制造"节点被藏起来"的机会 */
@@ -89,7 +89,7 @@ const REPO = path.resolve(__dirname, '..');
           await new Promise((r) => setTimeout(r, 120));
         }
         const r = await p.evaluate(() => {
-          const all = [...document.querySelectorAll('#t1 .tree__node')];
+          const all = [...document.querySelectorAll('#t1 li[role="treeitem"]')];
           if (!all.length) return { ok: true, note: '无节点（跳过）' };
           const zeros = all.filter((n) => n.getAttribute('tabindex') === '0');
           return { ok: zeros.length <= 1,
@@ -106,7 +106,7 @@ const REPO = path.resolve(__dirname, '..');
       /* ① ↑↓ 移动 */
       '↑↓ 在节点间移动': async (p) => {
         await p.evaluate(() => {
-          const n = document.querySelector('#t1 .tree__node');
+          const n = document.querySelector('#t1 li[role="treeitem"]');
           if (n) n.focus();
         });
         await new Promise((r) => setTimeout(r, 200));
@@ -148,8 +148,8 @@ const REPO = path.resolve(__dirname, '..');
             if (g) g.hidden = false;
           });
           const n = li.querySelector(':scope > .tree__node');
-          n.focus();
-          n.setAttribute('data-fl-probe', '1');
+          li.focus();   /* 0.27.20：焦点落点 = li[role=treeitem]（node 已无 tabindex） */
+          li.setAttribute('data-fl-probe', '1');   /* 0.27.20：探针跟焦点落点（li） */
           return { label: (n.textContent || '').trim().slice(0, 8) };
         });
         if (!setup) {
@@ -207,8 +207,8 @@ const REPO = path.resolve(__dirname, '..');
             if (g) g.hidden = false;
           });
           const n = li.querySelector(':scope > .tree__node');
-          n.focus();
-          n.setAttribute('data-fl-probe', '2');
+          li.focus();   /* 0.27.20：焦点落点 = li[role=treeitem]（node 已无 tabindex） */
+          li.setAttribute('data-fl-probe', '2');   /* 0.27.20：探针跟焦点落点（li） */
           return { label: (n.textContent || '').trim().slice(0, 8) };
         });
         if (!setup) {
@@ -254,7 +254,7 @@ const REPO = path.resolve(__dirname, '..');
       /* ⑤ Home / End 跳首末 */
       'Home/End 跳首末': async (p) => {
         await p.evaluate(() => {
-          const n = document.querySelector('#t1 .tree__node');
+          const n = document.querySelector('#t1 li[role="treeitem"]');
           if (n) n.focus();
         });
         await new Promise((r) => setTimeout(r, 180));
@@ -280,7 +280,7 @@ const REPO = path.resolve(__dirname, '..');
         const at = () => p.evaluate(() =>
           (document.activeElement.textContent || '').trim().slice(0, 10));
         await p.evaluate(() => {
-          const n = document.querySelector('#t1 .tree__node');
+          const n = document.querySelector('#t1 li[role="treeitem"]');
           if (n) n.focus();
         });
         await new Promise((r) => setTimeout(r, 120));
@@ -303,7 +303,7 @@ const REPO = path.resolve(__dirname, '..');
         /* 上一条刚打过 b ⇒ 先等缓冲超时清空，否则这次拼成 "bba" */
         await new Promise((r) => setTimeout(r, 700));
         await p.evaluate(() => {
-          const n = document.querySelector('#t1 .tree__node');
+          const n = document.querySelector('#t1 li[role="treeitem"]');
           if (n) n.focus();
         });
         await new Promise((r) => setTimeout(r, 120));
@@ -355,7 +355,7 @@ const REPO = path.resolve(__dirname, '..');
             if (g) g.hidden = true;
           }
           const n = lv0[0].querySelector(':scope > .tree__node');
-          n.focus();
+          lv0[0].focus();   /* 0.27.20：焦点落点 = li */
           return { lv0: lv0.length, lv1: lv1.length };
         });
         if (!pre) {
@@ -388,6 +388,56 @@ const REPO = path.resolve(__dirname, '..');
       },
 
       /* 收起的节点其子树必须不可聚焦 */
+      /* 🔴 0.27.20（无障碍官 S1/S7 的验收判据）：语义归位后 selected/焦点
+         必须对读屏**可见**——旧实现写在 role=none 节点上，AX 树里
+         selected=true 的节点数为 0（选中状态完全不可见）。 */
+      '初始全量 aria-selected=false（APG 单选树）': async (p) => {
+        const r = await p.evaluate(() => {
+          const items = [...document.querySelectorAll('#t1 [role="treeitem"]')];
+          const noSel = items.filter((i) => i.getAttribute('aria-selected') !== 'false'
+                                        && i.getAttribute('aria-selected') !== 'true');
+          return { ok: items.length > 0 && noSel.length === 0,
+                   note: items.length + ' 个 treeitem，缺 aria-selected 的 ' + noSel.length + ' 个' };
+        });
+        return r;
+      },
+
+      'Space 选中后：AX 树里 selected=true 恰好 1 个且 role=treeitem': async (p) => {
+        /* 焦点落第一个 treeitem → Space 选中 → 用 CDP AX 树取证
+           （DOM 里看得到 ≠ 读屏看得到——S1 事故正是死在这里） */
+        const cdp = await p.target().createCDPSession();   /* 同 a11y-ax.js:336 */
+        await cdp.send('Accessibility.enable');
+        await p.evaluate(() => {
+          const first = document.querySelector('#t1 li[role="treeitem"]');
+          if (!first) return;
+          /* roving 的 tabindex 归属跟随最后一次 focusAt——外部判据直接
+             focus() 会空跳（tabindex=-1）。显式给 0 再聚焦，等价于
+             "Tab 进树落在首项"的确定性通道。 */
+          first.setAttribute('tabindex', '0');
+          first.focus();
+        });
+        await p.keyboard.press('Space');
+        await new Promise((r) => setTimeout(r, 200));
+        const { nodes: axNodes } = await cdp.send('Accessibility.getFullAXTree');
+        const sel = axNodes.filter((n) =>
+          n.role && n.role.value === 'treeitem' &&
+          n.properties && n.properties.some(
+            (pr) => pr.name === 'selected' && pr.value.value === true));
+        /* 聚焦证据走 DOM（CDP 新会话的 focused 属性报 RootWebArea，
+           不可用作判据）；selected 证据走 AX 树——这正是 S1 事故的
+           盲区所在：DOM 有 ≠ 读屏有。 */
+        const domFocus = await p.evaluate(() => {
+          const a = document.activeElement;
+          return { role: a && a.getAttribute('role'),
+                   sel: a && a.getAttribute('aria-selected') };
+        });
+        return { ok: sel.length === 1 && domFocus.role === 'treeitem' &&
+                       domFocus.sel === 'true',
+                 note: 'AX selected=true ×' + sel.length +
+                       ' · DOM 聚焦 role=' + domFocus.role +
+                       ' aria-selected=' + domFocus.sel };
+      },
+
       '收起子树的不可聚焦': async (p) => {
         const r = await p.evaluate(() => {
           const collapsed = [...document.querySelectorAll('#t2 [role="treeitem"]')]

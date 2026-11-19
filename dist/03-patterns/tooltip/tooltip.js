@@ -331,7 +331,23 @@ acquire('hover');
 }
 function onMouseLeave() {
 
+if (hoverGrace) { global.clearTimeout(hoverGrace); }
+hoverGrace = global.setTimeout(function () {
+hoverGrace = null;
 release('hover');
+}, 80);
+}
+var hoverGrace = null;
+function tipEnter() {
+if (hoverGrace) { global.clearTimeout(hoverGrace); hoverGrace = null; }
+if (!owned.hover) acquire('hover');
+}
+function tipLeave() {
+if (hoverGrace) { global.clearTimeout(hoverGrace); }
+hoverGrace = global.setTimeout(function () {
+hoverGrace = null;
+release('hover');
+}, 80);
 }
 
 function onClick(e) {
@@ -348,8 +364,12 @@ el.addEventListener('mouseenter', onMouseEnter);
 el.addEventListener('mouseleave', onMouseLeave);
 el.addEventListener('click', onClick);
 
+tip.addEventListener('mouseenter', tipEnter);
+tip.addEventListener('mouseleave', tipLeave);
+
 var dismiss = flDismissable({
-escOn: [el],
+
+escOn: [document],
 inside: [el, tip],
 when: function () { return open; },
 onDismiss: function (ev, reason) {

@@ -182,6 +182,23 @@ def bump(new):
     write(FILES['lock'], raw)
     lock_hits_n = lock_hits[0]
 
+    # ③a-2 package.json description 里的组件数（0.27.20 补 · AI 契约官实锤：
+    #    "40 components" 在 icons-anim 加入后漂成 41 没人管——版本号有
+    #    这个脚本同步，组件数没理由不是生成的）。从 components.json 现算。
+    try:
+        comps = json.loads(read(FILES['contract'])).get('components')
+        n_comps = len(comps) if isinstance(comps, list) else None
+        if n_comps:
+            raw = read(FILES['package'])
+            raw2, n_desc = re.subn(
+                r'(machine-readable contract: )\d+( components)',
+                lambda m: m.group(1) + str(n_comps) + m.group(2), raw, count=1)
+            if n_desc:
+                write(FILES['package'], raw2)
+                print('   description 组件数 → %d' % n_comps)
+    except Exception as e:
+        print('   ⚠️ description 组件数同步跳过：%s' % e)
+
     # ③b ai/components.json 的 libraryVersion（0.9.0 补 · 第五处）
     raw = read(FILES['contract'])
     raw2, n_contract = re.subn(r'("libraryVersion"\s*:\s*)"[^"]+"',

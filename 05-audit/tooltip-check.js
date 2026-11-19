@@ -320,6 +320,77 @@ const REPO = path.resolve(__dirname, '..');
                                   : '四个组合各一条有色边、箭头指向锚点、气泡在期望的一侧 ✅' };
       },
 
+      /* 🔴 0.27.20 WCAG 1.4.13 三条件实测（无障碍官 F1 实锤的清算）：
+         ① Dismissible——hover 态（焦点在 body）按 Esc 必须能收。
+            旧实现 Esc 挂在触发元素上（焦点不在 ⇒ 收不到）⇒ 违规。 */
+      'Esc 可关 hover 态（1.4.13 Dismissible）': async (p) => {
+        const probe = await p.evaluate(() => {
+          const el = document.createElement('button');
+          el.id = 'tt-esc-probe';
+          el.textContent = 'esc probe';
+          el.style.cssText = 'position:fixed;top:20px;left:20px;z-index:100000';
+          document.body.appendChild(el);
+          window.Tooltip.attach(el, 'tt-esc-probe-tip', 'bottom');
+          el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }));
+          return true;
+        });
+        if (!probe) return { ok: false, note: '🔴 探针装不上' };
+        await new Promise((r) => setTimeout(r, 250));
+        const opened = await p.evaluate(() =>
+          [...document.querySelectorAll('.tooltip[data-state="open"]')].length);
+        await p.keyboard.press('Escape');   /* 焦点在 body——旧实现收不到 */
+        await new Promise((r) => setTimeout(r, 200));
+        const after = await p.evaluate(() => {
+          const tip = [...document.querySelectorAll('.tooltip')].pop();
+          const gone = !tip || tip.getAttribute('data-state') !== 'open';
+          const el = document.getElementById('tt-esc-probe');
+          if (el) { try { window.Tooltip.detach(el); } catch (e) {} el.remove(); }
+          return gone;
+        });
+        return { ok: opened >= 1 && after === true,
+                 note: 'hover 开=' + opened + ' · Esc 后收=' + after };
+      },
+
+      /* ② Hoverable——指针从触发器滑进气泡，气泡不消失（80ms 宽限） */
+      '指针可移入气泡（1.4.13 Hoverable）': async (p) => {
+        const setup = await p.evaluate(() => {
+          const el = document.createElement('button');
+          el.id = 'tt-hover-in';
+          el.textContent = 'hover-in probe';
+          el.style.cssText = 'position:fixed;top:80px;left:20px;z-index:100000';
+          document.body.appendChild(el);
+          window.Tooltip.attach(el, 'tt-hover-in-tip', 'bottom');
+          el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }));
+          return true;
+        });
+        if (!setup) return { ok: false, note: '🔴 探针装不上' };
+        await new Promise((r) => setTimeout(r, 250));
+        /* 指针滑进气泡：先离开触发器（触发 80ms 宽限），再 hover 气泡 */
+        await p.evaluate(() => {
+          const el = document.getElementById('tt-hover-in');
+          el.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+        });
+        await new Promise((r) => setTimeout(r, 40));   /* 宽限窗口内 */
+        const tipBox = await p.evaluate(() => {
+          const tip = [...document.querySelectorAll('.tooltip')].pop();
+          if (!tip) return null;
+          const r = tip.getBoundingClientRect();
+          return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        });
+        let hovered = null;
+        if (tipBox) { await p.mouse.move(tipBox.x, tipBox.y); }
+        await new Promise((r) => setTimeout(r, 300));
+        hovered = await p.evaluate(() => {
+          const tip = [...document.querySelectorAll('.tooltip')].pop();
+          const alive = tip && tip.getAttribute('data-state') === 'open';
+          const el = document.getElementById('tt-hover-in');
+          if (el) { try { window.Tooltip.detach(el); } catch (e) {} el.remove(); }
+          return alive;
+        });
+        return { ok: hovered === true,
+                 note: '离开触发器 40ms 后滑入气泡中心：气泡仍开=' + hovered };
+      },
+
       /* ⑦ 悬停能弹出、移开能关（attach 路径 —— 0.27 修的真缺陷）
          🔴 为什么要这条：attach() 把气泡挂到 body，CSS 的
             `[data-tooltip]:hover + .tooltip`（相邻兄弟）永远打不中，

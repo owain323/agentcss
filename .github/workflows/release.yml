@@ -86,6 +86,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false   # 🔴 0.27.20：发布进程不携带 GitHub_TOKEN（工程官 S4）
           # 🔴 fetch-depth: 0 + fetch-tags 是**必须的**：
           #    release-gate 要核"版本有没有 tag 锚点"，而 depth=1 时
           #    抓下来的 tag 指向的是祖先提交，判据会凭空变红。
@@ -102,7 +103,7 @@ jobs:
       - name: 升级 npm（trusted publishing 需要 >= 11.5.1）
         run: |
           set -eu
-          npm install -g npm@latest
+          npm install -g npm@11.5.1   # 钉版本：OIDC 门槛 11.5.1（签名链上不跑浮动版本——工程官 S4）
           echo "npm=$(npm --version)  node=$(node --version)"
 
       # 🔴 必须在门禁**之前**装：视觉基线是在这套字体下录的。
@@ -226,9 +227,22 @@ jobs:
             echo "::error::CHANGELOG 里找不到 $V 这一节 —— Release 正文会是空的，拒绝创建"
             exit 1
           fi
+          # 🔴 0.27.20（工程官 S3）：TODO 模板正文 = 档案失守——0.27.19 的
+          #    Release 正文就是模板原文（54 字符）。模板进了产物 = 发布记录在骗人。
+          if grep -q 'TODO · 这一版改了什么' release-notes.md; then
+            echo "::error::Release 正文是 CHANGELOG 的 TODO 模板 —— 先把这一版改了什么写完再发版"
+            exit 1
+          fi
           gh release create "$GITHUB_REF_NAME" \
             --title "v$V" \
             --notes-file release-notes.md
+          # 🔴 0.27.20（工程官 S2）：README 教的 releases/download 安装路径此前 404
+          #    （15 个 Release 全部零 asset）。上传 registry 同源 tarball，
+          #    URL 即真实存在、字节即 registry 产物。
+          tarball="agentcss-$V.tgz"
+          npm pack --pack-destination . >/dev/null
+          sha256sum "$tarball"
+          gh release upload "$GITHUB_REF_NAME" "$tarball" --clobber
 
       # 回执必须**永远**跑：失败时它就是"到底发到哪一步"的唯一记录。
       - name: 发布回执（npm + provenance + Release 三者齐备才算完成）
@@ -268,6 +282,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -322,7 +338,7 @@ jobs:
       - name: 升级 npm（trusted publishing 需要 >= 11.5.1）
         run: |
           set -eu
-          npm install -g npm@latest
+          npm install -g npm@11.5.1   # 钉版本：OIDC 门槛 11.5.1（签名链上不跑浮动版本——工程官 S4）
           npm --version
       - name: 删除 dist-tag
         env:

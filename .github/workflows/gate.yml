@@ -49,11 +49,42 @@ on:
     - cron: '17 3 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read     # 🔴 0.27.20：CI 只需要读仓库——125 道门禁不持有写权限（工程官 S4）
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+
+  # 🔴 0.27.20（工程官 S1）：发布资格前移——近 8 次发布 6 次首跑失败，
+  #    全是"先打 tag 才发现 Linux 门禁红"⇒ 删 tag 重打成了日常动作。
+  #    本 job 在 master push 上跑**与 release.yml 逐行同源**的发布前序列
+  #    （ci-fonts → npm ci → publish:check）；绿了才有资格打 tag。
+  #    AC：下一次发布 tag 推出前必须存在同 headSha 的绿色 qualify run。
+  release-qualify:
+    name: 发布资格（Linux 发布前门禁 · 与 release.yml 同源）
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 装 CI 字体（与 release.yml 同一个脚本）
+        run: bash 05-audit/ci-fonts.sh
+      - name: npm ci + 升级 npm（钉版本，与 release.yml 一致）
+        run: |
+          set -eu
+          npm install -g npm@11.5.1
+          npm ci --no-audit --no-fund
+      - name: 发布前门禁（与 prepublishOnly / release.yml 同一套）
+        run: npm run publish:check
   # ==================================================================
   # ① PR 快门禁 —— 纯静态，零浏览器，秒级
   # ==================================================================

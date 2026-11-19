@@ -471,8 +471,27 @@ var flDismissable = function (opts) {
       acquire('hover');
     }
     function onMouseLeave() {
-      /* 只放掉 hover 那份；click 钉住的、focus 持有的各自负责关 */
-      release('hover');
+      /* 🔴 0.27.20（WCAG 1.4.13 Hoverable）：指针离开触发器不立刻收——
+         80ms 宽限让指针能跨过 el→tip 边界（气泡紧贴触发器，零间隙）。
+         指针进气泡（tip mouseenter）则取消收起并把 hover 所有权续期。
+         旧实现 leave 同步收 ⇒ 气泡在指针到达前已消失（读不了长文）。 */
+      if (hoverGrace) { global.clearTimeout(hoverGrace); }
+      hoverGrace = global.setTimeout(function () {
+        hoverGrace = null;
+        release('hover');
+      }, 80);
+    }
+    var hoverGrace = null;
+    function tipEnter() {
+      if (hoverGrace) { global.clearTimeout(hoverGrace); hoverGrace = null; }
+      if (!owned.hover) acquire('hover');   /* 续期或重开（重开时 show() 用上次坐标） */
+    }
+    function tipLeave() {
+      if (hoverGrace) { global.clearTimeout(hoverGrace); }
+      hoverGrace = global.setTimeout(function () {
+        hoverGrace = null;
+        release('hover');
+      }, 80);
     }
 
     /* ③ 触屏唯一入口 + 指针显式操作（文件头"触发规则"）：
@@ -490,6 +509,9 @@ var flDismissable = function (opts) {
     el.addEventListener('mouseenter', onMouseEnter);
     el.addEventListener('mouseleave', onMouseLeave);
     el.addEventListener('click', onClick);
+    /* Hoverable：气泡自己也是 hover 区（0.27.20） */
+    tip.addEventListener('mouseenter', tipEnter);
+    tip.addEventListener('mouseleave', tipLeave);
 
     /* ④ Esc 能关（WCAG 1.4.13）+ 点击外部关闭 —— 走 dismissable 核
       （0.8.6 收编，原先手写 `document.addEventListener('click', hide)`
@@ -497,7 +519,11 @@ var flDismissable = function (opts) {
       走 focus-return 核。⚠️ destroy 时 dismiss.destroy() 必须一起调：
       只摘监听不摘栈记录的话，__flDismiss 栈只增不减（实测泄漏）。 */
     var dismiss = flDismissable({
-      escOn: [el],
+      /* 🔴 0.27.20（WCAG 1.4.13 Dismissible · 无障碍官 F1 实锤 P1）：
+         Esc 要挂 **document**——hover 打开时焦点不在 el 上（焦点在 body），
+         挂在 el 上的 keydown 收不到 ⇒ hover 态按 Esc 关不掉。when: open
+         已经把"只在开着时" gate 住了，document 级监听不会越权。 */
+      escOn: [document],
       inside: [el, tip],
       when: function () { return open; },
       onDismiss: function (ev, reason) {

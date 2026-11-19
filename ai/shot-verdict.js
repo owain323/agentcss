@@ -23,6 +23,20 @@
 
 var SEVERITY_ORDER = { pass: 0, warn: 1, fail: 2 };
 
+/* 🔴 0.27.20（AI 契约官 T4）：判定 → 药方交叉引用。
+   便宜模型拿到一句判语后最常见的失败是"自由发挥下一步"——
+   而翻车点库（ai/pitfalls.json）里躺着现成的修法。
+   这张表只收**确有把握**的映射；每条 ref 的存在性由
+   ai-layer-gate ⑥⁶ 断言（pitfalls.json 里必须有这个 id），
+   映射漂移会在门禁下红，不会静默断链。 */
+var REF_MAP = {
+  'true-overflow': 'table-overflow-wrapper',
+  'page-overflow': 'table-overflow-wrapper',
+  'container-scroll': 'single-scroll-container',
+  'capture-incomplete': 'stale-server-verify',
+  'js-error': 'dom-stub-smoke'
+};
+
 /** 单宽度的判定。entry 形状见 ai/shot.js 的 shots[]（captureOk 必须带）。 */
 function verdictForWidth(entry) {
   var reasons = [];
@@ -30,7 +44,8 @@ function verdictForWidth(entry) {
     reasons.push({
       code: 'capture-incomplete', severity: 'fail',
       where: 'w' + (entry && entry.width ? entry.width : '?'),
-      detail: '探针没有跑成（页面加载失败/解析失败）——判定不可信，不许假 pass'
+      detail: '探针没有跑成（页面加载失败/解析失败）——判定不可信，不许假 pass',
+      ref: REF_MAP['capture-incomplete']
     });
     return { status: 'fail', reasons: reasons };
   }
@@ -39,7 +54,8 @@ function verdictForWidth(entry) {
       code: 'js-error', severity: 'fail',
       where: 'w' + entry.width,
       detail: 'JS 报错 ' + entry.consoleErrors.length + ' 条：' +
-        entry.consoleErrors[0]
+        entry.consoleErrors[0],
+        ref: REF_MAP['js-error']
     });
   }
   var items = entry.overflowItems || [];
@@ -48,13 +64,15 @@ function verdictForWidth(entry) {
       reasons.push({
         code: 'container-scroll', severity: 'warn',
         where: 'w' + entry.width + ' ' + items[i].tag,
-        detail: '溢出在设计内滚动容器里（表格横向滚动是契约行为），不判失败'
+        detail: '溢出在设计内滚动容器里（表格横向滚动是契约行为），不判失败',
+        ref: REF_MAP['container-scroll']
       });
     } else {
       reasons.push({
         code: 'true-overflow', severity: 'fail',
         where: 'w' + entry.width + ' ' + items[i].tag,
-        detail: '溢出且不在任何滚动祖先内——真溢出，会顶破布局'
+        detail: '溢出且不在任何滚动祖先内——真溢出，会顶破布局',
+        ref: REF_MAP['true-overflow']
       });
     }
   }
@@ -62,7 +80,8 @@ function verdictForWidth(entry) {
     reasons.push({
       code: 'page-overflow', severity: 'fail',
       where: 'w' + entry.width,
-      detail: '页面级横向溢出（scrollWidth > 视口）——不管元素在不在容器里，页面已经顶破'
+      detail: '页面级横向溢出（scrollWidth > 视口）——不管元素在不在容器里，页面已经顶破',
+      ref: REF_MAP['page-overflow']
     });
   }
   var status = 'pass';
@@ -90,7 +109,8 @@ function computeShotVerdict(widthEntries, consoleErrors) {
   if (ce.length) {
     all.unshift({
       code: 'js-error', severity: 'fail', where: '全局',
-      detail: 'JS 报错 ' + ce.length + ' 条：' + ce[0]
+      detail: 'JS 报错 ' + ce.length + ' 条：' + ce[0],
+      ref: REF_MAP['js-error']
     });
   }
   for (var j = 0; j < all.length; j++) {

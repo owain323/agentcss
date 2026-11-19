@@ -61,6 +61,12 @@ git push --atomic origin master v0.24.2   # 提交与 tag 一起推；不要 git
 3. **登记已知偏差**：写进 [VERIFY-RELEASE.md](VERIFY-RELEASE.md) 的「已知偏差」一节，必须含受影响版本、文件、错误内容、正确内容、影响对象、修复状态、处理方式，并给出可复现的检查命令。
 4. **在下一个版本的 CHANGELOG 里说明**，让升级的人知道修了什么。
 5. **不覆盖历史**：不改 tag、不重发同版本、不要求 registry 删除已发布版本。
+6. **坏版本止血**：行为级错误（不是笔误级）需要让还没踩坑的人收到警告时，
+   用 `npm deprecate agentcss@<坏版本> "<原因与替代版本>"`。
+   ⚠️ 凭据通道：trusted publishing（OIDC）只覆盖 publish/dist-tag——
+   **deprecate 需要单独的细粒度凭据（只授 deprecate 权限）**，
+   首次使用前必须演练一次（对 `0.0.0-stage` 这类 dummy 包）并在这里记退出码；
+   没演练过的止血通道等于没有止血通道。
 
 现存的实例见 [VERIFY-RELEASE.md](VERIFY-RELEASE.md) 第 5 节。
 
@@ -243,6 +249,7 @@ bash 05-audit/release-run.sh probe
 
 | probe 输出 | 含义 | 该做什么 |
 |---|---|---|
+| **发布前门禁红（tag 未产生任何产物）** | release.yml 的"发布前门禁"job 红（visual-stamp / md-links / leak 等 Linux 侧判据） | **不要**当成已发布事故：确认 `probe` 输出 `npm=absent release=absent`，删除 tag，在 master 修复后重打（见下方"唯一例外"）。0.27.11–0.27.19 期间此分支走了 6 次（见 §7.2 补登表）。**预防**：gate.yml 的 `release-qualify` job（0.27.20 起）在 master push 上跑同一序列——它绿了再打 tag |
 | `npm=absent release=absent` | 全新发布 | 正常跑完工作流 |
 | `npm=present provenance=ok release=absent` | npm 已发、Release 没建 | **重跑同一条工作流**；发布步骤会自动跳过，只补 Release |
 | `npm=present provenance=ok release=present` | 已完成 | 不需要动作；`verify` 会打印回执 |
@@ -319,6 +326,22 @@ npm 与 Release 都是 absent ⇒ 删 tag、修夹具、在同一提交树上重
 | 测试环境失真 | 夹具里的临时仓库缺 `.gitignore`，`__pycache__` 让"工作区干净"正确地变红 | 夹具必须复刻真实环境的**全部**约束；要修夹具，不改判据 |
 | 观测条件缺失 | 浏览器判据没起 `:8000` 静态服务，21 个组件全是 `ERR_CONNECTION_REFUSED` | 浏览器判据自带观测条件；失败信息要能区分"没测成"与"结论为假" |
 | 外部系统最终一致性 | `npm publish` 成功，版本端点数十秒后才可见 | 只对 `absent` 重试，对 `unreadable` 不重试；上界用**次数**不用累计秒数 |
+
+### 7.2.1 登记：0.27.11–0.27.19 的发布前红（2026-11-19 汇总入册）
+
+`release-qualify`（0.27.20）落地前的诚实账：这 6 次都是"先打 tag → Linux 门禁红 →
+删 tag 重打"，走的都是 §6 的"唯一例外"路径，汇总如下：
+
+| 版本 | 首跑红因 | 处置 |
+|---|---|---|
+| v0.27.11 | 发布前门禁红（Linux 基线/门禁级联） | 修复后重打 |
+| v0.27.13 | Linux 基线过期 | CI 重录基线后重打 |
+| v0.27.14 | Linux 基线过期 | CI 重录基线后重打 |
+| v0.27.15 | 发布前门禁红 | 修复后重打 |
+| v0.27.17 | 发布前门禁红（先例流程两轮） | 修复后重打 |
+| v0.27.18 | 发布前门禁红（Linux 基线 + md-links） | 两轮修复后重打 |
+
+⇒ 这正是 `release-qualify`（0.27.20）存在的理由：**资格检查必须在打 tag 之前绿**。
 
 ### 7.3 下一次真实发布要验的六条（提前固定，不许事后放宽）
 

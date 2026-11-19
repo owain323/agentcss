@@ -533,6 +533,14 @@
           e.preventDefault();
           open();
         }
+        /* 🔴 0.27.20（APG Menu Button 键位表 · 无障碍官 C1 实锤）：
+           ↑ 在按钮上 = 打开并聚焦**最后一项**。select.js:647 有同款先例
+           （Up 在关闭态开在末项）。旧实现 ArrowUp 完全无效。 */
+        if (k === 'ArrowUp') {
+          e.preventDefault();
+          open();
+          focusAt(-1);
+        }
         return;
       }
 

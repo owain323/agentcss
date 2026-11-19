@@ -80,6 +80,10 @@ read-only queries. See `ai/START-HERE.md` §7.
 
 ## Docs
 
-`README.md` (English) · `ai/START-HERE.md` (Chinese navigation) · `llms-full.txt` (one-page reference with every component).
+- [README.md](README.md): human quickstart (English)
+- [ai/START-HERE.md](ai/START-HERE.md): longer Chinese navigation
+- [llms-full.txt](llms-full.txt): one-page reference with every component
+- [ai/components.json](ai/components.json): full machine contract (prefer the CLI card: `ai components --component=<id>`)
+- [AGENTS.md](AGENTS.md): ten-line agent digest
 
 **Language:** prose docs (component READMEs, demos) are Chinese; JSON keys, CLI flags and this file are English.

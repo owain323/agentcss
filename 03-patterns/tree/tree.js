@@ -296,7 +296,11 @@
       var node = li.querySelector(':scope > .tree__node') || li.firstElementChild;
       if (node) {
         node.setAttribute('role', 'none');   /* 节点本身不是 treeitem */
-        node.setAttribute('tabindex', '-1');
+        /* 🔴 0.27.20（无障碍官 S1/S7 实锤 P0）：roving tabindex 与
+           aria-selected 必须落在 **li[role=treeitem]** 上——旧实现写在
+           role=none 的 .tree__node 上，AX 树里聚焦节点暴露为 generic、
+           Space 选中后 selected=true 的节点数为 **0**（选中状态对读屏
+           完全不可见）。node 只保留 role=none 供 CSS/点击定位。 */
         if (!node.querySelector('.tree__marker')) {
           var m = document.createElement('span');
           m.className = 'tree__marker';
@@ -304,6 +308,10 @@
           node.insertBefore(m, node.firstChild);
         }
       }
+      /* roving tabindex 落点 = li；初始全量 false（APG：单选树每个
+         treeitem 都要有显式 selected=false，读屏才知道"可选中"）。 */
+      li.setAttribute('tabindex', '-1');
+      if (!li.hasAttribute('aria-selected')) li.setAttribute('aria-selected', 'false');
       items.push({ li: li, node: node, ul: kids });
     });
 
@@ -311,7 +319,7 @@
     var cur = -1;
     function visible() {
       return items.filter(function (it) {
-        return it.node && it.node.offsetParent !== null;
+        return it.li && it.li.offsetParent !== null;
       });
     }
     /* ⭐ tabindex 的复位交给 roving 核（01-tokens/behavior/roving.js）：
@@ -324,8 +332,8 @@
       if (!list.length) return;
       if (i < 0) i = list.length - 1;
       if (i >= list.length) i = 0;
-      roving.rove(list[i].node);
-      list[i].node.focus();
+      roving.rove(list[i].li);
+      list[i].li.focus();
       cur = i;
     }
     function current() {
@@ -341,7 +349,7 @@
       container: root,
       items: function () { return items; },
       movable: function () { return visible(); },
-      nodeOf: function (it) { return it.node; },
+      nodeOf: function (it) { return it.li; },
       axis: 'y',
       onMove: function (i) { focusAt(i); },
     });
@@ -370,11 +378,11 @@
        否则销毁→重建（SPA/HMR）会双份触发。 */
     function onRootFocusin(e) {
       /* 同 dropdown：helper 自带原生/兜底判断，不要在外面用原生 API 当门。 */
-      var node = closest(e.target, '.tree__node');
-      if (!node) return;
+      var itemEl = closest(e.target, '[role="treeitem"]');
+      if (!itemEl) return;
       var list = visible();
       for (var i = 0; i < list.length; i++) {
-        if (list[i].node === node) {
+        if (list[i].li === itemEl) {
           cur = i;
           /* 🔴 typeahead 锚点随焦点同步（APG：搜索从当前项之后开始）。
              原来锚点只在 type() 命中时更新 => 方向键挪走后再打字，
@@ -464,8 +472,9 @@
     root.addEventListener('keydown', onRootKeydown);
 
     function select(it) {
-      items.forEach(function (x) { x.node.setAttribute('aria-selected', 'false'); });
-      it.node.setAttribute('aria-selected', 'true');
+      /* 0.27.20：selected 写在 li[role=treeitem] 上（见 init 内注释） */
+      items.forEach(function (x) { x.li.setAttribute('aria-selected', 'false'); });
+      it.li.setAttribute('aria-selected', 'true');
       flEmit(root, 'fl-select', { value: it.node.getAttribute('data-value') ||
                                           it.node.textContent.replace(/^\s+|\s+$/g, ''),
                                   item: it });

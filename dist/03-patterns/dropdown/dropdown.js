@@ -446,6 +446,12 @@ if (k === 'ArrowDown' || k === 'Enter' || k === ' ' || k === 'Spacebar') {
 e.preventDefault();
 open();
 }
+
+if (k === 'ArrowUp') {
+e.preventDefault();
+open();
+focusAt(-1);
+}
 return;
 }
 

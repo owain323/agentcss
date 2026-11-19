@@ -13,8 +13,8 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1075301,
-    "distGzip": 128599
+    "sourceBytes": 1080059,
+    "distGzip": 129454
   },
   "files": [
     {
@@ -321,15 +321,15 @@
     },
     {
       "source": "02-primitives/combobox/combobox.js",
-      "sourceSha256": "f880f92274d49b03ca832c6d69502f5a114bbbe7e07a7fc14e37a2b6e6e6b863",
-      "sourceBytes": 24644,
-      "sourceGzip": 8812,
+      "sourceSha256": "3a971075928b61dee08e10b4d85409538b8867988307455e18537cf2d8d4516e",
+      "sourceBytes": 26326,
+      "sourceGzip": 9502,
       "outputs": [
         {
           "path": "dist/02-primitives/combobox/combobox.js",
           "kind": "stripped",
-          "bytes": 19256,
-          "gzip": 6922
+          "bytes": 20938,
+          "gzip": 7616
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -650,15 +650,15 @@
     },
     {
       "source": "03-patterns/dropdown/dropdown.js",
-      "sourceSha256": "7a7038b1909780dd4546c0b663fc289731910c9ed4aae0b4117021c706ac9942",
-      "sourceBytes": 23882,
-      "sourceGzip": 8932,
+      "sourceSha256": "117e8af36f4f1910af6b1ab86e7bdf2cc7ab06b3fab7c6a73a875a6919146c55",
+      "sourceBytes": 24256,
+      "sourceGzip": 9076,
       "outputs": [
         {
           "path": "dist/03-patterns/dropdown/dropdown.js",
           "kind": "stripped",
-          "bytes": 11592,
-          "gzip": 3763
+          "bytes": 11659,
+          "gzip": 3772
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
@@ -897,58 +897,58 @@
     },
     {
       "source": "03-patterns/tooltip/tooltip.css",
-      "sourceSha256": "dd6882e7f7069999adf427e9dcadfdff20adb9dacdce8439930d68810961c902",
-      "sourceBytes": 3983,
-      "sourceGzip": 2034,
+      "sourceSha256": "c37668b501e71cd247265d721d9972663ed3b4fffee7b0a15eb2470db095e5cb",
+      "sourceBytes": 4264,
+      "sourceGzip": 2173,
       "outputs": [
         {
           "path": "dist/03-patterns/tooltip/tooltip.css",
           "kind": "minified",
-          "bytes": 1240,
-          "gzip": 501
+          "bytes": 1260,
+          "gzip": 507
         }
       ]
     },
     {
       "source": "03-patterns/tooltip/tooltip.js",
-      "sourceSha256": "e8445c297d817da23fbd8aecbe71340124921448a9498366451bcc90fc2f0752",
-      "sourceBytes": 26234,
-      "sourceGzip": 10337,
+      "sourceSha256": "5971a94dbea04fb2d4b2e13ef0a0d36c2de16936e0438fe6b9ccdd452c299e5f",
+      "sourceBytes": 27654,
+      "sourceGzip": 10784,
       "outputs": [
         {
           "path": "dist/03-patterns/tooltip/tooltip.js",
           "kind": "stripped",
-          "bytes": 10103,
-          "gzip": 3228
+          "bytes": 10650,
+          "gzip": 3320
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
     },
     {
       "source": "03-patterns/tree/tree.css",
-      "sourceSha256": "d239098b4d21f58a9e416cb2ac929b45c8b2ed2db4e33abb899fb54a1708e340",
-      "sourceBytes": 4058,
-      "sourceGzip": 1958,
+      "sourceSha256": "bb88602e54f9f2b234706e86eac6e4efca00578e0c1413b2e9245342b1b8783e",
+      "sourceBytes": 4305,
+      "sourceGzip": 2031,
       "outputs": [
         {
           "path": "dist/03-patterns/tree/tree.css",
           "kind": "minified",
-          "bytes": 1566,
-          "gzip": 621
+          "bytes": 1714,
+          "gzip": 636
         }
       ]
     },
     {
       "source": "03-patterns/tree/tree.js",
-      "sourceSha256": "da7a79ba865c0cf6b1917e89a35833fd18db02ebdc53a1daa514495e600277cf",
-      "sourceBytes": 21387,
-      "sourceGzip": 7914,
+      "sourceSha256": "f9ba6aa7e61165193a7c00c5219f14b5f92562fb216c61403fa72f968cc29a04",
+      "sourceBytes": 22141,
+      "sourceGzip": 8251,
       "outputs": [
         {
           "path": "dist/03-patterns/tree/tree.js",
           "kind": "stripped",
-          "bytes": 10353,
-          "gzip": 3384
+          "bytes": 10432,
+          "gzip": 3423
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

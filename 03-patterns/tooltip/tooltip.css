@@ -38,6 +38,10 @@
 .tooltip[data-state="open"] {
   opacity: 1;
   visibility: visible;
+  /* 🔴 0.27.20（WCAG 1.4.13 Hoverable）：开着时气泡要能接住指针
+     （指针可滑入气泡读长文/选中文字）；关着时维持 none——
+     隐藏的气泡不许挡住底下的点击（判据 ⑤ 的语义原样保留）。 */
+  pointer-events: auto;
 }
 
 /* ---------- 箭头（小三角，用 CSS 画，不引图片）---------- */

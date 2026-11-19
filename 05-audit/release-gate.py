@@ -761,8 +761,24 @@ def workflow_problems(text):
         out.append('给 setup-node 传了 `registry-url` ⇒ 会写一行空 `_authToken`，'
                    'npm 先撞 ENEEDAUTH，轮不到 OIDC')
     # ---- Node 22 自带的 npm 10.x 不支持 trusted publishing ------------------
-    if 'npm install -g npm@latest' not in text:
+    m = re.search(r'npm install -g npm@(\S+)', text)
+    if not m:
         out.append('没升级 npm ⇒ Node 22 自带 10.x，trusted publishing 需要 >= 11.5.1')
+    elif m.group(1) == 'latest':
+        # 🔴 0.27.20（工程官 S4）：签名链上不跑浮动版本——npm CLI 本身是
+        #    provenance 信任链的一环，@latest 等于把签名权交给未来某个版本。
+        out.append('npm 用 @latest 浮动版本 ⇒ 签名链上应钉具体版本（OIDC 门槛 11.5.1）')
+    # ---- 发布进程不携带 GitHub_TOKEN（工程官 S4）---------------------------
+    #   只对**有 checkout** 的工作流生效（GOOD_WF 最小夹具没有 checkout 步骤）
+    if 'actions/checkout' in text and 'persist-credentials: false' not in text:
+        out.append('checkout 未设 persist-credentials: false ⇒ '
+                   '门禁/发布进程的 .git/config 里留着 GitHub_TOKEN')
+    # ---- Release 正文不许是 TODO 模板（工程官 S3，0.27.19 实锤）------------
+    if 'TODO · 这一版改了什么' in text and 'grep -q' in text:
+        pass  # 守卫在场（检查动作本身含 TODO 字样，放行）
+    elif 'TODO · 这一版改了什么' in text:
+        out.append('release.yml 引用了 TODO 模板字样但没有 grep 守卫 ⇒ '
+                   '模板正文会原样变成 GitHub Release 档案')
     return out
 
 
@@ -1090,7 +1106,7 @@ def _selftest():
         'jobs:', '  publish:', '    steps:',
         '      - run: |', '          TAG="${GITHUB_REF_NAME#v}"',
         "          PKG=$(node -p \"require('./package.json').version\")",
-        '      - run: npm install -g npm@latest',
+        '      - run: npm install -g npm@11.5.1',
         '      - run: npm publish --provenance --access public',
     ])
     chk('正：工作流八条齐备（OIDC）', workflow_problems(GOOD_WF), False)
@@ -1110,8 +1126,12 @@ def _selftest():
     chk('反：给 setup-node 传 registry-url',
         workflow_problems(GOOD_WF + NL + "          registry-url: 'https://r/'"), True)
     chk('反：忘了升级 npm',
-        workflow_problems(GOOD_WF.replace('      - run: npm install -g npm@latest' + NL, '')),
-        True)
+        workflow_problems(GOOD_WF.replace(
+            '      - run: npm install -g npm@11.5.1' + NL, '')), True)
+    chk('反：npm 用 @latest 浮动版本（0.27.20 · 工程官 S4）',
+        workflow_problems(GOOD_WF.replace(
+            '      - run: npm install -g npm@11.5.1',
+            '      - run: npm install -g npm@latest')), True)
     # 🔴 这两条防的是**判据咬注释**：解释"为什么不能传 registry-url"是合法的，
     #    本仓的 release.yml 正是这么写的 —— 全文匹配会让它自己红。
     chk('正：注释里解释 registry-url 不算违规',

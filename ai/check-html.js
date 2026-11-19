@@ -123,7 +123,13 @@ var RULES = {
   },
   'class-unknown': {
     level: 'warn', title: '类名库里没有',
-    hint: '若是笔误就改掉；若是页面自己的类，在页内 <style> 里定义它（否则它什么也不会做）。'
+    hint: '若是页面自己的类，在页内 <style> 里定义它（否则它什么也不会做）。'
+        + '报错会列出全部出现行号——见 ok 就停的调用方要把所有行都改完。'
+  },
+  'class-typo': {
+    level: 'error', title: '疑似拼写错误（与已定义类编辑距离 ≤ 2）',
+    hint: '报错里给了最接近的已定义类与定义文件——九成是手滑。'
+        + '同一拼写多处出现会合并成一条并列出全部行号。'
   },
   'empty-link': {
     level: 'warn', title: '<a> 没有 href',
@@ -276,6 +282,28 @@ function importsInCss(text) {
 
 /** 库的类名地图：class → 定义它的文件（相对库根）。进程内只算一次。 */
 var LIB = null;
+/* 🔴 0.27.20（DX 官 T1）：受限编辑距离——给 class-unknown 配 did-you-mean。
+   max 早退（行内最小值超过 max 直接放弃），O(min(la,lb)) 空间。 */
+function editDistance(a, b, max) {
+  if (a === b) return 0;
+  var la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > max) return max + 1;
+  var prev = [], cur = [], i, j, t;
+  for (j = 0; j <= lb; j++) prev[j] = j;
+  for (i = 1; i <= la; i++) {
+    cur[0] = i;
+    var rowMin = i;
+    for (j = 1; j <= lb; j++) {
+      var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      if (cur[j] < rowMin) rowMin = cur[j];
+    }
+    if (rowMin > max) return max + 1;
+    t = prev; prev = cur; cur = t;
+  }
+  return prev[lb];
+}
+
 function libraryClassMap() {
   if (LIB) return LIB;
   var map = Object.create(null);
@@ -376,6 +404,7 @@ function checkPage(file, opts) {
   var tables = [];
   var usedClasses = Object.create(null);
   var firstUseLine = Object.create(null);
+  var allLines = Object.create(null);
 
   function inLabel() {
     for (var i = stack.length - 1; i >= 0; i--) if (stack[i].tag === 'label') return true;
@@ -434,6 +463,8 @@ function checkPage(file, opts) {
             /* 模板占位（{{x}} / ${x} / <% %>）不是类名，是构建期才有的东西 */
             if (/[{}<>$%=]/.test(c)) continue;
             if (!usedClasses[c]) { usedClasses[c] = 1; firstUseLine[c] = nd.line; }
+            if (!allLines[c]) { allLines[c] = []; }
+            allLines[c].push(nd.line);   /* 0.27.20：全部出现行号（聚合报） */
           }
         }
         if (a.id) {
@@ -572,7 +603,28 @@ function checkPage(file, opts) {
         '.' + cname + ' 定义在 ' + def + '，这页没有引用它',
         { file: def });
     } else {
-      add('class-unknown', firstUseLine[cname], '.' + cname + ' 在库里没有定义');
+      /* 🔴 0.27.20（DX 官实测）：.tabs__panle 四处拼错只报第一行、
+         ok=true 提前终止——便宜模型会带着 3 处错"带病发布"。
+         ⇒ ① 全部行号聚合进一条 finding；② 编辑距离 ≤2 的疑似拼写
+         升级为 error（进 verdict 判红）并给 did-you-mean。 */
+      var lines = allLines[cname] || [firstUseLine[cname]];
+      var best = null, bestD = 3;
+      for (var cand in lib.map) {
+        var d = editDistance(cname, cand, 2);
+        if (d < bestD) { bestD = d; best = cand; }
+        else if (d === bestD && best && cand < best) { best = cand; }
+      }
+      if (best && bestD <= 2) {
+        add('class-typo', lines[0],
+          '.' + cname + ' 在库里没有定义——最接近的已定义类：`.' + best +
+          '`（定义在 ' + lib.map[best][0] + '）' +
+          (lines.length > 1 ? '（共 ' + lines.length + ' 处：行 ' + lines.join(', ') + '）' : ''),
+          { file: lib.map[best][0], lines: lines, suggest: '.' + best });
+      } else {
+        add('class-unknown', lines[0], '.' + cname + ' 在库里没有定义' +
+          (lines.length > 1 ? '（共 ' + lines.length + ' 处：行 ' + lines.join(', ') + '）' : ''),
+          { lines: lines });
+      }
     }
   }
 

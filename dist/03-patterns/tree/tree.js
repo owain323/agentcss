@@ -249,7 +249,7 @@ li.setAttribute('aria-expanded', kids.hidden ? 'false' : 'true');
 var node = li.querySelector(':scope > .tree__node') || li.firstElementChild;
 if (node) {
 node.setAttribute('role', 'none');
-node.setAttribute('tabindex', '-1');
+
 if (!node.querySelector('.tree__marker')) {
 var m = document.createElement('span');
 m.className = 'tree__marker';
@@ -257,13 +257,16 @@ m.setAttribute('aria-hidden', 'true');
 node.insertBefore(m, node.firstChild);
 }
 }
+
+li.setAttribute('tabindex', '-1');
+if (!li.hasAttribute('aria-selected')) li.setAttribute('aria-selected', 'false');
 items.push({ li: li, node: node, ul: kids });
 });
 
 var cur = -1;
 function visible() {
 return items.filter(function (it) {
-return it.node && it.node.offsetParent !== null;
+return it.li && it.li.offsetParent !== null;
 });
 }
 
@@ -272,8 +275,8 @@ var list = visible();
 if (!list.length) return;
 if (i < 0) i = list.length - 1;
 if (i >= list.length) i = 0;
-roving.rove(list[i].node);
-list[i].node.focus();
+roving.rove(list[i].li);
+list[i].li.focus();
 cur = i;
 }
 function current() {
@@ -285,7 +288,7 @@ var roving = flRoving({
 container: root,
 items: function () { return items; },
 movable: function () { return visible(); },
-nodeOf: function (it) { return it.node; },
+nodeOf: function (it) { return it.li; },
 axis: 'y',
 onMove: function (i) { focusAt(i); },
 });
@@ -303,11 +306,11 @@ it.ul.hidden = !open;
 
 function onRootFocusin(e) {
 
-var node = closest(e.target, '.tree__node');
-if (!node) return;
+var itemEl = closest(e.target, '[role="treeitem"]');
+if (!itemEl) return;
 var list = visible();
 for (var i = 0; i < list.length; i++) {
-if (list[i].node === node) {
+if (list[i].li === itemEl) {
 cur = i;
 
 typeahead.setLast(i);
@@ -375,8 +378,9 @@ typeahead.type(k);
 root.addEventListener('keydown', onRootKeydown);
 
 function select(it) {
-items.forEach(function (x) { x.node.setAttribute('aria-selected', 'false'); });
-it.node.setAttribute('aria-selected', 'true');
+
+items.forEach(function (x) { x.li.setAttribute('aria-selected', 'false'); });
+it.li.setAttribute('aria-selected', 'true');
 flEmit(root, 'fl-select', { value: it.node.getAttribute('data-value') ||
 it.node.textContent.replace(/^\s+|\s+$/g, ''),
 item: it });

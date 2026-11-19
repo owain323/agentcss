@@ -11,7 +11,7 @@
 - **专门照顾 AI 编码助手**。每个组件都有一份机器可读的"说明书"，AI 先读它再写代码，
   写完还能用配套命令自己检查。
 
-规模：40 个组件（成熟度按组件标注，见 ai/components.json）、约 1 MB 的 npm 包、全库样式总量锁死在 172 KB 以内。
+规模：41 个组件（成熟度按组件标注，见 ai/components.json）、约 1 MB 的 npm 包、全库样式总量锁死在 172 KB 以内。
 
 ## 一张图看懂
 
@@ -33,7 +33,7 @@ flowchart TD
 
     subgraph out["三个出口"]
         NPM["npm 包"]
-        WEB["文档站（40 个组件页）"]
+        WEB["文档站（41 个组件页）"]
         REPO["GitHub 仓库（检查系统全部公开）"]
     end
 
@@ -71,7 +71,7 @@ flowchart TD
 
 这个项目最讲究的一件事：**同一份数据只存一个地方，别的都由它自动生成。**
 
-- 40 个组件的清单（类名、状态、无障碍属性）只写在 `ai/components.json` 一处。
+- 41 个组件的清单（类名、状态、无障碍属性）只写在 `ai/components.json` 一处。
   文档站的 46 个页面、给 AI 的摘要文本，全部由这份清单自动生成——
   有一个自动检查专门盯着"生成物和清单是否一致"，改了清单忘了重新生成就会红。
 - 关键数字同理：文档里写的组件数、检查数，都有自动检查对着源头核。
@@ -101,7 +101,7 @@ flowchart TD
 设计数值、交互脚本的行为。配套命令行工具（装完这个包就能用）：
 
 ```bash
-npx agentcss ai components --json        # 列出全部 40 个组件
+npx agentcss ai components --json        # 列出全部 41 个组件
 npx agentcss ai check page.html --json   # 检查你写出来的页面合不合规范
 npx agentcss ai shot page.html --width=390,1440   # 按真实手机宽度截图
 npx agentcss ai scaffold report/finance  # 生成一页报表的最小骨架

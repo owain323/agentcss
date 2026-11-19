@@ -437,6 +437,14 @@
       /* 合成中 ⇒ 本组件的一切按键语义让路（理由见上） */
       if (composing || e.isComposing || e.keyCode === 229) return;
       var k = e.key;
+      /* 🔴 0.27.20（APG combobox 键位表 · 无障碍官 A1 实锤 P0）：Tab 关闭
+         建议列表并放行焦点移动——旧实现列表开着、aria-expanded 谎报 true，
+         读屏用户拿到一个"假装展开"的输入框。select.js:661 的 close(false)
+         同款先例。 */
+      if (k === 'Tab') {
+        if (!list.hidden) { close(); }
+        return;   /* 不拦默认：Tab 的本职是把焦点带走 */
+      }
 
       /* ↑↓ 在建议间移动 */
       if (k === 'ArrowDown' || k === 'ArrowUp') {
@@ -480,8 +488,11 @@
         if (h2) { addTag(h2.value); input.value = ''; paintList(); }
         return;
       }
-      if (k === 'Home' && !list.hidden) { e.preventDefault(); setActive(0, 1); return; }
-      if (k === 'End' && !list.hidden) { e.preventDefault(); setActive(opts().length - 1, -1); return; }
+      /* 🔴 0.27.20（APG 文本型 combobox · 无障碍官 A3 实锤）：Home/End 只有
+         在**输入为空**时才用作列表导航；有文本时是文本光标键 —— 旧实现
+         劫持后光标纹丝不动（实测 value="applex" caret 6→6）。 */
+      if (k === 'Home' && !list.hidden && input.value === '') { e.preventDefault(); setActive(0, 1); return; }
+      if (k === 'End' && !list.hidden && input.value === '') { e.preventDefault(); setActive(opts().length - 1, -1); return; }
     }
 
     function onInput() { open(); }
@@ -508,6 +519,22 @@
       input.focus();
     }
     input.addEventListener('keydown', onKeydown);
+    /* 🔴 0.27.20（无障碍官 S2 的兜底层）：Tab 分支管键盘路径；鼠标/编程式
+       把焦点挪走时由 focusout 兜底——relatedTarget 不在本组件内 ⇒ 关列表。
+       setTimeout(0) 等焦点真正落地再判（focusout 时 activeElement 还是旧值）。
+       点列表项的场景：option 没有 tabindex（activedescendant 模式）⇒
+       relatedTarget 为 null 也会判"在外面"⇒ 会关——但 onListClick 的
+       addTag 走 mousedown→click 序列，mousedown 先于 focusout ⇒ 已提交，
+       关列表不吞点击（真机顺序，select.js 同款行为）。 */
+    input.addEventListener('focusout', function () {
+      setTimeout(function () {
+        if (!list.hidden &&
+            !(root.contains(document.activeElement)) &&
+            document.activeElement !== input) {
+          close();
+        }
+      }, 0);
+    });
     input.addEventListener('compositionstart', onCompositionStart);
     input.addEventListener('compositionend', onCompositionEnd);
     input.addEventListener('input', onInput);

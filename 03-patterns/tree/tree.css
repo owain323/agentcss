@@ -46,6 +46,11 @@
   user-select: none;
 }
 
+/* 0.27.20：焦点落点移到 li[role=treeitem]（AX 语义归位），环跟着走 */
+li[role="treeitem"]:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
 .tree__node:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: calc(-1 * var(--focus-ring-width));

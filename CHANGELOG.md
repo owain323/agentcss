@@ -18,11 +18,104 @@
 
 ## [Unreleased]
 
+## [0.27.20] - 2026-11-19
+
+> 第六轮：软件工坊四角色**对标外部参照物**评审（APG/Radix、Tailwind/shadcn、
+> Chrome/npm 顶包、llmstxt.org），四维各 7.5/10——分数挂实测证据
+> （APG 键位逐个数出 43/53≈81%、冷启动 15 分钟实走、发布链 L2 逐字节）。
+> 13 张 P0 工单全清。
+
+### Fixed — 无障碍（对标 APG/Radix）
+
+- **Tree 选中状态对读屏不可见**（P0）：roving tabindex 与 aria-selected
+  写在 role=none 的节点上，AX 树里聚焦节点是 generic、选中后
+  selected=true 的节点数为 **0**。语义归位：焦点/selected 全部移到
+  li[role=treeitem]；初始全量 aria-selected=false；焦点环跟随；
+  tree-check 断言跟进 + 新增 AX 证据判据（selected 恰好 1 个且
+  role=treeitem）。
+- **Combobox Tab 关不掉且 aria-expanded 谎报**（P0）：Tab 离开后列表
+  仍开、expanded 残留 true。加 Tab 分支（放行焦点移动）+ focusout
+  兜底（relatedTarget 判定 + setTimeout(0) 等焦点落地）。
+- **Tooltip 违反 WCAG 1.4.13 Dismissible**：hover 态（焦点在 body）
+  按 Esc 收不掉——Esc 只挂在触发元素上。改挂 document（when: open
+  gate）。**Hoverable**：气泡 pointer-events:none 使指针结构性进不去
+  ——开着时 auto、关着时维持 none（隐藏层不挡点击的语义保留）+
+  80ms 跨界宽限。tooltip-check 新增 1.4.13 两条实测判据。
+- **Dropdown 缺 APG"↑ 开菜单聚焦末项"**（select.js 同款先例）。
+- **Combobox 劫持 Home/End 抢文本光标**：输入非空时放行光标行为
+  （APG 文本型 combobox 口径），空输入才作列表导航。
+
+### Fixed — 文档与 DX（对标 Tailwind/shadcn）
+
+- **check 的拼写自纠闭环**（DX 官实测：4 处拼错只报 1 行、ok=true
+  提前终止 → 便宜模型带病发布）：新增 class-typo（error 级）——
+  与已定义类编辑距离 ≤2 时给 did-you-mean（最接近类 + 定义文件）、
+  全部出现行号聚合进一条 finding、升级进 verdict 判红。
+- check 的 class-unknown 也列出全部出现行号（不再只报首行）。
+
+### Fixed — 工程与发布（对标 Chrome/npm 顶包）
+
+- **Release 正文模板守卫**（0.27.19 的 Release 正文是 TODO 模板原文
+  54 字符——工作流只校验非空）：release.yml 拒绝 TODO 模板；
+  release-gate workflow_problems 三条新判据（npm@latest 浮动版本红 /
+  persist-credentials 缺失红 / 模板守卫缺失红）；0.27.19 的
+  CHANGELOG 节与 GitHub Release 正文补真实账。
+- **README 安装路径 404**：15 个 Release 全部零 asset 而 README 教
+  releases/download 路径——release.yml 现在上传 registry 同源 tarball。
+- **发布资格前移**（6/8 次发布首跑失败的根治）：gate.yml 新增
+  release-qualify job（master push 上跑与 release.yml 逐行同源的
+  Linux 发布前序列）；RELEASE-PROCESS §6 增补"发布前门禁红"分支、
+  §7.2.1 补登 6 次失败台账、§3 增补 npm deprecate 止血剧本（含凭据
+  通道限制与演练要求）。
+- **CI 最小权限**：gate.yml 加 permissions: contents:read；
+  release/gate 的 checkout 一律 persist-credentials:false；
+  npm CLI 钉 11.5.1（签名链上不跑浮动版本）。
+
+### Fixed — AI 契约（对标 llmstxt.org/生态）
+
+- **verdict → pitfalls 交叉引用**：shot-verdict 的 reason 带 ref 字段
+  （true-overflow→table-overflow-wrapper 等 5 条映射）——便宜模型拿到
+  的是"下一步抄什么"而不是一句判语；ai-layer ⑥⁶ 判据守映射不断链
+  （首版实现抓错 REF_MAP 的键——键是判定码不是药方 id，自检教训入档）。
+- **llms.txt 规范资源层**：零 markdown 链接（llmstxt.org 违规）→
+  Docs 节改为真链接清单（llms-full/components.json/AGENTS.md）。
+- **计数漂移清账**：package.json description 的组件数改由 bump-version
+  从 components.json 现算生成（40→41 曾无人管）；ARCHITECTURE.md 4 处、
+  ai/START-HERE "十四个子命令"、docs/ACCESSIBILITY.md demo 页数全部对齐。
+- **ai-surface 预算口径自洽**：$whyCap 从"全部机器面"改为"发现层"
+  （llms.txt 指挥按需读的 JSON 不在此账——原措辞给作者"面没涨"假信号）。
+
+---
+
 ## [0.27.19] - 2026-11-19
 
-### TODO · 这一版改了什么
+### Added
 
-（写清楚「改了什么 / 为什么」，有反向控制就写上）
+- **icons-anim 资产组件**（第五轮 · 软件工坊三角色裁决执行）：`09-assets/icons-anim/` ——
+  给静态图标加**纯 CSS** 四模式动效（draw/breathe/popin/spin）。几何零改动
+  （icon-gate 守 sha256+body）、reduced-motion 全灭（真浏览器三向判据：
+  8 动画 ⇄ 0 动画 ⇄ 摘类归零）、fail-open（动画缺位图标完整可见）。
+  SMIL 批次（icon-forge 交付）不进库的裁决兑现：SMIL 不受 reduced-motion
+  与全局灭活控制。两道新门禁：icons-anim-check（5 判据+变异自检）、
+  icons-anim-reduced（真浏览器）。
+- **`ai icon-check`**：icon-gate.py（唯一真源）的 CLI 包装 + `ai icons`
+  查询端冒烟（清单查得到的图标才叫交付完成）；icon-gate 新增**锁值三方
+  判据**（manifest.count = icons 数组 = svg 文件数）。
+
+### Changed
+
+- **安卓真机回归**（0.27.17/18 全部悬空改动上真机）：bench35 run-gate 26/26
+  全绿（-full 深度版）；bench28 原生 Chrome 69.0.3497.100 old-engine 5/5；
+  **鉴别力探针**（old-engine --inject-error）：注入 console.error ⇒ 判据
+  精确捕获并 FAIL——Runtime.enable 修复在 2018 年内核上被证明活着。
+  报告归档 `10-review/android/2026-11-19/`。
+- **MODE=full 预算校准**：300→900（实测 6 轮 675-874s，--timing Top10 入档）；
+  实训一条：跑全量不得开着安卓模拟器（perf-gate 首屏被 CPU 争用推成假红）。
+
+### Docs
+
+- `docs/ROADMAP-DECISIONS.md`：剩余项终态四卡（maturity ladder / CHANGELOG
+  打包 / ESM 1.0 / 冻结项），每项带"为什么机器关不了"的显式声明。
 
 ---
 

@@ -412,6 +412,21 @@ try {
     iconBad.push('icon-check 应退出 0 且单 JSON 含 gateExit=0 + smoke.ok=true' +
       '（实测 ' + icRun.status + '）');
   }
+  /* 🔴 0.27.20 ⑥⁶：verdict → pitfalls 交叉引用不许断链。
+     shot-verdict 的 REF_MAP 每条 ref 都必须在 pitfalls.json 里真实存在
+     ——药方 id 拼错/删掉时，agent 拿着 ref 去查会扑空（映射漂移 = 静默断链）。 */
+  var svSrc = require('fs').readFileSync(path.join(AI, 'shot-verdict.js'), 'utf8');
+  /* 抓 REF_MAP 定义块里的**值**（药方 id）——键是判定码，不是 pitfalls id。
+     （第一版抓了键 ⇒ 全部"缺"，键与值两层同戏。） */
+  var mapBlock = (svSrc.match(/var REF_MAP = \{[\s\S]*?\};/) || [''])[0];
+  var refIds = [...mapBlock.matchAll(/:\s*'([a-z0-9-]+)'/g)].map((m) => m[1]);
+  var pitIds = new Set((require('fs').existsSync(path.join(AI, 'pitfalls.json'))
+    ? JSON.parse(require('fs').readFileSync(path.join(AI, 'pitfalls.json'), 'utf8')).pitfalls
+    : []).map((x) => x.id));
+  var missingRef = refIds.filter((id) => !pitIds.has(id));
+  expect(refIds.length >= 4 && missingRef.length === 0,
+    '⑥⁶ verdict→pitfalls 交叉引用不断链（REF_MAP 共 ' + refIds.length + ' 条）',
+    missingRef.length ? 'pitfalls.json 缺：' + missingRef.join('/') : '');
   var gHit = run(['icons', '--json', '--query=profit']);
   var gHitDoc = null;
   try { gHitDoc = JSON.parse(gHit.stdout); } catch (e) { /* 下面判 */ }
