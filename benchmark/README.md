@@ -30,9 +30,9 @@
 | **参考解法的确定性断言** | ✅ 每次都能跑，已接 `npm run benchmark` |
 | **跑批记录的形状校验** | ✅ `--check-records`，八条判据，已接门禁 |
 | **「记录 → 评分」管线** | ✅ `models/reference.json`（参考解法，非模型）必须 10/10，已接门禁 |
-| **真实模型跑批** | ❌ **一次都还没跑 —— 状态是 UNVERIFIED，不是 PASS** |
+| **真实模型跑批** | ✅ DeepSeek-chat 2026-11-20（T 组 18/30 = 60%，30 次 API 调用零错误；benchmark/models/deepseek-chat.json 已过 --check-records） |
 
-⚠️ 我没有模型 API 的访问权限，**所以这里没有任何模型跑分数据**。
+✅ 2026-11-20 DeepSeek-chat 跑批完成（60%），记录见 models/deepseek-chat.json。
 我不会编一个数字出来 —— 那样这份 Benchmark 就失去全部意义了。
 
 `benchmark/models/` 里目前只有一份 `reference.json`，
