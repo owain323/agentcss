@@ -1,3 +1,4 @@
+from _canary import assert_ours
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
@@ -33,7 +34,8 @@ overlay-host-reverse.py — `overlay-host-check.js` 的**常驻反向控制**
 用法：python 05-audit/overlay-host-reverse.py
 """
 import hashlib
-import io
+import os
+import os
 import os
 import subprocess
 import sys

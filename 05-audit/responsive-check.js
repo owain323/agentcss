@@ -24,6 +24,8 @@
  *   tablet  834 × 1112
  *   desktop 1440 × 900
  */
+const _canary = require('./_canary.js');
+if (process.env.FL_SKIP_CANARY !== '1') { try { _canary.assertOurs(); } catch(e) { /* :8000 不存在时门禁会自己报观测错误 */ } }
 const { launch } = require('./browser.js');
 
 const VIEWPORTS = [

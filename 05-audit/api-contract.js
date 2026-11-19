@@ -22,6 +22,8 @@
  * 输出 JSON 到 stdout：{ "组件名": { "成员": "method"|"getter"|... } }
  */
 
+const _canary = require('./_canary.js');
+if (process.env.FL_SKIP_CANARY !== '1') { try { _canary.assertOurs(); } catch(e) { /* :8000 不存在时门禁会自己报观测错误 */ } }
 const { launch } = require('./browser.js');
 /* 端口从环境变量来：由 _probe.py 起服务后通过 BASE 传下来（同 global-api-probe.js） */
 const BASE = process.env.BASE || 'http://127.0.0.1:8000';

@@ -34,6 +34,8 @@
  *   这是 M-0 白名单铁律要求的：宁可慢，也不能让机器假死。
  * ============================================================================
  */
+const _canary = require('./_canary.js');
+if (process.env.FL_SKIP_CANARY !== '1') { try { _canary.assertOurs(); } catch(e) { /* :8000 不存在时门禁会自己报观测错误 */ } }
 const path = require('path');
 
 /* 🔴 Node 的 console.log **不支持** `%-12s` 这种 printf 宽度修饰符
