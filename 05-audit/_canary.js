@@ -9,7 +9,11 @@ const { execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-const BASE = 'http://127.0.0.1:8000';
+// 🔴 0.27.21：BASE 从环境变量来（_probe.py 起服务后传下来）。
+//    硬编码 :8000 的版本在 CI 上必红：Server.ensure() 现在独占**空闲端口**，
+//    canary 却去敲 8000 ⇒ 「:8000 上是另一棵树」的假观测错误。
+//    没有环境变量时回退 8000（check-all 起的那台就在那里）。
+const BASE = process.env.BASE || 'http://127.0.0.1:8000';
 const ROOT = path.resolve(__dirname, '..');
 
 function sameTree() {
@@ -34,8 +38,10 @@ function isOurs() { return sameTree() && isGateServer(); }
 
 function assertOurs() {
   if (isOurs()) return;
-  if (!sameTree()) {
-    console.log('  [EXIT 3] :8000 上是另一棵树——是服务的错，不是判据的错');
+  if (!sameTree() && !isGateServer()) {
+    console.log('  [EXIT 3] ' + BASE + ' 不可达——是服务的错，不是判据的错');
+  } else if (!sameTree()) {
+    console.log('  [EXIT 3] ' + BASE + ' 上是另一棵树——是服务的错，不是判据的错');
   } else if (!isGateServer()) {
     console.log('  [EXIT 3] :8000 不是门禁服务器（缺 X-FL-Gate-Server）——是服务的错');
   } else {
