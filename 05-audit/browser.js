@@ -376,6 +376,13 @@ function shimPage(page, browser) {
     /* Playwright 没有 setCacheEnabled：每次 launch 都是全新 context，
        本来就不会跨运行复用磁盘缓存 ⇒ 语义上等价于"已关"。 */
     setCacheEnabled: async function () { return undefined; },
+    /* puppeteer: emulateMediaType('print') → Playwright: emulateMedia({ media })。
+       🔴 0.27.21（WO-11 修复单）：consumer-smoke 的打印态判据在 firefox/webkit
+       上崩（"emulateMediaType is not a function"）——playwright 没有这个
+       方法名，补映射（与 emulateMediaFeatures 同型）。 */
+    emulateMediaType: async function (m) {
+      return cur.emulateMedia({ media: m });
+    },
     /* puppeteer: emulateMediaFeatures([{name,value}]) → Playwright: emulateMedia({...}) */
     emulateMediaFeatures: async function (list) {
       const opt = {};
@@ -441,4 +448,17 @@ async function withPage(vp, fn) {
    导出之后，`chrome-discovery-gate.js` 能用假目录树在任意机器上验它。 */
 module.exports = { launch, newPage, withPage, CHROME, engineOf,
   findPlaywrightChrome, PW_ROOTS,
+  requireChromium: requireChromium,
   ENGINES: ['chromium', 'webkit', 'firefox'] };
+
+/* 🔴 0.27.21（WO-11 修复单）：CDP（Chrome DevTools Protocol）只有 Chromium 实现。
+   走 createCDPSession 的门禁在 firefox/webkit 上**没有可用实现路径**——
+   按 E153 立法走第三态退出（跑不了 ≠ 通过，也不假红），nightly 报告里
+   显式显示 SKIP 与原因。调用方：门禁入口 require('./browser.js').requireChromium('为什么')。 */
+function requireChromium(label) {
+  var e = engineOf();
+  if (e !== 'chromium') {
+    console.log('  SKIP（本引擎不适用：' + label + ' 依赖 CDP，仅 Chromium 有实现——当前引擎 ' + e + '）');
+    process.exit(3);
+  }
+}

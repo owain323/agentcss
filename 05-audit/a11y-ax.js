@@ -42,6 +42,10 @@
 const fs = require('fs');
 const path = require('path');
 const { launch } = require('./browser');
+/* 🔴 0.27.21（WO-11 修复单）：CDP 仅 Chromium 有实现 ⇒ 非 Chromium 引擎
+   上整门按未判定处理（E153 第三态），不冒充通过也不假红。 */
+require('./browser.js').requireChromium('AX 树转录走 CDP Accessibility 域');
+
 
 const ROOT = path.resolve(__dirname, '..');
 const BASE = process.env.FL_BASE || 'http://127.0.0.1:8000';

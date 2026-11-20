@@ -137,7 +137,7 @@ function serve() {
   });
 }
 
-const MEASURE = (sel, prop) => {
+const MEASURE = ({ sel, prop }) => {   /* 🔴 0.27.21（WO-11 修复单）：单对象参数 */
   const el = document.querySelector(sel);
   if (!el) return null;
   return getComputedStyle(el)[prop];
@@ -186,15 +186,15 @@ const MEASURE = (sel, prop) => {
 
       // 三个杠杆
       for (const [toks, val, sel, prop, label] of LEVERS) {
-        const before = await page.evaluate(MEASURE, sel, prop);
+        const before = await page.evaluate(MEASURE, { sel: sel, prop: prop });
         if (before === null) {
           notes.push(rel + ' 没有 ' + sel + '（跳过 ' + label + '）');
           continue;
         }
-        await page.evaluate((ts, v) => {
+        await page.evaluate(({ ts, v }) => {
           ts.forEach((t) => document.documentElement.style.setProperty(t, v));
-        }, toks, val);
-        const after = await page.evaluate(MEASURE, sel, prop);
+        }, { ts: toks, v: val });
+        const after = await page.evaluate(MEASURE, { sel: sel, prop: prop });
         if (after === before) {
           problems.push(rel + ' ' + label + '：改了 ' + toks.join(' + ') + '（' + val +
                         '），' + sel + ' 的 ' + prop + ' 仍是 ' + before +

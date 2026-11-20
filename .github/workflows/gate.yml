@@ -309,6 +309,14 @@ jobs:
         with:
           node-version: '20'
 
+      # 🔴 0.27.21（WO-11 修复单 · 环境类）：print / a11y-ax / zoom-reflow /
+      #   skel-lever 在首跑全引擎齐红（chromium 也红，本地 Windows 全绿）——
+      #   ubuntu 镜像没有 CJK/阿拉伯/希伯来字体，文字度量变了 ⇒ 溢出、
+      #   行数、可访问名全漂。quick job 早有这条（42 张基线全红的教训），
+      #   browsers job 漏了。与 ci-fonts.sh 锚定的基线同源。
+      - name: 装 CI 字体（print / a11y / zoom / skel 类判据锚在它上面）
+        run: bash 05-audit/ci-fonts.sh
+
       - name: 按锁文件安装
         run: npm ci
 

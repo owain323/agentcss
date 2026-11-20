@@ -63,7 +63,7 @@ function read(rel) {
  *    所以 dist 里没有它属于正确行为 —— 判据要在两边都把注释抹掉再比，
  *    否则是在拿"注释还在不在"当语义，那是判据写错了。
  */
-const COMPARE = (a, b) => {
+const COMPARE = ({ a, b }) => {   /* 🔴 0.27.21（WO-11 修复单）：多参 evaluate 在 firefox/webkit 被 Playwright 拒收，统一单对象 */
   const norm = (s) => String(s)
     .replace(/\/\*[\s\S]*?\*\//g, '')     // 注释不是 token：两边都抹掉
     .replace(/\s+/g, ' ')                 // 空白连续段折叠（见上）
@@ -105,7 +105,7 @@ async function run(manifest, mutate) {
       pairs += 1;
       let res;
       try {
-        res = await page.evaluate(COMPARE, srcTxt, dstTxt);
+        res = await page.evaluate(COMPARE, { a: srcTxt, b: dstTxt });
       } catch (e) {
         problems.push({
           file: out.path,
