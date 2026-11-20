@@ -72,6 +72,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # 🔴 0.27.21：release-gate 的 tag 锚点判据要完整 tag 对象——
+          #    浅克隆下「v0.27.21 没有被取下来 ⇒ 无法判断 tag 是否存在」
+          #    （CI 实测假红；与 quick job 的同一条教训）。
+          fetch-depth: 0
+          fetch-tags: true
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
