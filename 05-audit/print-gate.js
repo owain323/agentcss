@@ -1174,6 +1174,20 @@ async function main() {
   if (fs.existsSync(OUT)) {
     try { baseline = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { baseline = null; }
   }
+  /* 🔴 0.27.21（WO-11 修复单）：run 数等基线**按录制平台绑定**（文字度量
+     随平台字体而变——实测 win32 录 984、Linux 跑 1033）。平台不匹配 ⇒
+     判不了，按「跑不了 ≠ 通过」第三态退出，不假红。（与 shot-baseline
+     的平台分集同一课；基线本体带 platform 字段，--update 时写入。） */
+  {
+    let plat = null;
+    try { plat = (baseline && baseline.platform) || null; } catch (e) {}
+    if (plat && plat !== process.platform) {
+      console.log('  SKIP（本平台不适用：print 基线按 ' + plat + ' 录制——文字度量随平台字体而变，'
+        + '在 ' + process.platform + ' 上比对是假红。在录制平台上跑，或在 ' + process.platform
+        + ' 上 --update 建立自己的基线）');
+      process.exit(3);
+    }
+  }
 
   const result = {};
   for (const [name, url] of PAGES) {

@@ -41,7 +41,8 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | accent-gate | 全引擎 | 产品缺陷（工具） | 内嵌脚本 executablePath 硬编码本机 Windows Chrome 路径——CI Linux 上必然 Browser was not found（0 秒即红；诊断放宽后完整报错现形） | 改走 browser.js 的浏览器发现（与全库同源），本地转绿 |
 | print / print-adv | chromium（Linux） | 判据坏了（基线平台绑定） | run 数基线按 win32 录制（984），Linux 文字度量跑出 1033——基线无平台标记 ⇒ 假红 | 基线带 platform 字段 + 平台不匹配时第三态 SKIP（与 shot-baseline 平台分集同一课） |
 | selftest | chromium（CI） | 判据坏了（发现逻辑） | find_chrome 只有 Windows 注册表路径 ⇒ CI 上永远 None ⇒ 误判环境类假红 | 发现逻辑与 browser.js 同源（CHROME_PATH → 既有候选 → 复用发现 → PATH） |
-| skel-lever / zoom-reflow | chromium（Linux） | 产品缺陷（demo/指南页） | model-viewer/demo.html 两张**裸表**（320px 下 min-content 溢出 5px，Linux 字体度量触发）；guide/sparkline.html 同类 6px 溢出 | model-viewer 裸表套 .table 滚动壳 + 补 table.css 引用（本地结构验证 ✓）；sparkline 待定元素 |
+| print / print-adv | chromium（Linux） | 判据坏了（基线平台绑定） | run 数基线按 win32 录制（984），Linux 文字度量跑出 1033——基线无平台标记 ⇒ 假红 | 基线带 platform 字段（--update 写入）+ 平台不匹配时第三态 SKIP（与 shot-baseline 平台分集同一课）|
+| skel-lever / zoom-reflow | chromium（Linux） | 产品缺陷（demo/指南页）·**部分已修** | model-viewer/demo.html 两张**裸表**（320px 下 min-content 溢出 5px，Linux 字体度量触发）——已套 .table 滚动壳 + 补 table.css；guide/sparkline.html 的 6px 溢出元素待定位（Windows 无法复现，Linux 字体度量专属） | model-viewer 已修；sparkline 待 Linux 环境定位元素 |
 
 ## 待诊断（红保持，下一轮 nightly 带证据后继续）
 
