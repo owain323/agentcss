@@ -44,6 +44,7 @@ import sys
 import os
 import re
 import json
+import shutil
 import subprocess
 import tempfile
 
@@ -64,9 +65,31 @@ PROBES = '<script>' + open(os.path.join(os.path.dirname(os.path.abspath(__file__
 
 
 def find_chrome():
+    # 🔴 0.27.21（WO-11 修复单）：发现逻辑与 browser.js 同源——
+    #    原来只有 Windows 注册表路径，CI Linux 上永远 None ⇒ 自检把
+    #    「本该跑的环境验证」误判成环境类假红。顺序：CHROME_PATH →
+    #    既有候选 → browser.js 的发现（Playwright 缓存 + 系统候选，E31
+    #    同一判定只写一遍，复用而不重抄）→ PATH 上的常规可执行名。
+    env = os.environ.get('CHROME_PATH')
+    if env and os.path.isfile(env):
+        return env
     for p in CHROME_CANDIDATES:
         if os.path.isfile(p):
             return p
+    try:
+        r = subprocess.run(['node', '-e',
+            'console.log(require("./browser.js").CHROME || "")'],
+            cwd=HERE, capture_output=True, text=True, timeout=30)
+        out = (r.stdout or '').strip()
+        if r.returncode == 0 and out and os.path.isfile(out):
+            return out
+    except Exception:
+        pass
+    for name in ('google-chrome', 'google-chrome-stable', 'chromium',
+                 'chromium-browser', 'msedge'):
+        w = shutil.which(name)
+        if w:
+            return w
     return None
 
 

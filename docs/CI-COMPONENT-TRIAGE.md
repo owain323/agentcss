@@ -34,15 +34,25 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | release.yml 首推卡发布前门禁 | api-contract 要真浏览器；此前靠 runner 镜像预装 Chrome，镜像换代后消失 | Chromium 安装挪到发布前门禁之前（release.yml / quick / release-qualify 三处显式装） |
 | api-contract「:8000 上是另一棵树」 | `_canary.js/_canary.py` 硬编码 :8000，而探测服务独占**空闲端口** | canary 读 `BASE` 环境变量（共享库各一行）；`_probe` 探测失败时吐子进程真实输出 |
 
+## 已修 · 第二批（dispatch run 44781478377 的证据）
+
+| 门禁 | 引擎 | 分类 | 根因与证据 | 处置 |
+|------|------|------|-----------|------|
+| accent-gate | 全引擎 | 产品缺陷（工具） | 内嵌脚本 executablePath 硬编码本机 Windows Chrome 路径——CI Linux 上必然 Browser was not found（0 秒即红；诊断放宽后完整报错现形） | 改走 browser.js 的浏览器发现（与全库同源），本地转绿 |
+| print / print-adv | chromium（Linux） | 判据坏了（基线平台绑定） | run 数基线按 win32 录制（984），Linux 文字度量跑出 1033——基线无平台标记 ⇒ 假红 | 基线带 platform 字段 + 平台不匹配时第三态 SKIP（与 shot-baseline 平台分集同一课） |
+| selftest | chromium（CI） | 判据坏了（发现逻辑） | find_chrome 只有 Windows 注册表路径 ⇒ CI 上永远 None ⇒ 误判环境类假红 | 发现逻辑与 browser.js 同源（CHROME_PATH → 既有候选 → 复用发现 → PATH） |
+| skel-lever / zoom-reflow | chromium（Linux） | 产品缺陷（demo/指南页） | model-viewer/demo.html 两张**裸表**（320px 下 min-content 溢出 5px，Linux 字体度量触发）；guide/sparkline.html 同类 6px 溢出 | model-viewer 裸表套 .table 滚动壳 + 补 table.css 引用（本地结构验证 ✓）；sparkline 待定元素 |
+
 ## 待诊断（红保持，下一轮 nightly 带证据后继续）
 
 | 门禁 | 引擎 | 现象 | 备注 |
 |------|------|------|------|
-| clicktest | chromium（CI）+ firefox（本地） | card「hover 抬起 transform=无」——hover 后无 transform | Windows chromium 绿；CI 驱动是 puppeteer-core 25 + playwright 构建的 chromium，疑似驱动组合下的 hover 观测差异，待本地 firefox trace 细看 |
-| analysis-report | firefox+webkit | 「缺 .report__main / .report__aside / .kf / figure」——整页结构读不到 | firefox 下页面没加载或选择器落空，14s 失败；待 trace |
-| scrollbar | firefox | 「scrollbar-width 生效（实测 none）」 | firefox 对 scrollbar-width 的 computed 序列化与 chromium 不同，待对照 probe 选择器 |
-| report | firefox+webkit（CI 05c57d0） | 多条「抛错：Cannot read properties of null」 | 疑似多参 evaluate 同族（已修一批），05c57d0 之后的 nightly 应重评 |
-| token-resolved / switch-geom | webkit（CI） | 待本地 webkit 组件层复现 | 本地 webkit 跑完补此行 |
+| clicktest | chromium（CI）+ firefox | card「hover 抬起 transform=无」 | Windows chromium 绿；CI 驱动组合（puppeteer-core 25 × playwright 构建的 chromium）下 hover 观测差异，待驱动组合专项 |
+| analysis-report | firefox+webkit | 「缺 .report__main / .report__aside / .kf / figure」——整页结构读不到 | firefox 下页面没加载或选择器落空，待 trace |
+| scrollbar | firefox | 「scrollbar-width 生效（实测 none）」 | Firefox 对 scrollbar-width 的 computed 序列化与 chromium 不同（Windows firefox 也复现 ⇒ 引擎行为非环境），待对照 probe 元素 |
+| report | firefox+webkit | 多条 NaN 与「抛错：Cannot read properties of null」 | NaN 来自 computed 解析（getComputedStyle 序列化差异），null 来自选择器落空；待逐条 trace |
+| a11y-ax | chromium（Linux） | date-range spinbutton 可访问名「年 年」↔「Month Month」 | 🔴 产品缺陷候选：可访问名跟**操作系统 locale** 而非页面语言（date-range.js 的标签来源），快照也无平台/语言分集——两个架构面，挂修复单 |
+| switch-geom / nav-drawer | webkit | switch 几何 / 焦点陷阱行为差异 | 本地 webkit 复现 nav-drawer「8 次 Tab 仍在抽屉内」1/50 条不成立——WebKit 焦点行为差异，待细看 |
 
 ## 规矩（不因红片而变）
 

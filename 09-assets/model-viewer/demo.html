@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="../../01-tokens/typography.css">
 <link rel="stylesheet" href="../../01-tokens/page.css">
 <link rel="stylesheet" href="model-viewer.css">
+<link rel="stylesheet" href="../../04-recipes/table/table.css">   /* 🔴 0.27.21：.table 滚动壳（320px 下表格 min-content 溢出 5px，WCAG 1.4.10） */
 
 <style>
 .note code { font-family: var(--mono); font-size: .92em;
@@ -59,7 +60,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
        data-mv-orbit="vendor/OrbitControls.js"></div>
 
   <h2 class="rule-top">为什么是这样设计的</h2>
-  <table aria-label="3D 模型页的设计要求与做法">
+  <div class="table" tabindex="0" role="region" aria-label="3D 模型页的设计要求与做法（可横向滚动）"><table aria-label="3D 模型页的设计要求与做法">
     <tr><th>要求</th><th>做法</th></tr>
     <tr><td>首屏要快</td>
         <td>3D 引擎<strong>点击后</strong>才 <code>&lt;script&gt;</code> 注入，
@@ -72,7 +73,7 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
     <tr><td>iOS 手感</td>
         <td><code>touch-action: none</code> 让拖动不触发页面滚动；
             关掉 tap highlight；页面切后台<strong>停止渲染</strong>省电</td></tr>
-  </table>
+  </table></div>
 
   <h2 class="rule-top">边界（本库不做什么）</h2>
   <ul>
@@ -85,14 +86,14 @@ td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabu
   </ul>
 
   <h2 class="rule-top">体积现状</h2>
-  <table aria-label="各文件的体积与加载时机">
+  <div class="table" tabindex="0" role="region" aria-label="各文件的体积与加载时机（可横向滚动）"><table aria-label="各文件的体积与加载时机">
     <tr><th>文件</th><th class="num">体积</th><th>何时加载</th></tr>
     <tr><td><code>model-viewer.js</code>（本库）</td><td class="num">~9 KB</td><td><span class="ok">首屏</span></td></tr>
     <tr><td><code>models/fox.glb</code></td><td class="num">159 KB</td><td>点击后（可 XHR 显示进度）</td></tr>
     <tr><td><code>vendor/three.min.js</code></td><td class="num">589 KB</td><td>点击后</td></tr>
     <tr><td><code>vendor/GLTFLoader.js</code></td><td class="num">94 KB</td><td>点击后</td></tr>
     <tr><td><code>vendor/OrbitControls.js</code></td><td class="num">26 KB</td><td>点击后</td></tr>
-  </table>
+  </table></div>
   <p class="note">
     ⭐ <strong>首屏只付出约 9 KB</strong>；点一次才付 868 KB。
     素材库里还有 20 个模型（最大 21MB），<strong>本库只放最小的 1–2 个</strong>。
