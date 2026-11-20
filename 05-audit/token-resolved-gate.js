@@ -58,6 +58,11 @@ const fs = require('fs');
 const http = require('http');
 const { safeListen } = require('./safe-listen.js');
 const os = require('os');
+/* 🔴 0.27.21（WO-11 修复单）：解析值基线按 chromium 序列化（字体栈等 computed 值
+   各引擎序列化不同）。解析值核对的本质是「computed 与 tokens.css 一致」，
+   用 chromium 核即可；非 Chromium 引擎按 E153 第三态退出，不重复造按引擎分集的基线。 */
+require('./browser.js').requireChromium('解析值基线按 chromium 序列化');
+
 
 const ROOT = path.dirname(__dirname);
 const CSS = path.join(ROOT, '01-tokens', 'tokens.css');
