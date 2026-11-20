@@ -34,6 +34,9 @@ WHITELIST = {
     'FakeElement',
     # form-validation.js 的公开全局名（契约/探针/类型三处登记），非内部代号
     'FormValidation',
+    # puppeteer-core 内部类名（accent-gate 捕获的启动错误输出里出现），
+    # 非内部代号
+    'BrowserLauncher',
     # CSS 强制色调色板关键字（WO-26 select 的 forced-colors 块），
     # 规范名，非内部代号
     'HighlightText',

@@ -277,6 +277,11 @@ async function run(files, label) {
       orphans: 'Firefox 未实现分页排版属性（渐进增强，Chromium/WebKit 生效）',
       widows: 'Firefox 未实现分页排版属性（渐进增强，Chromium/WebKit 生效）',
     },
+    webkit: {
+      'scrollbar-color': 'WebKit/Safari 未实现标准 scrollbar-color（本库另有 ::-webkit-scrollbar 厂商层兜底，见 scrollbar 门禁）',
+      'overscroll-behavior': '当前 WebKit 构建未实现（滚动到边自然回弹，优雅降级）',
+      'overscroll-behavior-x': '当前 WebKit 构建未实现（滚动到边自然回弹，优雅降级）',
+    },
   };
   const eng = (process.env.FL_ENGINE || 'chromium').toLowerCase();
   const gaps = KNOWN_ENGINE_GAPS[eng] || {};
