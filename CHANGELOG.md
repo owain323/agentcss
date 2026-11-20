@@ -18,6 +18,70 @@
 
 ## [Unreleased]
 
+## [0.27.22] - 2026-11-20
+
+> 0.27.21 发布当天的补丁版：跨引擎收敛（firefox/webkit/chromium-Linux 的
+> 组件层红片）+ 两枚产品缺陷修复 + 发布链观测条件补齐。全部先在本地
+> `FL_ENGINE=<引擎> MODE=component` 复现再修，无一阈值放宽。
+
+### Fixed — 产品缺陷（用户可见）
+- 🔴 **抽屉焦点陷阱在 WebKit 上失效**：旧陷阱只在首/尾边界拦截，中间依赖
+  「原生 Tab 恰好留在抽屉内」——WebKit 在 tabindex=-1 容器 + inert 正文
+  环境下把 BODY 当下一站，第一次 Tab 焦点就逃出抽屉（iOS/WebKit 用户受影响；
+  chromium/firefox 掩蔽了缺陷）。改显式全循环，三引擎行为一致。
+  （nav-drawer 门禁 webkit 实测抓出，逃逸去向插桩定案。）
+- model-viewer demo 两张裸表在 320px 视口横向溢出 5px（WCAG 1.4.10，
+  Linux 字体度量触发）→ 套 .table 滚动壳 + 补 table.css 引用。
+- 修 `<head>` 里被浏览器渲染成可见文本块的裸注释（页高 2251→2196）。
+
+### Fixed — 跨引擎判据（firefox/webkit 上假红 → 三引擎全绿）
+- browser.js shimPage.setViewport 保留已加载文档（换 context 新页前重导航
+  当前 URL）——此前先 goto 再 setViewport(mobile) 的门禁在 firefox/webkit
+  拿到 about:blank ⇒ analysis-report / report / clicktest 全部
+  「缺元素 / NaN」的共同根因，实测三门转绿。
+- shimPage 补 `emulateMediaType` 映射——consumer 打印态判据 firefox 转绿。
+- 多参 evaluate 包单对象（firefox/webkit 被 Playwright 拒收、chromium
+  掩蔽）：motion-concurrency / tap-target / dist-parity / zoom-reflow /
+  skeleton-lever。
+- scrollbar-check：Firefox headless 对 scrollbar-width 的 computed 恒报
+  none（inline thin 也算 none，CSS.supports=true 同页对照）⇒ firefox 下降级
+  为 CSSOM 规则存在性核对，理由入断言文本。
+- responsive-check：截断判据跳过 display:inline 元素（Firefox 对 nowrap
+  inline span 恒报溢出，1440 桌面宽也报 20 个 table__unit「截断」全是误报）。
+- css-validity：引擎已知缺口表（firefox 的 orphans/widows、webkit 的
+  scrollbar-color / overscroll-behavior(-x)）→ WARN 注理由不阻断。
+
+### Fixed — 测试环境确定性
+- browser.js 两个 launch 分支钉 `locale: zh-CN`——原生 date 控件内部旋钮
+  的可访问名跟浏览器 UI locale 走（zh「年 年」/ en「Month Month」），
+  不钉则 a11y 快照跨机器必漂。
+
+### Fixed — 判据能力边界显式化（E153 第三态）
+- CDP 仅 Chromium 有实现 ⇒ a11y-ax / forced-colors / upload / app-shell /
+  timeline / delta / tree / model-viewer / pdf-export 十门入口
+  requireChromium 守卫；behavior-reverse.sh 编排器最外层守卫。
+- print-gate 基线带 platform 字段（run 数按录制平台绑定——win32 录 984、
+  Linux 跑 1033 的假红），平台不匹配时第三态 SKIP。
+- accent-gate executablePath 硬编码本机 Windows Chrome 路径 → 改走
+  browser.js 浏览器发现（与全库 39 个脚本同源）。
+- selftest.py find_chrome 与 browser.js 发现同源（CI Linux 永远 None 的
+  环境类假红）。
+
+### Fixed — 发布链
+- `_canary.js/_canary.py` BASE 读环境变量（硬编码 :8000 与探测服务的
+  空闲端口错位 ⇒ api-contract 在 CI 必红的真凶，`_probe` 可诊断性
+  一击命中）。
+- release.yml / quick / release-qualify 显式装 Chromium（不再依赖 runner
+  镜像预装）；release-qualify 补 fetch-depth/fetch-tags。
+- `_probe` 探测失败时吐出子进程真实输出（排障不再黑洞）。
+
+### Security
+- 🔴 0.27.21 的交接文档曾明文携带 DeepSeek API key 并推上公开仓——
+  树中已抹除、文档挪入 gitignore 的 internal/。**key 必须在 DeepSeek
+  控制台吊销轮换**；历史重写待作者决策。
+
+---
+
 ## [0.27.21] - 2026-11-20
 
 > WO 工单 27 条执行完成（Wave 4 收尾 → Wave 8），全部走「改代码或加判据」，
