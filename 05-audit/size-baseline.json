@@ -201,8 +201,8 @@
       "raw": 13644
     },
     "03-patterns/nav/nav.js": {
-      "gzip": 7247,
-      "raw": 19360
+      "gzip": 7552,
+      "raw": 19912
     },
     "03-patterns/nav/toc.js": {
       "gzip": 2275,
@@ -330,6 +330,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 432302,
-  "total_raw": 1086784
+  "total_gzip": 432607,
+  "total_raw": 1087336
 }
