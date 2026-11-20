@@ -20,7 +20,9 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | a11y-ax(±rev) / forced-colors / upload / app-shell / timeline / dir-color / tree / model-viewer | firefox+webkit | 判据坏了（能力边界） | 判据观测走 CDP（createCDPSession / touchscreen 拖拽序列）——CDP 仅 Chromium 有实现；firefox 上报 `page.target is not a function` 等 | 同上 → SKIP |
 | beh-reverse | firefox+webkit | 判据坏了（编排器） | 编排内多个子门走 CDP；子门各自 exit 3 会被编排器读成 FAIL | 编排器最外层守卫 → 整门 SKIP |
 | tap-highlight | firefox | 判据坏了（适用域） | `-webkit-tap-highlight-color` 是 WebKit 专有属性，Firefox computed 恒为空串——判据在 Firefox 上没有语义 | firefox 下 SKIP（这门本来就是 iOS/WebKit 行为守卫） |
-| css-validity | firefox | 判据坏了（已知引擎缺口） | `orphans`/`widows`（report.css:400 分页排版）Firefox 长期未实现——声明合法、优雅降级，与门禁已有的 -webkit- WARN 同形态 | 进引擎已知缺口表 → WARN 注理由，不阻断 |
+| model-viewer | firefox+webkit | 判据坏了（能力边界） | 3D 触摸拖拽序列用 puppeteer 的 touchscreen.touchStart/touchMove——Playwright 的 firefox/webkit 只有 tap()，按下-拖动-抬起没有实现路径 | requireChromium 守卫 → SKIP |
+| token-resolved | webkit | 判据坏了（基线序列化） | 解析值基线按 chromium 序列化（字体栈等 computed 值各引擎序列化不同）；核对本质是「computed 与 tokens.css 一致」，chromium 核即可 | requireChromium 守卫 → SKIP |
+| css-validity | webkit | 判据坏了（已知引擎缺口） | scrollbar-color（WebKit 未实现标准属性，本库有 ::-webkit-scrollbar 厂商层兜底）+ overscroll-behavior(-x)（当前 WebKit 构建未实现，自然回弹） | 引擎已知缺口表 → WARN 注理由，三引擎转绿 | `orphans`/`widows`（report.css:400 分页排版）Firefox 长期未实现——声明合法、优雅降级，与门禁已有的 -webkit- WARN 同形态 | 进引擎已知缺口表 → WARN 注理由，不阻断 |
 
 ## 环境类（已修观测条件）
 
