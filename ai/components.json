@@ -226,7 +226,9 @@
         "legacyClass": []
       },
       "aria": {
-        "roles": [],
+        "roles": [
+          "region"
+        ],
         "attrs": [
           "label"
         ]
