@@ -1105,6 +1105,25 @@ function judge(result, baseline) {
 
 /* ---------------------------------------------------------------- 主流程 */
 
+/* 🔴 0.27.21（WO-11 修复单）：run 数等基线**按录制平台绑定**（文字度量
+   随平台字体而变——实测 win32 录 984、Linux 跑 1033）。平台不匹配 ⇒
+   判不了，按「跑不了 ≠ 通过」第三态退出，不假红。（与 shot-baseline
+   的平台分集同一课；基线本体带 platform 字段，--update 时写入。）
+   ⚠️ main() 与 adversarial() **两个入口**都要调——只查 main() 时
+   --adversarial 在 CI Linux 连红了两轮 nightly（实测）。 */
+function assertBaselinePlatform() {
+  let plat = null;
+  try {
+    plat = (JSON.parse(fs.readFileSync(OUT, 'utf8')).platform) || null;
+  } catch (e) { /* 基线不存在 ⇒ 交给后续的"先跑一次 --update"逻辑 */ }
+  if (plat && plat !== process.platform) {
+    console.log('  SKIP（本平台不适用：print 基线按 ' + plat + ' 录制——文字度量随平台字体而变，'
+      + '在 ' + process.platform + ' 上比对是假红。在录制平台上跑，或在 ' + process.platform
+      + ' 上 --update 建立自己的基线）');
+    process.exit(3);
+  }
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   if (argv.indexOf('--selftest') >= 0) return selftest();
@@ -1174,20 +1193,7 @@ async function main() {
   if (fs.existsSync(OUT)) {
     try { baseline = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { baseline = null; }
   }
-  /* 🔴 0.27.21（WO-11 修复单）：run 数等基线**按录制平台绑定**（文字度量
-     随平台字体而变——实测 win32 录 984、Linux 跑 1033）。平台不匹配 ⇒
-     判不了，按「跑不了 ≠ 通过」第三态退出，不假红。（与 shot-baseline
-     的平台分集同一课；基线本体带 platform 字段，--update 时写入。） */
-  {
-    let plat = null;
-    try { plat = (baseline && baseline.platform) || null; } catch (e) {}
-    if (plat && plat !== process.platform) {
-      console.log('  SKIP（本平台不适用：print 基线按 ' + plat + ' 录制——文字度量随平台字体而变，'
-        + '在 ' + process.platform + ' 上比对是假红。在录制平台上跑，或在 ' + process.platform
-        + ' 上 --update 建立自己的基线）');
-      process.exit(3);
-    }
-  }
+  assertBaselinePlatform();
 
   const result = {};
   for (const [name, url] of PAGES) {
@@ -1729,6 +1735,9 @@ const ADV_FILES = [
 ];
 
 async function adversarial() {
+  /* 🔴 0.27.21：平台检查必须覆盖 --adversarial 路径——它在 main() 之前
+     return（实测：只检查 main() 时 print-adv 在 CI Linux 连红两轮 nightly）。 */
+  assertBaselinePlatform();
   let bad = 0;
   let total = 0;
   const report = (ok, why, extra) => {
@@ -1881,7 +1890,8 @@ async function adversarial() {
    门禁没有可用实现路径。按 E153 立法走**第三态**退出（跑不了 ≠ 通过，
    也不冒充失败）——nightly 报告里显式显示 SKIP 与原因，而不是一排
    "渲染阶段崩了"的假红。 */
-if (typeof process.env.FL_ENGINE === 'string' && process.env.FL_ENGINE !== 'chromium') {
+if (require.main === module &&
+    typeof process.env.FL_ENGINE === 'string' && process.env.FL_ENGINE !== 'chromium') {
   console.log('  SKIP（本引擎不适用：打印产物判据依赖 page.pdf，仅 Chromium 有实现——当前引擎 ' + process.env.FL_ENGINE + '）');
   process.exit(3);
 }
