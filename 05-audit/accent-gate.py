@@ -65,8 +65,14 @@ SCRIPT = r'''
 const pages = %s, exempt = %s, LIMIT = %d, ACCENT = %s;
 (async () => {
   const puppeteer = require('puppeteer-core');
+  /* 🔴 0.27.21（WO-11 修复单）：executablePath 硬编码本机 Windows Chrome 路径
+     —— 本机全绿、CI Linux 上必然 Browser was not found（实测 accent-gate
+     0 秒即红一整天）。改走 browser.js 的浏览器发现（findPlaywrightChrome
+     + 系统候选路径），与全库其余 39 个脚本同源。 */
+  const { CHROME } = require('./browser.js');
+  if (!CHROME) { throw new Error('找不到 Chrome/Chromium（见 browser.js 已尝试的候选路径）'); }
   const b = await puppeteer.launch({
-    executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    executablePath: CHROME,
     headless: 'new', args: ['--no-sandbox', '--disable-gpu'] });
   const p = await b.newPage();
   const out = [];

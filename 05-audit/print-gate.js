@@ -1235,6 +1235,7 @@ async function main() {
         };
       }
     }
+    out.platform = process.platform;   /* 🔴 0.27.21：基线平台标记（见平台检查） */
     fs.writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n');
     console.log('  已写入 ' + path.relative(ROOT, OUT));
   }
