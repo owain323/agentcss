@@ -268,8 +268,21 @@ async function run(files, label) {
   const ok = await checkInBrowser(tested.map((e) => [e.prop, e.val]));
   const bad = [];        // 无前缀却不认 ⇒ 真错
   const warn = [];       // -webkit- 不认 ⇒ 可能是 Safari 专有
+  /* 🔴 0.27.21（WO-11 修复单）：目标引擎**已知不实现**、但声明本身合法且
+     优雅降级的属性 → WARN 不 FAIL。实测：Firefox 长期未实现 orphans/widows
+     （分页排版属性），Chromium/WebKit 生效——这是引擎缺口，不是声明写错。
+     与上面的 -webkit- WARN 同一形态：可见、注明理由、不阻断。 */
+  const KNOWN_ENGINE_GAPS = {
+    firefox: {
+      orphans: 'Firefox 未实现分页排版属性（渐进增强，Chromium/WebKit 生效）',
+      widows: 'Firefox 未实现分页排版属性（渐进增强，Chromium/WebKit 生效）',
+    },
+  };
+  const eng = (process.env.FL_ENGINE || 'chromium').toLowerCase();
+  const gaps = KNOWN_ENGINE_GAPS[eng] || {};
   tested.forEach((e, i) => {
     if (ok[i]) return;
+    if (gaps[e.prop]) { warn.push(e); return; }
     (WEBKIT.test(e.prop) ? warn : bad).push(e);
   });
   return { total: all.length, uniq: entries.length, tested: tested.length,

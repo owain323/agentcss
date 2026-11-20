@@ -1,3 +1,10 @@
+/* 🔴 0.27.21（WO-11 修复单）：-webkit-tap-highlight-color 是 WebKit 专有属性，
+   Firefox 上 computed 值恒为空串——判据在 Firefox 上没有语义。
+   按 E153 第三态退出（这门本来就是 iOS/WebKit 行为的守卫）。 */
+if ((process.env.FL_ENGINE || 'chromium') === 'firefox') {
+  console.log('  SKIP（本引擎不适用：-webkit-tap-highlight-color 是 WebKit 专有属性——Firefox 无此概念）');
+  process.exit(3);
+}
 const _canary = require('./_canary.js');
 if (process.env.FL_SKIP_CANARY !== '1') { try { _canary.assertOurs(); } catch(e) { /* :8000 不存在时门禁会自己报观测错误 */ } }
 const { launch } = require('./browser.js');

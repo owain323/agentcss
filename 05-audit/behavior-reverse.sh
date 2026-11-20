@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+
+# 🔴 0.27.21（WO-11 修复单）：本编排器的多个子门走 CDP（仅 Chromium 有实现）。
+#   非 Chromium 引擎上整门按未判定处理（E153 第三态）——子门各自 exit 3
+#   会被这里读成 FAIL，所以必须在最外层就跳。
+if [ "${FL_ENGINE:-chromium}" != "chromium" ]; then
+  echo "  SKIP（本引擎不适用：编排内的 CDP 子门仅 Chromium 有实现——当前引擎 ${FL_ENGINE}）"
+  exit 3
+fi
+
 # LAYER: component
 # behavior-reverse.sh — 把四个微行为核 + 覆盖矩阵的**反向控制**一次性跑完
 #

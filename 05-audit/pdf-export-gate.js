@@ -44,6 +44,10 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
+/* 🔴 0.27.21（WO-11 修复单）：PDF 产物判据依赖 page.pdf——仅 Chromium 有实现，
+   非 Chromium 引擎按 E153 第三态退出。 */
+require('./browser.js').requireChromium('PDF 导出与产物分析走 page.pdf');
+
 
 const ROOT = path.dirname(__dirname);
 const CLI = path.join(ROOT, 'ai', 'cli.js');

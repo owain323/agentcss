@@ -128,7 +128,10 @@ def main():
         import json
         lines = [l for l in r.stdout.strip().split('\n') if l.startswith('[')]
         if not lines:
-            print('  [accent-gate] 没拿到结果：%s' % (r.stderr or r.stdout)[:120])
+            # 🔴 0.27.21：截断 120 → 900 并优先 stderr——CI 上只剩 stack 首行
+            #   （BrowserLauncher.js:104），真错误在后面，排障又多烧一轮 CI。
+            tail = ((r.stderr or '') + (r.stdout or '')).strip()[-900:]
+            print('  [accent-gate] 没拿到结果：%s' % tail)
             return 1
         data = json.loads(lines[-1])
     except Exception as e:

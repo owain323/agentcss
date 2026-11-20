@@ -237,7 +237,7 @@ const occludedProbe = () => {
 const STABLE = { need: 3, timeout: 1500, maxEls: 600 };
 
 /* 在页面里执行：返回 {ok, frames, ms} 或 {ok:false, ...}。 */
-function watchLayout(need, timeout, maxEls) {
+function watchLayout({ need, timeout, maxEls }) {   /* 🔴 0.27.21（WO-11 修复单）：单对象参数，firefox/webkit 兼容 */
   const fingerprint = () => {
     const de = document.scrollingElement || document.documentElement;
     const parts = [de.scrollWidth, de.clientWidth, de.scrollHeight, de.clientHeight,
@@ -284,7 +284,7 @@ function watchLayout(need, timeout, maxEls) {
  */
 async function settle(p, label, opts) {
   const o = Object.assign({}, STABLE, opts || {});
-  const r = await p.evaluate(watchLayout, o.need, o.timeout, o.maxEls);
+  const r = await p.evaluate(watchLayout, { need: o.need, timeout: o.timeout, maxEls: o.maxEls });
   if (!r.ok) {
     const e = new Error('关键布局指标 ' + r.ms + 'ms 内未稳定（' + label + '，' +
                         r.frames + ' 帧仍变化）');

@@ -88,7 +88,7 @@ const PAGES = [
       await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     } catch (e) { continue; }
 
-    const found = await p.evaluate((sels, nonT) => {
+    const found = await p.evaluate(({ sels, nonT }) => {   /* 🔴 0.27.21（WO-11 修复单）：单对象参数 */
       const out = [];
       sels.forEach(([sel, label]) => {
         document.querySelectorAll(sel).forEach((el) => {
@@ -105,7 +105,7 @@ const PAGES = [
         });
       });
       return out;
-    }, TARGETS.map((t) => [t[0], t[1]]), NON_TARGET);
+    }, { sels: TARGETS.map((t) => [t[0], t[1]]), nonT: NON_TARGET });
 
     // 每类只报最差的一个
     const byLabel = {};

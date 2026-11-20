@@ -1860,6 +1860,17 @@ async function adversarial() {
 /* 0.27.18：入口守卫 + 导出内部件 —— 此前 require 本文件会直接执行 main()，
    任何想复用 render/analyze 的脚本都会触发一次完整门禁（实测：探针刚
    require 就撞上"浏览器已在跑"）。入口守卫与其他门禁同款。 */
+
+/* 🔴 0.27.21（WO-11 修复单）：page.pdf / 打印产物判据是 **Chromium 专属**
+   API（Playwright 的 firefox/webkit 没有 page.pdf）⇒ 在这两个引擎上本
+   门禁没有可用实现路径。按 E153 立法走**第三态**退出（跑不了 ≠ 通过，
+   也不冒充失败）——nightly 报告里显式显示 SKIP 与原因，而不是一排
+   "渲染阶段崩了"的假红。 */
+if (typeof process.env.FL_ENGINE === 'string' && process.env.FL_ENGINE !== 'chromium') {
+  console.log('  SKIP（本引擎不适用：打印产物判据依赖 page.pdf，仅 Chromium 有实现——当前引擎 ' + process.env.FL_ENGINE + '）');
+  process.exit(3);
+}
+
 if (require.main === module) {
   main().then((rc) => process.exit(rc || 0)).catch((e) => {
     console.error('  🔴 ' + ((e && e.friendly && e.message) || (e && e.stack) || e));
