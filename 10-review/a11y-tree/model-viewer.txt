@@ -11,22 +11,23 @@ RootWebArea "3D 模型查看器 · agentcss"
     button "加载 3D 模型"
     paragraph "模型 fox.glb 会 点击后才下载 ，首屏不占流量。"
     heading "为什么是这样设计的" [level=2]
-    table "3D 模型页的设计要求与做法"
-      row
-        columnheader "要求"
-        columnheader "做法"
-      row
-        cell "首屏要快"
-        cell "3D 引擎点击后才 <script> 注入， 首屏 0 KB；模型走 XHR 以便显示真实进度"
-      row
-        cell "绝不能白屏"
-        cell "WebGL 不支持 / 库没来 / 模型 404 / 解析失败 —— 四种失败全部给中文提示 + 重试按钮"
-      row
-        cell "视觉统一"
-        cell "颜色、圆角、间距全部走 var(--*)，换主题跟着变"
-      row
-        cell "iOS 手感"
-        cell "touch-action: none 让拖动不触发页面滚动； 关掉 tap highlight；页面切后台停止渲染省电"
+    region "3D 模型页的设计要求与做法（可横向滚动）"
+      table "3D 模型页的设计要求与做法"
+        row
+          columnheader "要求"
+          columnheader "做法"
+        row
+          cell "首屏要快"
+          cell "3D 引擎点击后才 <script> 注入， 首屏 0 KB；模型走 XHR 以便显示真实进度"
+        row
+          cell "绝不能白屏"
+          cell "WebGL 不支持 / 库没来 / 模型 404 / 解析失败 —— 四种失败全部给中文提示 + 重试按钮"
+        row
+          cell "视觉统一"
+          cell "颜色、圆角、间距全部走 var(--*)，换主题跟着变"
+        row
+          cell "iOS 手感"
+          cell "touch-action: none 让拖动不触发页面滚动； 关掉 tap highlight；页面切后台停止渲染省电"
     heading "边界（本库不做什么）" [level=2]
     list
       listitem "不把 three.js 打包成本库的依赖 —— 592KB 违背「零依赖」；而且素材里那两个 loader 是 ES6 " [level=1]
@@ -36,29 +37,30 @@ RootWebArea "3D 模型查看器 · agentcss"
       listitem "不自己手搓 glTF 解析器 —— 用成熟的 GLTFLoader。" [level=1]
         ListMarker "• "
     heading "体积现状" [level=2]
-    table "各文件的体积与加载时机"
-      row
-        columnheader "文件"
-        columnheader "体积"
-        columnheader "何时加载"
-      row
-        cell "model-viewer.js（本库）"
-        cell "~9 KB"
-        cell "首屏"
-      row
-        cell "models/fox.glb"
-        cell "159 KB"
-        cell "点击后（可 XHR 显示进度）"
-      row
-        cell "vendor/three.min.js"
-        cell "589 KB"
-        cell "点击后"
-      row
-        cell "vendor/GLTFLoader.js"
-        cell "94 KB"
-        cell "点击后"
-      row
-        cell "vendor/OrbitControls.js"
-        cell "26 KB"
-        cell "点击后"
+    region "各文件的体积与加载时机（可横向滚动）"
+      table "各文件的体积与加载时机"
+        row
+          columnheader "文件"
+          columnheader "体积"
+          columnheader "何时加载"
+        row
+          cell "model-viewer.js（本库）"
+          cell "~9 KB"
+          cell "首屏"
+        row
+          cell "models/fox.glb"
+          cell "159 KB"
+          cell "点击后（可 XHR 显示进度）"
+        row
+          cell "vendor/three.min.js"
+          cell "589 KB"
+          cell "点击后"
+        row
+          cell "vendor/GLTFLoader.js"
+          cell "94 KB"
+          cell "点击后"
+        row
+          cell "vendor/OrbitControls.js"
+          cell "26 KB"
+          cell "点击后"
     paragraph "⭐ 首屏只付出约 9 KB ；点一次才付 868 KB。 素材库里还有 20 个模型（最大 21MB）， 本库只放最小的"
