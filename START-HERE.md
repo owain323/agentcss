@@ -58,7 +58,7 @@
 | 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 269 | — | **凡是会异步取数就要** |
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 274 | **必需 295** (`form-validation.js`) | 提交前要校验就要 |
 | 列表增删 | `03-patterns/list/list.css` | 162 | 可选 201 (`flip.js`，FLIP 增删动画，纯增强) | 列表会动态增删就要 |
-| 导航 / 目录 | `03-patterns/nav/nav.css` | 337 | **必需 449** (`nav.js`) · 可选 115 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
+| 导航 / 目录 | `03-patterns/nav/nav.css` | 337 | **必需 456** (`nav.js`) · 可选 115 (`toc.js`，自动生成目录，纯增强) | 顶部要导航，或长文要目录就要 |
 | 长文排版 | `03-patterns/content/content.css` | 300 | — | 写文档 / 长文就要 |
 | delta | `02-primitives/delta/delta.css` | 113 | — |  |
 | metric | `02-primitives/metric/metric.css` | 157 | — |  |

@@ -220,7 +220,11 @@ async function launchPlaywright(engine) {
       '  ⇒ 没有它就是"这台机器跑不了这个引擎"，必须报错，**不许退回 Chromium** ——\n' +
       '     退回 Chromium 会让矩阵再次变成"三个作业跑同一个浏览器"。');
   }
-  var browser = await pw[engine].launch({ headless: true });
+  /* 🔴 0.27.21（可访问名 locale 钉定）：原生 date 控件的内部旋钮可访问名
+     跟浏览器 UI locale 走（实测：zh 环境转录「年 年」，en_US CI 转录
+     「Month Month」）⇒ a11y 快照跨机器必漂。钉 zh-CN——本库内容是中文，
+     测试环境的语言就该确定。 */
+  var browser = await pw[engine].launch({ headless: true, locale: 'zh-CN' });
   browser.__engine = engine;
   /* ⚠️ Playwright 的 version() 是**同步**的，puppeteer 的也是 ——
      但 chromium 分支拿的是 puppeteer 对象，两边都当同步值读。 */
@@ -276,6 +280,7 @@ async function launchChromium(opts) {
     executablePath: CHROME,
     headless: 'new',
     args: [
+      '--lang=zh-CN',   /* 🔴 0.27.21：同 playwright 分支——原生 date 控件的旋钮名跟 UI locale 走，不钉则快照跨机器漂 */
       '--no-sandbox',
       '--disable-gpu',
       '--disable-dev-shm-usage',
@@ -367,6 +372,16 @@ function shimPage(page, browser) {
           deviceScaleFactor: vp.deviceScaleFactor || 1,
         });
         const np = await ctx.newPage();
+        /* 🔴 0.27.21（WO-11 修复单）：puppeteer 的 setViewport **只改视口、
+           保留已加载的文档**。这里换成新 context 的新页 ⇒ 之前 goto 的
+           内容全丢（about:blank）——analysis-report / report / clicktest
+           等先 goto 再 setViewport 的门禁在 firefox/webkit 上全部
+           「缺 .report__main / NaN」，实测根因就是这个。⇒ 换页前把当前
+           URL 重新导航一遍，保住调用方的文档。 */
+        const curUrl = (() => { try { return cur.url(); } catch (e) { return null; } })();
+        if (curUrl && curUrl !== 'about:blank') {
+          try { await np.goto(curUrl, { waitUntil: 'load' }); } catch (e) { /* 导航失败交由调用方判据 */ }
+        }
         try { await cur.close(); } catch (e) { /* 忽略 */ }
         cur = np;                        // ⭐ 换引用即可，调用方无感
         return;
