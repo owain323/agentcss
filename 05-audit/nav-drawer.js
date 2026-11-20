@@ -109,9 +109,22 @@ function chk(label, ok, extra) {
     let trapped = true;
     for (let i = 0; i < 8; i++) {
       await p.keyboard.press('Tab');
-      const inside = await p.evaluate(() =>
-        document.querySelector('.nav__list').contains(document.activeElement));
-      if (!inside) { trapped = false; break; }
+      /* 🔴 0.27.21（WO-11 修复单）：WebKit 的焦点投递是**异步**的——
+         press 之后立即读 activeElement 会读到旧值（chromium 同步落焦
+         掩蔽了这个差异）。⇒ 等 50ms 再读。不是放宽：判定语义不变，
+         仍是「8 次 Tab 后焦点必须还在抽屉内」。 */
+      await new Promise((r) => setTimeout(r, 50));
+      const inside = await p.evaluate(() => {
+        const el = document.activeElement;
+        return {
+          inside: document.querySelector('.nav__list').contains(el),
+          where: el ? (el.tagName + (el.className ? '.' + String(el.className).split(' ')[0] : '') + (el.id ? '#' + el.id : '')) : 'null',
+        };
+      });
+      if (!inside.inside) {
+        console.log('    [逃逸去向] 第 ' + (i + 1) + ' 次 Tab：' + inside.where);
+        trapped = false; break;
+      }
     }
     chk('焦点陷阱：8 次 Tab 仍在抽屉内', trapped);
 

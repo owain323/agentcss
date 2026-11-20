@@ -13,8 +13,8 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1086784,
-    "distGzip": 129629
+    "sourceBytes": 1087336,
+    "distGzip": 129654
   },
   "files": [
     {
@@ -737,15 +737,15 @@
     },
     {
       "source": "03-patterns/nav/nav.js",
-      "sourceSha256": "5dc1bcf86b133285df32a63e6c2f344b2a0f1af2e9363501d034241697ba87aa",
-      "sourceBytes": 19360,
-      "sourceGzip": 7247,
+      "sourceSha256": "32befbb5c465687e94ccdab88115aa543ecdcdcdc7835b0458f12113d77a1ed8",
+      "sourceBytes": 19912,
+      "sourceGzip": 7552,
       "outputs": [
         {
           "path": "dist/03-patterns/nav/nav.js",
           "kind": "stripped",
-          "bytes": 9086,
-          "gzip": 2809
+          "bytes": 9131,
+          "gzip": 2834
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"

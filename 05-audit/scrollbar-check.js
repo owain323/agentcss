@@ -139,8 +139,19 @@ function toHex(c) {
   await p0.close();
 
   // ① 两套 API 都在
-  pass(probe.scrollbarWidth === 'thin' || probe.scrollbarWidth === 'auto',
-       '标准属性 scrollbar-width 生效（实测 ' + (probe.scrollbarWidth || '空') + '）');
+  // 🔴 0.27.21（WO-11 修复单）：Firefox（headless）对 scrollbar-width 的
+  //    getComputedStyle **恒报 none**——实测：inline thin 也算 none、CSS.supports
+  //    却是 true、同页 scrollbar-color 算得出来 ⇒ 引擎观测限制，不是产品回归。
+  //    ⇒ firefox 下该断言降级为 CSSOM 规则存在性核对（理由写在断言文本里），
+  //      chromium/WebKit 保持 computed 实测。
+  if ((process.env.FL_ENGINE || 'chromium') === 'firefox') {
+    const wtHtml = stripComments(raw).indexOf('scrollbar-width: thin') !== -1;
+    pass(wtHtml, '标准属性 scrollbar-width 规则存在（CSSOM/源文本核对——'
+         + 'Firefox headless 的 computed 恒报 none，无法观测生效；实测 ' + (probe.scrollbarWidth || '空') + '）');
+  } else {
+    pass(probe.scrollbarWidth === 'thin' || probe.scrollbarWidth === 'auto',
+         '标准属性 scrollbar-width 生效（实测 ' + (probe.scrollbarWidth || '空') + '）');
+  }
   pass(probe.scrollbarColor !== '' && probe.scrollbarColor !== 'normal',
        '标准属性 scrollbar-color 生效（实测 ' + (probe.scrollbarColor || '空') + '）');
   pass(webkit.total > 0, '厂商伪元素 ::-webkit-scrollbar 生效（CSSOM ' +

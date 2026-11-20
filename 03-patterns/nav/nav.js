@@ -394,12 +394,19 @@
     var first = list[0];
     var last = list[list.length - 1];
     var active = document.activeElement;
-    if (e.shiftKey && (active === first || active === this.list)) {
+    /* 🔴 0.27.21（nav-drawer 门禁实测抓出）：旧实现只在首/尾**边界**拦截，
+       中间全靠「原生 Tab 恰好留在抽屉内」。WebKit 的原生 Tab 顺序在
+       tabindex=-1 容器 + inert 正文的环境下把 BODY 当下一站 ⇒
+       第一次 Tab 焦点就逃出抽屉（chromium/firefox 掩蔽了这个缺陷）。
+       ⇒ 显式全循环：每次 Tab 都 preventDefault 并在 focusables 数组内
+       移动——三个引擎行为一致且确定。 */
+    var idx = list.indexOf(active);
+    if (e.shiftKey) {
       e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
+      (idx <= 0 ? last : list[idx - 1]).focus();
+    } else {
       e.preventDefault();
-      first.focus();
+      (idx === -1 || idx >= list.length - 1) ? first.focus() : list[idx + 1].focus();
     }
   };
 

@@ -293,12 +293,14 @@ if (!list.length) { e.preventDefault(); this.list.focus(); return; }
 var first = list[0];
 var last = list[list.length - 1];
 var active = document.activeElement;
-if (e.shiftKey && (active === first || active === this.list)) {
+
+var idx = list.indexOf(active);
+if (e.shiftKey) {
 e.preventDefault();
-last.focus();
-} else if (!e.shiftKey && active === last) {
+(idx <= 0 ? last : list[idx - 1]).focus();
+} else {
 e.preventDefault();
-first.focus();
+(idx === -1 || idx >= list.length - 1) ? first.focus() : list[idx + 1].focus();
 }
 };
 

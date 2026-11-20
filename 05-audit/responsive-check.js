@@ -88,6 +88,14 @@ const SCAN = function (hasTouch) {
       /* 省略号是**设计选择**，不算 bug ⇒ 跳过 */
       continue;
     }
+    if (cs.display === 'inline') {
+      /* 🔴 0.27.21（WO-11 修复单）：display:inline 的 scrollWidth/clientWidth
+         无意义（inline 元素 clientWidth 恒 0）——Firefox 对 nowrap inline span
+         恒报 scrollWidth>clientWidth，1440 桌面宽下也报「截断」（实测 20 个
+         .table__unit 全是误报；Chromium 不暴露这个语义差 ⇒ 本地全绿掩盖）。
+         截断判据的靶子是块级容器，与上面的省略号跳过同型。 */
+      continue;
+    }
     if (cs.whiteSpace === 'nowrap' && el.scrollWidth > el.clientWidth + 2) {
       const r = el.getBoundingClientRect();
       if (r.width < 1) continue;
