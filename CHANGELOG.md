@@ -18,6 +18,65 @@
 
 ## [Unreleased]
 
+## [0.27.23] - 2026-11-22
+
+> 三域推 A 的收口版：跨引擎红片收敛到全部挂证据的待诊断项 + **两个真产品
+> 缺陷修复**（抽屉焦点陷阱 WebKit 失效 / 图标资产运行时层从零建成）。
+> 全部先在本地 `FL_ENGINE=<引擎> MODE=component` 复现再修。
+
+### Fixed — 产品缺陷
+- 🔴 **抽屉焦点陷阱在 WebKit 上失效**：旧陷阱只在首/尾边界拦截，中间依赖
+  原生 Tab 恰好留在抽屉内——WebKit 在 tabindex=-1 容器 + inert 正文
+  环境下把 BODY 当下一站，第一次 Tab 焦点就逃出抽屉。改显式全循环，
+  三引擎行为一致（nav-drawer 门禁三引擎绿）。
+
+### Added — 图标资产运行时层（从零建成）
+- demo 页（35 图标 ×2 消费方式：img alt / inline 注入）+ a11y 约定节
+  + manifest 表（.table 壳）
+- `icons-check` 门禁：磁盘完整性 / viewBox·stroke·线宽三统一 /
+  demo 注入 / 可访问名约定 / 颜色继承，selftest 8 夹具反向控制
+- 进 a11y-ax 快照清单、视觉基线清单、check-all 注册（icons + icons-rev），
+  生成器挂同步门禁（make-tiersnippet 先例）
+
+### Fixed — 跨引擎判据（第三批 shim 根因 + 引擎差异）
+- browser.js shimPage.setViewport **保留已加载文档**（换 context 新页前
+  重导航当前 URL）——先 goto 再 setViewport(mobile) 的门禁在 firefox/webkit
+  拿到 about:blank ⇒ analysis-report / report / clicktest / responsive
+  全部「缺元素/NaN/截断误报」的共同根因，实测五门转绿
+- shimPage 补 `emulateMediaType` 映射——consumer 打印态判据 firefox 转绿
+- 多参 evaluate 包单对象 ×5 文件（firefox/webkit 被 Playwright 拒收）
+- scrollbar-check：Firefox headless 对 scrollbar-width computed 恒报 none
+  （inline thin 同页对照实证）⇒ firefox 下降级为 CSSOM 核对（理由入断言）
+- responsive-check：截断判据跳过 display:inline（Firefox 对 nowrap inline
+  span 恒报溢出，1440 桌面宽也报 20 个「截断」全是误报）
+- css-validity：引擎已知缺口表（firefox orphans/widows、webkit
+  scrollbar-color / overscroll-behavior）→ WARN 注理由
+- a11y-ax：原生 date 控件旋钮名（浏览器 chrome 字符串）转录归一
+
+### Added — 判据确定性与可诊断性
+- browser.js 两 launch 分支钉 locale=zh-CN（原生 date 控件旋钮名跟浏览器
+  UI locale 走，不钉则快照跨机器必漂）
+- skel-lever 溢出顺带报最宽三元素（sparkline 6px 三轮无元素名，本版
+  nightly 已自指认 pre.code）
+- print-gate render 等 document.images 完成（未加载图片的 alt 灰色替代
+  是对比度假红与 run 数漂移的根因）
+- clicktest hover 失败时带中心命中元素诊断
+
+### Fixed — 发布链与判据域
+- print 基线**平台分集**（print-baseline-<platform>.json 双平台落地，
+  record-baseline 工作流一并录制）——print 域在 Linux CI 从显式跳过变
+  真跑真比
+- print ⑦ media 代表收口（icons demo 进 print 样本）+ 其打印设计
+  （装饰网格 omit，print-policy 先例）
+- print-adv 对抗等值断言按录制平台校准（Linux 第三态）
+- record-baseline 提交步带上 print 基线文件（首跑漏 add 白录的教训）
+- demo-claim data-bad 阈值跨引擎校准（chromium mono 校准的 250 → 分界 200，
+  配对断言 good ≤200 / bad >200 两引擎成立）
+- workflow-gate 抓到 record-baseline.yml 的裸脚本名引用（我引入的回归，
+  当轮修复）
+
+---
+
 ## [0.27.22] - 2026-11-20
 
 > 0.27.21 发布当天的补丁版：跨引擎收敛（firefox/webkit/chromium-Linux 的
