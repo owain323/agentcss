@@ -129,3 +129,4 @@ __pycache__/
 # 导出器被硬杀时留下的临时 HTML（E20：下次导出会清 6 小时前的）
 .agentcss-print-*.html
 .wo-baseline/
+05-audit/.stamp-stale.json

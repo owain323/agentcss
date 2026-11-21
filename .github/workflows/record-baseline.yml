@@ -28,6 +28,13 @@ on:
 permissions:
   contents: write
 
+# 🔴 0.27.24：快门禁与发布资格两个 job 都会在 stamp 过期时自动派发本
+#    workflow ⇒ 双派发是常态。同组互斥（后来者取消先来者），两次派发
+#    记录的是同一个 master 指纹，谁跑都一样——别让两台 runner 竞争着推。
+concurrency:
+  group: record-baseline
+  cancel-in-progress: true
+
 jobs:
   record:
     name: 录 Linux 视觉基线
