@@ -415,6 +415,10 @@ const CASES = {
         return { before: Math.round(before) };
       });
       await p.hover('.card--linked');
+      /* 🔴 0.27.23（可诊断性 + 帧结算）：CI chromium 实测 hover 后 transform=无
+         且上移 0px（本地同代码绿）⇒ 加双 rAF 等样式结算过 compositor，
+         失败时 note 带上 hover 点的命中元素——下轮 nightly 自己指认。 */
+      await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       await new Promise((r) => setTimeout(r, 300));
       const after = await p.evaluate(() => {
         const c = document.querySelector('.card--linked');
@@ -426,9 +430,16 @@ const CASES = {
       /* 🔴 README 铁律：hover 只动 transform/shadow，**不能改 margin/padding**
          —— 那会引起回流，卡片下面的内容会跳。 */
       const lifted = hover.before - after.top;
+      const hitAt = await p.evaluate(() => {
+        const c = document.querySelector('.card--linked');
+        const r = c.getBoundingClientRect();
+        const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return el ? el.tagName + '.' + String(el.className).split(' ')[0] : 'none';
+      }).catch(() => '?');
       out.push({ ok: lifted > 0 && after.transform !== 'none' && after.boxShadow,
                  label: 'hover 抬起：用 transform 而不是改 margin',
-                 note: '上移 ' + lifted + 'px，transform=' + (after.transform !== 'none' ? '有' : '无'),
+                 note: '上移 ' + lifted + 'px，transform=' + (after.transform !== 'none' ? '有' : '无')
+                   + '，中心命中=' + hitAt,
                  detail: '改 margin 会让下方内容跳' });
       return out;
     },

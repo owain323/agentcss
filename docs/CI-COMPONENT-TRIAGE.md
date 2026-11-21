@@ -56,16 +56,24 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | switch-geom / skel-lever / zoom-reflow | webkit/chromium | 同 shim 缺陷连带 | setViewport 丢文档的同族表现 | 同上，本地 webkit 全绿 |
 | print ⑦ 强度（media 代表） | chromium（Linux） | 产品缺陷（新页缺打印设计） | icons demo（70 media 元素）成为全集 media 最大实例；其 35 张 img 图标打印成 2.3:1 灰栅格 | demo 加 @media print 收起装饰网格（print-policy omit 先例）+ 进 print 样本作 media 代表（预算 6） |
 
+## 已修 · 第四批（run 44918395385 的证据）
+
+| 门禁 | 引擎 | 分类 | 根因与证据 | 处置 |
+|------|------|------|-----------|------|
+| workflow | 全引擎 | 判据坏了（我引入的回归） | record-baseline.yml 里 `pkill -f http-serve.py` 的裸脚本名被 workflow-gate 解析成不存在的引用 | 步骤重写：PID 跟踪 + kill（workflow-gate 本地绿） |
+| a11y-ax（date-range 旋钮名，locale 钉定后仍漂） | chromium（Linux CI） | 快照无 locale 归一 | 原生 `<input type=date>` 的内部旋钮名是 **Chromium 浏览器侧字符串**——`--lang`/Playwright locale 都改不动（CI en_US 转录 Month Month） | 转录归一：date 部分旋钮名 → `<date-part>`（浏览器 chrome 非作者内容，归一不损失回归能力） |
+| demo-claim（analysis-report 对照块） | firefox | 判据坏了（单引擎校准阈值） | data-bad `>250` 是 chromium mono 度量校准的——firefox mono 下同串量得 228 | 分界校准 200（good ≤200 / bad >200 两引擎都成立），配对断言语义不变 |
+| print-adv | chromium（Linux） | 判据坏了（平台敏感） | 对抗夹具的**等值断言**（unbreakable↔breakable run 数一致）按 win32 文字度量校准——Linux 度量下断言必假红 | E153 第三态：牙齿在录制平台已验；Linux 上 print 门禁本体走基线分集照跑 |
+| skel-lever（溢出无元素名） | chromium+webkit（Linux） | 可诊断性 | 页级 scrollWidth 无元素身份——sparkline 6px 排查三轮无元素名 | 溢出时顺带报最宽前三个元素（nightly 自指认） |
+
 ## 待诊断（红保持，下一轮 nightly 带证据后继续）
 
 | 门禁 | 引擎 | 现象 | 备注 |
 |------|------|------|------|
-| clicktest | chromium（CI）+ firefox | card「hover 抬起 transform=无」 | Windows chromium 绿；CI 驱动组合（puppeteer-core 25 × playwright 构建的 chromium）下 hover 观测差异，待驱动组合专项 |
-| analysis-report | firefox+webkit | 「缺 .report__main / .report__aside / .kf / figure」——整页结构读不到 | firefox 下页面没加载或选择器落空，待 trace |
-| scrollbar | firefox | 「scrollbar-width 生效（实测 none）」 | Firefox 对 scrollbar-width 的 computed 序列化与 chromium 不同（Windows firefox 也复现 ⇒ 引擎行为非环境），待对照 probe 元素 |
-| report | firefox+webkit | 多条 NaN 与「抛错：Cannot read properties of null」 | NaN 来自 computed 解析（getComputedStyle 序列化差异），null 来自选择器落空；待逐条 trace |
-| a11y-ax | chromium（Linux） | date-range spinbutton 可访问名「年 年」↔「Month Month」 | 🔴 产品缺陷候选：可访问名跟**操作系统 locale** 而非页面语言（date-range.js 的标签来源），快照也无平台/语言分集——两个架构面，挂修复单 |
-| switch-geom / nav-drawer | webkit | switch 几何 / 焦点陷阱行为差异 | 本地 webkit 复现 nav-drawer「8 次 Tab 仍在抽屉内」1/50 条不成立——WebKit 焦点行为差异，待细看 |
+| clicktest（hover 抬起） | chromium（CI） | 待 nightly 带诊断重跑 | 已加双 rAF settle + 中心命中元素诊断——nightly 会自指认 hover 点的命中元素（Windows 复现不了，CI 驱动组合专属） |
+| switch-geom | webkit（CI Linux） | OFF 态滑块渲染在右（应左）——Windows webkit 不复现 | WebKit-Linux 渲染差异，证据已留 CI 日志；待 Linux 环境复现或渲染层分析 |
+| skel-lever（sparkline 6px） | chromium+webkit（Linux） | 页级溢出无元素名 | 已加最宽三元素诊断——下一轮 nightly 自指认元素后修复 |
+| a11y-ax（date-range locale） | 已修 | 转录归一 `<date-part>`（浏览器 chrome 非作者内容） | 本地绿；CI 待 nightly 确认 |
 
 ## 规矩（不因红片而变）
 

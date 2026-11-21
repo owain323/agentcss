@@ -170,7 +170,19 @@ const MEASURE = ({ sel, prop }) => {   /* 🔴 0.27.21（WO-11 修复单）：�
         await page.setViewport({ width: w, height: 800 });
         const ov = await page.evaluate(() => {
           const de = document.documentElement;
-          return { sw: de.scrollWidth, cw: de.clientWidth };
+          /* 🔴 0.27.23（可诊断性）：溢出时顺带报**最宽的前三个元素**——
+             页级 scrollWidth 只有总量，没有元素身份 ⇒ sparkline 的 6px
+             溢出（Linux 字体度量专属）排查了三轮没有元素名。 */
+          const wide = [...document.querySelectorAll('body *')]
+            .map((el) => ({ el, r: el.getBoundingClientRect() }))
+            .filter((x) => x.r.right > de.clientWidth + 1)
+            .sort((a, b) => b.r.right - a.r.right)
+            .slice(0, 3)
+            .map((x) => x.el.tagName.toLowerCase() +
+                        (x.el.className && typeof x.el.className === 'string'
+                         ? '.' + x.el.className.split(' ')[0] : '') +
+                        ' right=' + Math.round(x.r.right));
+          return { sw: de.scrollWidth, cw: de.clientWidth, wide };
         });
         if (ov.sw > ov.cw + 1) {
           const known = KNOWN_OVERFLOW.find((k) => k.file === rel);
@@ -178,7 +190,8 @@ const MEASURE = ({ sel, prop }) => {   /* 🔴 0.27.21（WO-11 修复单）：�
             seenKnown.add(rel);
           } else {
             problems.push(rel + ' @' + w + 'px 横向溢出：scrollWidth ' + ov.sw +
-                          ' > clientWidth ' + ov.cw);
+                          ' > clientWidth ' + ov.cw +
+                          '（最宽：' + (ov.wide.join(' / ') || '未取到') + '）');
           }
         }
       }

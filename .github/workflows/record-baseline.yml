@@ -62,10 +62,13 @@ jobs:
             #    文字度量随平台字体而变，win32 录的 run 数在 Linux 上比对是假红。
             #    ⇒ Linux runner 上一并录 print 基线（与视觉基线同次提交），
             #      print-gate 按平台取文件，两边的判据都跑真的。
-            (python3 05-audit/http-serve.py 8000 > /dev/null 2>&1 &) 
+            #    ⚠️ 服务用 PID 跟踪并 kill——工作流门禁会核对 run 里引用的脚本
+            #       路径（裸 `http-serve.py` 会被当成不存在的引用判红）。
+            python3 05-audit/http-serve.py 8000 > /dev/null 2>&1 &
+            SRV=$!
             sleep 2
             node 05-audit/print-gate.js --update
-            python3 05-audit/http-serve.py 8000 --shutdown > /dev/null 2>&1 || pkill -f http-serve.py || true
+            kill "$SRV" 2>/dev/null || true
           else
             python3 05-audit/shot-baseline.py --update --dir "$DIR"
           fi
