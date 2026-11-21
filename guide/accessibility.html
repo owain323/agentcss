@@ -101,7 +101,7 @@
 <tr><td>3.3.2</td><td>标签或说明</td><td>✅</td><td>必填项有可见标记 + <code>required</code></td></tr>
 <tr><td>3.3.7</td><td>冗余输入（2.2 A）</td><td>—</td><td>由业务表单决定，库不承载</td></tr>
 <tr><td>3.3.8</td><td>可访问的认证（2.2 AA）</td><td>—</td><td>库不含登录流程</td></tr>
-<tr><td>4.1.2</td><td>名称、角色、值</td><td>✅</td><td><code>a11y-ax.js</code>：<strong>全部 44 个 demo 页</strong>的可访问性树逐节点判，每个可交互控件有非空名称；朗读序列逐页存快照防回归。图标态（<code>.shell--rail</code>）的名字来自<strong>视觉隐藏但仍可访问</strong>的 <code>.shell__link-label</code>，不是 <code>aria-label</code> —— <code>app-shell-check</code> F12 / G4 两头守（改成 <code>display:none</code> 名字会消失）</td></tr>
+<tr><td>4.1.2</td><td>名称、角色、值</td><td>✅</td><td><code>a11y-ax.js</code>：<strong>全部 45 个 demo 页</strong>的可访问性树逐节点判，每个可交互控件有非空名称；朗读序列逐页存快照防回归。图标态（<code>.shell--rail</code>）的名字来自<strong>视觉隐藏但仍可访问</strong>的 <code>.shell__link-label</code>，不是 <code>aria-label</code> —— <code>app-shell-check</code> F12 / G4 两头守（改成 <code>display:none</code> 名字会消失）</td></tr>
 <tr><td>4.1.3</td><td>状态消息</td><td>◐</td><td>toast / 表单错误用 <code>role=&quot;status&quot;</code> / <code>alert</code>；<strong>未</strong>在真实读屏里验证播报时机</td></tr>
 </tbody>
 </table></div>
@@ -119,7 +119,7 @@
 <tr><td><code>heading-outline.js</code>（人工工具）</td><td><strong>全部 HTML：96 页 / 887 个标题</strong></td><td>0 处跳级 · 每页恰好 1 个 <code>h1</code> · DOM 标题数 == 无障碍树 heading 数</td></tr>
 <tr><td><code>a11y-ax.js</code> 可访问性树</td><td><strong>全部 <code>demo.html</code>（现 44 个）</strong>；清单与磁盘不一致即红</td><td>0 个无名控件；44 份朗读序列快照在 <code>10-review/a11y-tree/</code></td></tr>
 <tr><td><code>contrast.py</code> / <code>dark-contrast.js</code></td><td>亮 / 暗两套，逐对实算</td><td>正文 ≥ 4.5:1</td></tr>
-<tr><td><code>zoom-reflow.js</code></td><td>44 页（41 个组件 demo + 3 个文档页）× 3 条 AA 硬项；每页 1 次加载，改视口 / 字号后等<strong>关键布局指标</strong>稳定（指纹连续 3 帧不变，超时判红；证不到的边界见脚本头）</td><td>320px 不横滚 · 200% 不裁字 · 焦点不被遮挡</td></tr>
+<tr><td><code>zoom-reflow.js</code></td><td>45 页（42 个组件 demo + 3 个文档页）× 3 条 AA 硬项；每页 1 次加载，改视口 / 字号后等<strong>关键布局指标</strong>稳定（指纹连续 3 帧不变，超时判红；证不到的边界见脚本头）</td><td>320px 不横滚 · 200% 不裁字 · 焦点不被遮挡</td></tr>
 <tr><td><code>focus-ring-check</code> / <code>focus-return-check</code> / <code>keyboard-nav</code></td><td>焦点可见、焦点归还、键盘路径</td><td>全绿</td></tr>
 </tbody>
 </table></div>

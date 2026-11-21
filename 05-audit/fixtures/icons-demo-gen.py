@@ -77,7 +77,7 @@ __SLOTS__
     </ul>
 
     <h2 id="s4">manifest 全量（__COUNT__ 条）</h2>
-    <div class="table" tabindex="0" role="region" aria-label="图标清单（可横向滚动）"><table>
+    <div class="table" tabindex="0" role="region" aria-label="图标清单（可横向滚动）"><table aria-label="图标清单">
       <thead><tr><th>文件</th><th>name</th><th>label</th><th>分组</th></tr></thead>
       <tbody id="manifest-rows">
 __ROWS__

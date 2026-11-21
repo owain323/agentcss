@@ -2,11 +2,7 @@
 # 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
 # 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
 RootWebArea "icons · 图标资产"
-  link "跳到主内容"
-  banner "agentcss icons · 图标资产"
-    link "agentcss"
   main
-    paragraph "图表与资源 · 资产"
     heading "icons · 图标资产" [level=1]
     paragraph "35 个 Lucide 图标：独立 SVG 文件 + manifest 溯源，两种消费方式与一条可访问名约定"
     list

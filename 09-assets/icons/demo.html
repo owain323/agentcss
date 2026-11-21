@@ -20,22 +20,13 @@
 .icon-demo-color { padding: var(--sp-3); background: var(--accent); color: #fff;
                    border-radius: var(--r-sm); margin: 0 0 var(--sp-4); }
 .icon-demo-color .icon-slot { margin-inline-end: var(--sp-2); }
-.meta-links { list-style: none; padding: 0; margin: 0 0 var(--sp-4);
-              display: flex; gap: var(--sp-3); font-size: var(--fs-sm); }
-
-/* 🔴 打印设计（print 门禁实测抓出）：两个图标网格是**屏幕上的注入演示**——
-   35 个 2px 描边的小图标打印成 2.3:1 的灰色栅格，纸上无信息量。
-   语义示例（a11y 约定）与 manifest 表保留在纸上。 */
-@media print {
-  .icon-grid, .icon-demo-color { display: none; }
-}
 </style>
 </head>
 <body class="page">
 <main class="wrap">
     <h1>icons · 图标资产</h1>
     <p class="lede">35 个 Lucide 图标：独立 SVG 文件 + manifest 溯源，两种消费方式与一条可访问名约定</p>
-    <ul class="meta-links"><li><a href="README.md"><code>README.md</code></a></li><li><a href="manifest.json"><code>manifest.json</code></a></li></ul>
+    <ul class="g-meta"><li><a href="README.md"><code>README.md</code></a></li><li><a href="manifest.json"><code>manifest.json</code></a></li></ul>
 
     <h2 id="s1">方式一：<code>&lt;img&gt;</code> 标签（无样式依赖）</h2>
     <p>每个图标一个 <code>alt</code>（= manifest 的中文 label）。装饰场景由使用方改写为 <code>alt=""</code>。</p>
@@ -131,7 +122,7 @@
     </ul>
 
     <h2 id="s4">manifest 全量（35 条）</h2>
-    <div class="table" tabindex="0" role="region" aria-label="图标清单（可横向滚动）"><table>
+    <div class="table" tabindex="0" role="region" aria-label="图标清单（可横向滚动）"><table aria-label="图标清单">
       <thead><tr><th>文件</th><th>name</th><th>label</th><th>分组</th></tr></thead>
       <tbody id="manifest-rows">
       <tr><td><code>revenue.svg</code></td><td>revenue</td><td>收入</td><td>财务与业务</td></tr>
