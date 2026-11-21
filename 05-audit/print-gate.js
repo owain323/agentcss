@@ -1767,6 +1767,15 @@ async function adversarial() {
   /* 🔴 0.27.21：平台检查必须覆盖 --adversarial 路径——它在 main() 之前
      return（实测：只检查 main() 时 print-adv 在 CI Linux 连红两轮 nightly）。 */
   assertBaselinePlatform();
+  /* 🔴 0.27.23（E153 第三态）：对抗夹具的**等值断言**（unbreakable↔breakable
+     的 run 数一致、opacity:0 与对照全等）按 win32 文字度量校准——Linux 字体
+     度量不同 ⇒ 断言必假红。牙齿在录制平台已验；Linux 上跑 print 门禁
+     本体（基线分集），对抗验证不重复。 */
+  if (process.platform !== 'win32') {
+    console.log('  SKIP（本平台不适用：对抗夹具的等值断言按 win32 度量校准——'
+      + 'print 门禁本体在 ' + process.platform + ' 走基线分集照跑，牙齿已在 win32 验证）');
+    process.exit(3);
+  }
   let bad = 0;
   let total = 0;
   const report = (ok, why, extra) => {

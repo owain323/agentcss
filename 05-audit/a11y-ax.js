@@ -407,6 +407,17 @@ async function transcript(page) {
     }
     name = name.replace(/\s+/g, ' ').slice(0, 60);
 
+    /* 🔴 0.27.23（可访问名的 locale 归一）：原生 `<input type=date>` 的内部
+       旋钮可访问名是 **Chromium 浏览器侧字符串**——zh 环境转录「年 年」、
+       en_US CI 转录「Month Month」，`--lang` / Playwright locale 都改不动它。
+       这些名字是浏览器 chrome，不是作者内容 ⇒ 转录归一为 `<date-part>`。
+       归一不损失回归能力：作者可控制的部分（input 本身的名字、disabled
+       状态、行序）原样保留。 */
+    if (role === 'spinbutton' &&
+        /^(year|month|day|week|年|月|日|周)(\s*)?$/.test(name)) {
+      name = '<date-part>';
+    }
+
     const keep = !raw.ignored && !ROLE_IGNORE.has(role) &&
                  (name !== '' || STRUCTURAL.has(role) ||
                   Object.keys(states).some((k) => stateIsReal(states[k])));
