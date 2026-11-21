@@ -101,7 +101,7 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 |------|------|------|------|
 | size-baseline.py 判据与注释矛盾（0.27.11 起的债，12 版未修） | 判据坏了（代码没实现注释的「1KB 门槛」） | `:173` 注释「小文件涨 50% 可能只有几百字节，不值得拦」vs `:178` `d > tol or …` 比率项单独拦——typography.css +410B ⇒ +13.2% 被拦。**两轮（0.27.11 / 0.27.24 第五批）都走了「重录基线」绕行**——同一动作重演两次即债 | 代码对齐注释：文件级改 **gzip/raw 双绝对门槛**（`dabs > 1024 or rabs > 1024`），比率只剩展示（总量侧不动：总量的 5% 是几十 KB，比率项语义成立）。**证明**：① 回退 0.27.23 基线，新逻辑下 +410B 不重录即绿（绕行路径消失）② 反向变异 +2KB 不可压缩 ⇒ exit=1、文件被点名 ③ `--selftest` 4 用例（selftest-all 自动发现）——矛盾能活 12 版就是因为文件级逻辑没有反向控制 |
 | 发得出去 ≠ 三引擎全绿（0.27.23 在矩阵连红三轮期间照发） | 观测条件（发版流程缺门） | `publish:check` = 静态层 + pack-smoke，矩阵不在发版链上 | ① `release-run.sh` 新增 `preflight [sha]` 子命令：查该提交上最新 gate.yml dispatch run，非 success 拒绝（正例 df88907 exit=0 / 反例 absent exit=1 带恢复指引）② release.yml 发布前守门步硬卡同一检查（新增 `actions: read`）。**恢复路径**：dispatch → 等六 job 全绿 → 打 tag / 重跑发布 |
-| visual-stamp/visual 是失败第一名（5 次失败 run 29 处失败占 10 处） | 观测条件（"记得去 dispatch"的摩擦） | 成因恒定：win32 当场能录，Linux 要人工 `gh workflow run record-baseline` + 合并 | **案 A 变体**：visual-stamp-gate 过期/缺失时落机器可读标记 `05-audit/.stamp-stale.json`（伪造 stamp 实测：红 + 标记落 / 还原：绿 + 标记清）⇒ gate.yml 快门禁与发布资格两 job（仅 master）读到标记**自动派发** record-baseline（S4 修订：job 级 `actions: write` 只为派发，不给 contents:write；record-baseline 加并发组防双派发竞态）。**门禁照旧红不掩盖；基线分支的合并保留为像素 diff 的人工复核点**。案 B（基线出仓 artifact 化）不选：动 shot/print 门禁的读路径 + 伤本地克隆体验 + 录制来源可信度反而要另建 |
+| visual-stamp/visual 是失败第一名（5 次失败 run 29 处失败占 10 处） | 观测条件（"记得去 dispatch"的摩擦） | 成因恒定：win32 当场能录，Linux 要人工 `gh workflow run record-baseline` + 合并 | **案 A 变体**：visual-stamp-gate 过期/缺失时落机器可读标记（05-audit 下名为 .stamp-stale.json 的标记文件，gitignored、不随仓分发——克隆后不存在，故不做行内代码路径引用）⇒ gate.yml 快门禁与发布资格两 job（仅 master）读到标记**自动派发** record-baseline（S4 修订：job 级 `actions: write` 只为派发，不给 contents:write；record-baseline 加并发组防双派发竞态）。**门禁照旧红不掩盖；基线分支的合并保留为像素 diff 的人工复核点**。案 B（基线出仓 artifact 化）不选：动 shot/print 门禁的读路径 + 伤本地克隆体验 + 录制来源可信度反而要另建 |
 | 审计更正（双向证据纪律） | —— | 「hover 抬起用 margin 改位」是门禁**判据文案**不是缺陷本体——探针实证根因是 CI chromium 报 pointer:none（环境不可观测），已按第三态立法显式 SKIP。sparkline 溢出才是真产品缺陷（已修） | 审计的另一半「nightly 红的是真缺陷」成立一半；「0.27.23 照发」的流程批评成立，已由上两条接住 |
 | laptop-agentcss-write-20261031 部署密钥 | 安全债（结论补齐） | 实测：`read_only=false`（可写），指纹 = 本机 `~/.ssh/agentcss_deploy_ed25519`（agentcss-fix 的 `core.sshCommand` 指定它）——**就是本仓当前的推送凭据**；无任何 workflow 依赖它；本机无账号级 agentcss 密钥（id_ed25519 是 frontend-lib 仓的部署密钥、id_rsa 未注册） | **结论：保留**。它是仓库级作用域的推送凭据，撤销即断本机推送；风险边界=仅此仓。若要撤销：先在 GitHub 账号级注册 SSH key 并改 `core.sshCommand` → 再删部署密钥——作者动作 |
 | E:\frontend-lib 落后 | 流程债（只报不收） | 实测：本地 963b255，落后 **85 提交**（不止 7）；agentcss 是延续仓（可纯快进）；examples/finance-report/index.html 有一处未提交的一词改动（归母净利率→净利率，85 提交未碰该文件） | 已 `git merge --ff-only origin/master` 快进到 5cd859e，VERSION 0.27.23；一词改动**原样保留**在工作区——方向是术语精确度下降（归母净利率是标准财务术语），建议作者复核是否本意，确认后要么提交要么放弃 |
@@ -116,6 +116,13 @@ clicktest 的 [SKIP] 行与 gate 级第三态在日志中可见，判据一字�
 
 观察项保留：zoom-reflow（overlay @200%，webkit）偶发——44918395385 红过一次、
 44940962508/44943881582 未复现；再复现两次以上再立案。
+
+## 观察项（偶发，未立案）
+
+| 门禁 | 引擎 | 发生 | 机制假设 | 纪律 |
+|------|------|------|------|------|
+| zoom-reflow（overlay @200% 布局指标未稳定） | webkit | #1 run 44918395385 · #2 run 44950026675（其余三轮绿） | CI 负载下的结算计时抖动 | 再复现一次（#3）立案 |
+| clicktest（choice 勾选对比 1.00:1） | webkit | #1 run 44950026675（勾选后标记/底色全白，checked=true 而 :checked 样式未结算——本地勾选后底色是 accent） | +140ms 盲等 vs CI 上样式结算滞后（与 switch-geom 同族） | 已加失败时 +1s 复测探针（判据不动）：复测有色=观测时机→结算等待修法；仍白=真对比缺陷→产品修复单。再红一次按探针结论修 |
 
 ## 规矩（不因红片而变）
 

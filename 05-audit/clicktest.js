@@ -123,8 +123,23 @@ const CASES = {
           /* 勾选状态：标记必须在框底上**看得见**。
              判定用颜色对比，不看 content —— content 一直在，看不出撞色。 */
           if (!vis.tick || tickCr < 3) {
+            /* 🔴 0.27.24（可诊断性，判据不动）：webkit CI 首次假红
+               （run 44950026675：勾选后标记/底色全白 1.00:1，checked 已翻
+               true 而 :checked 样式疑似未结算——与 switch-geom 同族的
+               观测时机问题，单次发生不盲修）。失败时 +1s 复测：
+               复测有色 = 观测时机问题 → 走结算等待修法；
+               复测仍白 = 真对比缺陷 → 开产品修复单。 */
+            const late = await p.evaluate((idx) => new Promise((res) => {
+              setTimeout(() => {
+                const el = document.querySelectorAll('.choice__input')[idx];
+                const mk = el.parentNode.querySelector('.choice__mark');
+                const cs = getComputedStyle(mk);
+                res({ bg: cs.backgroundColor, checked: el.checked });
+              }, 1000);
+            }), i);
             ok = false;
-            note = '❌ 标记与框底几乎同色（对比 ' + tickCr.toFixed(2) + ':1）⇒ 看不见';
+            note = '❌ 标记与框底几乎同色（对比 ' + tickCr.toFixed(2) + ':1）⇒ 看不见'
+                 + '；+1s复测 底色=' + late.bg + ' checked=' + late.checked;
           } else {
             ok = true;
             note = '✅ 切换且标记可见（对比 ' + tickCr.toFixed(1) + ':1）';
