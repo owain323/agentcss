@@ -181,6 +181,7 @@ PAGES = [
     ('09-assets/model-viewer',    'demo.html', '模型查看器'),
     ('09-assets/sparkline',       'demo.html', '迷你图'),
     ('09-assets/icons-anim',      'demo.html', '图标动效'),
+    ('09-assets/icons',           'demo.html', '图标资产'),
     ('04-recipes/table',          'demo.html', '表格'),
     ('09-assets/bar',             'demo.html', '柱状图'),
     ('10-review/composition',     'demo.html', '组合页'),

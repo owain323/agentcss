@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>icons · 图标资产</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../01-tokens/tokens.css">
+<link rel="stylesheet" href="../../01-tokens/typography.css">
+<link rel="stylesheet" href="../../01-tokens/page.css">
+<link rel="stylesheet" href="../../04-recipes/table/table.css">
+<style>
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+             gap: var(--sp-2); list-style: none; padding: 0; margin: 0 0 var(--sp-4); }
+.icon-grid li { display: flex; align-items: center; gap: var(--sp-2);
+                padding: var(--sp-2); border: 1px solid var(--border-decor);
+                border-radius: var(--r-sm); background: var(--surface); }
+.icon-slot { display: inline-flex; width: 24px; height: 24px; }
+.icon-slot svg { width: 24px; height: 24px; }
+.icon-demo-color { padding: var(--sp-3); background: var(--accent); color: #fff;
+                   border-radius: var(--r-sm); margin: 0 0 var(--sp-4); }
+.icon-demo-color .icon-slot { margin-inline-end: var(--sp-2); }
+.meta-links { list-style: none; padding: 0; margin: 0 0 var(--sp-4);
+              display: flex; gap: var(--sp-3); font-size: var(--fs-sm); }
+
+/* 🔴 打印设计（print 门禁实测抓出）：两个图标网格是**屏幕上的注入演示**——
+   35 个 2px 描边的小图标打印成 2.3:1 的灰色栅格，纸上无信息量。
+   语义示例（a11y 约定）与 manifest 表保留在纸上。 */
+@media print {
+  .icon-grid, .icon-demo-color { display: none; }
+}
+</style>
+</head>
+<body class="page">
+<main class="wrap">
+    <h1>icons · 图标资产</h1>
+    <p class="lede">35 个 Lucide 图标：独立 SVG 文件 + manifest 溯源，两种消费方式与一条可访问名约定</p>
+    <ul class="meta-links"><li><a href="README.md"><code>README.md</code></a></li><li><a href="manifest.json"><code>manifest.json</code></a></li></ul>
+
+    <h2 id="s1">方式一：<code>&lt;img&gt;</code> 标签（无样式依赖）</h2>
+    <p>每个图标一个 <code>alt</code>（= manifest 的中文 label）。装饰场景由使用方改写为 <code>alt=""</code>。</p>
+    <ul class="icon-grid">
+      <li><img src="svg/revenue.svg" width="24" height="24" alt="收入"><code>revenue</code></li>
+      <li><img src="svg/expense.svg" width="24" height="24" alt="支出"><code>expense</code></li>
+      <li><img src="svg/profit.svg" width="24" height="24" alt="利润"><code>profit</code></li>
+      <li><img src="svg/balance.svg" width="24" height="24" alt="资产负债"><code>balance</code></li>
+      <li><img src="svg/cashflow.svg" width="24" height="24" alt="现金流"><code>cashflow</code></li>
+      <li><img src="svg/invoice.svg" width="24" height="24" alt="发票"><code>invoice</code></li>
+      <li><img src="svg/bank.svg" width="24" height="24" alt="银行"><code>bank</code></li>
+      <li><img src="svg/wallet.svg" width="24" height="24" alt="钱包"><code>wallet</code></li>
+      <li><img src="svg/report.svg" width="24" height="24" alt="报表"><code>report</code></li>
+      <li><img src="svg/chart-bar.svg" width="24" height="24" alt="柱状图"><code>chart-bar</code></li>
+      <li><img src="svg/chart-line.svg" width="24" height="24" alt="折线图"><code>chart-line</code></li>
+      <li><img src="svg/pie-chart.svg" width="24" height="24" alt="饼图"><code>pie-chart</code></li>
+      <li><img src="svg/trend-up.svg" width="24" height="24" alt="上涨"><code>trend-up</code></li>
+      <li><img src="svg/trend-down.svg" width="24" height="24" alt="下跌"><code>trend-down</code></li>
+      <li><img src="svg/calculator.svg" width="24" height="24" alt="计算器"><code>calculator</code></li>
+      <li><img src="svg/search.svg" width="24" height="24" alt="搜索"><code>search</code></li>
+      <li><img src="svg/dashboard.svg" width="24" height="24" alt="仪表盘"><code>dashboard</code></li>
+      <li><img src="svg/settings.svg" width="24" height="24" alt="设置"><code>settings</code></li>
+      <li><img src="svg/user.svg" width="24" height="24" alt="用户"><code>user</code></li>
+      <li><img src="svg/users.svg" width="24" height="24" alt="团队"><code>users</code></li>
+      <li><img src="svg/alert.svg" width="24" height="24" alt="警告"><code>alert</code></li>
+      <li><img src="svg/check.svg" width="24" height="24" alt="完成"><code>check</code></li>
+      <li><img src="svg/close.svg" width="24" height="24" alt="关闭"><code>close</code></li>
+      <li><img src="svg/download.svg" width="24" height="24" alt="导出"><code>download</code></li>
+      <li><img src="svg/upload.svg" width="24" height="24" alt="上传"><code>upload</code></li>
+      <li><img src="svg/filter.svg" width="24" height="24" alt="筛选"><code>filter</code></li>
+      <li><img src="svg/calendar.svg" width="24" height="24" alt="日历"><code>calendar</code></li>
+      <li><img src="svg/folder.svg" width="24" height="24" alt="文件夹"><code>folder</code></li>
+      <li><img src="svg/document.svg" width="24" height="24" alt="文档"><code>document</code></li>
+      <li><img src="svg/refresh.svg" width="24" height="24" alt="刷新"><code>refresh</code></li>
+      <li><img src="svg/help.svg" width="24" height="24" alt="帮助"><code>help</code></li>
+      <li><img src="svg/menu.svg" width="24" height="24" alt="菜单"><code>menu</code></li>
+      <li><img src="svg/external-link.svg" width="24" height="24" alt="外链"><code>external-link</code></li>
+      <li><img src="svg/eye.svg" width="24" height="24" alt="查看"><code>eye</code></li>
+      <li><img src="svg/lock.svg" width="24" height="24" alt="锁定"><code>lock</code></li>
+    </ul>
+
+    <h2 id="s2">方式二：inline SVG（currentColor 继承文字颜色）</h2>
+    <p>下面的 <code>.icon-slot</code> 由本页脚本按 manifest 注入几何——与文档化的消费流一致。
+       装饰性图标 <code>aria-hidden="true"</code>；语义性图标 <code>role="img"</code> + <code>aria-label</code>。</p>
+    <div class="icon-demo-color" data-icon-color-demo>
+      <p style="margin:0 0 var(--sp-2)"><strong>颜色继承演示</strong>：stroke 跟随容器的文字颜色（当前 #fff）。</p>
+      <span class="icon-slot" data-icon="trend-up" role="img" aria-label="上涨（图标）"></span>
+      <span class="icon-slot" data-icon="trend-down" role="img" aria-label="下跌（图标）"></span>
+    </div>
+    <div class="icon-grid">
+      <span class="icon-slot" data-icon="revenue" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="expense" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="profit" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="balance" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="cashflow" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="invoice" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="bank" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="wallet" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="report" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="chart-bar" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="chart-line" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="pie-chart" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="calculator" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="search" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="dashboard" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="settings" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="user" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="users" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="alert" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="check" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="close" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="download" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="upload" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="filter" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="calendar" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="folder" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="document" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="refresh" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="help" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="menu" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="external-link" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="eye" aria-hidden="true"></span>
+      <span class="icon-slot" data-icon="lock" aria-hidden="true"></span>
+    </div>
+
+    <h2 id="s3">a11y 约定（本页负责证什么）</h2>
+    <ul>
+      <li><code>&lt;img&gt;</code> 方式：<code>alt</code> 必填——语义场景用中文 label，装饰场景 <code>alt=""</code>。</li>
+      <li>inline 方式：纯装饰 <code>aria-hidden="true"</code>；需要被朗读时
+          <code>role="img"</code> + <code>aria-label</code>（本页的三个语义示例）。</li>
+      <li>不许出现「裸 SVG 无名」——下方表格与两个网格由
+          <code>icons-check</code> 门禁逐个核对。</li>
+    </ul>
+
+    <h2 id="s4">manifest 全量（35 条）</h2>
+    <div class="table" tabindex="0" role="region" aria-label="图标清单（可横向滚动）"><table>
+      <thead><tr><th>文件</th><th>name</th><th>label</th><th>分组</th></tr></thead>
+      <tbody id="manifest-rows">
+      <tr><td><code>revenue.svg</code></td><td>revenue</td><td>收入</td><td>财务与业务</td></tr>
+      <tr><td><code>expense.svg</code></td><td>expense</td><td>支出</td><td>财务与业务</td></tr>
+      <tr><td><code>profit.svg</code></td><td>profit</td><td>利润</td><td>财务与业务</td></tr>
+      <tr><td><code>balance.svg</code></td><td>balance</td><td>资产负债</td><td>财务与业务</td></tr>
+      <tr><td><code>cashflow.svg</code></td><td>cashflow</td><td>现金流</td><td>财务与业务</td></tr>
+      <tr><td><code>invoice.svg</code></td><td>invoice</td><td>发票</td><td>财务与业务</td></tr>
+      <tr><td><code>bank.svg</code></td><td>bank</td><td>银行</td><td>财务与业务</td></tr>
+      <tr><td><code>wallet.svg</code></td><td>wallet</td><td>钱包</td><td>财务与业务</td></tr>
+      <tr><td><code>report.svg</code></td><td>report</td><td>报表</td><td>财务与业务</td></tr>
+      <tr><td><code>chart-bar.svg</code></td><td>chart-bar</td><td>柱状图</td><td>财务与业务</td></tr>
+      <tr><td><code>chart-line.svg</code></td><td>chart-line</td><td>折线图</td><td>财务与业务</td></tr>
+      <tr><td><code>pie-chart.svg</code></td><td>pie-chart</td><td>饼图</td><td>财务与业务</td></tr>
+      <tr><td><code>trend-up.svg</code></td><td>trend-up</td><td>上涨</td><td>财务与业务</td></tr>
+      <tr><td><code>trend-down.svg</code></td><td>trend-down</td><td>下跌</td><td>财务与业务</td></tr>
+      <tr><td><code>calculator.svg</code></td><td>calculator</td><td>计算器</td><td>财务与业务</td></tr>
+      <tr><td><code>search.svg</code></td><td>search</td><td>搜索</td><td>通用界面</td></tr>
+      <tr><td><code>dashboard.svg</code></td><td>dashboard</td><td>仪表盘</td><td>通用界面</td></tr>
+      <tr><td><code>settings.svg</code></td><td>settings</td><td>设置</td><td>通用界面</td></tr>
+      <tr><td><code>user.svg</code></td><td>user</td><td>用户</td><td>通用界面</td></tr>
+      <tr><td><code>users.svg</code></td><td>users</td><td>团队</td><td>通用界面</td></tr>
+      <tr><td><code>alert.svg</code></td><td>alert</td><td>警告</td><td>通用界面</td></tr>
+      <tr><td><code>check.svg</code></td><td>check</td><td>完成</td><td>通用界面</td></tr>
+      <tr><td><code>close.svg</code></td><td>close</td><td>关闭</td><td>通用界面</td></tr>
+      <tr><td><code>download.svg</code></td><td>download</td><td>导出</td><td>通用界面</td></tr>
+      <tr><td><code>upload.svg</code></td><td>upload</td><td>上传</td><td>通用界面</td></tr>
+      <tr><td><code>filter.svg</code></td><td>filter</td><td>筛选</td><td>通用界面</td></tr>
+      <tr><td><code>calendar.svg</code></td><td>calendar</td><td>日历</td><td>通用界面</td></tr>
+      <tr><td><code>folder.svg</code></td><td>folder</td><td>文件夹</td><td>通用界面</td></tr>
+      <tr><td><code>document.svg</code></td><td>document</td><td>文档</td><td>通用界面</td></tr>
+      <tr><td><code>refresh.svg</code></td><td>refresh</td><td>刷新</td><td>通用界面</td></tr>
+      <tr><td><code>help.svg</code></td><td>help</td><td>帮助</td><td>通用界面</td></tr>
+      <tr><td><code>menu.svg</code></td><td>menu</td><td>菜单</td><td>通用界面</td></tr>
+      <tr><td><code>external-link.svg</code></td><td>external-link</td><td>外链</td><td>通用界面</td></tr>
+      <tr><td><code>eye.svg</code></td><td>eye</td><td>查看</td><td>通用界面</td></tr>
+      <tr><td><code>lock.svg</code></td><td>lock</td><td>锁定</td><td>通用界面</td></tr>
+      </tbody>
+    </table></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  fetch('manifest.json').then(function (r) { return r.json(); }).then(function (m) {
+    var byName = {};
+    m.icons.forEach(function (it) { byName[it.name] = it; });
+    document.querySelectorAll('.icon-slot').forEach(function (slot) {
+      var it = byName[slot.getAttribute('data-icon')];
+      if (!it) return;
+      slot.innerHTML = '<svg viewBox="' + m.viewBox + '" fill="none" stroke="currentColor" '
+        + 'stroke-width="' + m.strokeWidth + '" stroke-linecap="round" stroke-linejoin="round" '
+        + 'aria-hidden="true" focusable="false">' + it.body + '</svg>';
+    });
+    var tbody = document.getElementById('manifest-rows');
+    if (tbody) {
+      tbody.innerHTML = m.icons.map(function (it) {
+        return '<tr><td><code>' + it.name + '.svg</code></td><td><code>' + it.name
+          + '</code></td><td>' + it.label + '</td><td>' + it.group + '</td></tr>';
+      }).join('');
+    }
+  });
+})();
+</script>
+</body>
+</html>

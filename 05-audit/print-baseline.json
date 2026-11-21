@@ -10,7 +10,8 @@
     "/examples/finance-report/index.html",
     "/04-recipes/table/demo.html",
     "/02-primitives/choice/demo.html",
-    "/02-primitives/upload/demo.html"
+    "/02-primitives/upload/demo.html",
+    "/09-assets/icons/demo.html"
   ],
   "types": {
     "wide": {
@@ -38,7 +39,7 @@
     "tall": {
       "what": "分页必然发生",
       "metric": "docH",
-      "members": 40,
+      "members": 41,
       "pages": [
         "/02-primitives/button/demo.html",
         "/02-primitives/input/demo.html",
@@ -68,6 +69,7 @@
         "/03-patterns/reveal/demo.html",
         "/09-assets/model-viewer/demo.html",
         "/09-assets/sparkline/demo.html",
+        "/09-assets/icons/demo.html",
         "/04-recipes/table/demo.html",
         "/09-assets/bar/demo.html",
         "/10-review/composition/demo.html",
@@ -85,12 +87,13 @@
     "grid": {
       "what": "多栏栅格",
       "metric": "maxCols",
-      "members": 11,
+      "members": 12,
       "pages": [
         "/02-primitives/skeleton/demo.html",
         "/02-primitives/upload/demo.html",
         "/03-patterns/reveal/demo.html",
         "/09-assets/icons-anim/demo.html",
+        "/09-assets/icons/demo.html",
         "/04-recipes/analysis-report/demo.html",
         "/04-recipes/app-shell/demo.html",
         "/04-recipes/report/demo.html",
@@ -112,7 +115,7 @@
     "media": {
       "what": "矢量/位图",
       "metric": "mediaCount",
-      "members": 13,
+      "members": 14,
       "pages": [
         "/02-primitives/button/demo.html",
         "/02-primitives/choice/demo.html",
@@ -120,6 +123,7 @@
         "/02-primitives/upload/demo.html",
         "/09-assets/sparkline/demo.html",
         "/09-assets/icons-anim/demo.html",
+        "/09-assets/icons/demo.html",
         "/09-assets/bar/demo.html",
         "/04-recipes/analysis-report/demo.html",
         "/04-recipes/app-shell/demo.html",
@@ -151,13 +155,14 @@
     "table": {
       "what": "表格",
       "metric": "tables",
-      "members": 12,
+      "members": 13,
       "pages": [
         "/03-patterns/content/demo.html",
         "/02-primitives/popover/demo.html",
         "/03-patterns/accordion/demo.html",
         "/03-patterns/pagination/demo.html",
         "/09-assets/model-viewer/demo.html",
+        "/09-assets/icons/demo.html",
         "/04-recipes/table/demo.html",
         "/10-review/composition/demo.html",
         "/04-recipes/analysis-report/demo.html",
@@ -369,6 +374,26 @@
           "#000000": 501,
           "#7D1C11": 12,
           "#1C4526": 3
+        }
+      }
+    },
+    "type-media-icons": {
+      "light": {
+        "pages": 3,
+        "runs": 1049,
+        "worst": 9.4,
+        "hist": {
+          "#000000": 1027,
+          "#0000EE": 22
+        }
+      },
+      "dark": {
+        "pages": 3,
+        "runs": 1049,
+        "worst": 9.4,
+        "hist": {
+          "#000000": 1027,
+          "#0000EE": 22
         }
       }
     }

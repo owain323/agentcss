@@ -997,6 +997,10 @@ run "tabs"       node 05-audit/tabs-contract.js
 run "reveal"     node 05-audit/reveal-contract.js
 run "icons-anim"         node 05-audit/icons-anim-check.js
 run "icons-anim-reduced" node 05-audit/icons-anim-reduced.js
+# 🔴 0.27.22：35 个静态 SVG 图标的运行时层（此前只有目录级一致性）——
+#   磁盘完整性 / 三统一 / demo 页注入与可访问名约定，判据带喂坏夹具的 selftest。
+run "icons"         node 05-audit/icons-check.js
+run "icons-rev"     node 05-audit/icons-check.js --selftest
 run "accordion"  node 05-audit/accordion-contract.js
 run "chart"      node 05-audit/chart-check.js
 run "sparkline"  node 05-audit/sparkline-contract.js
