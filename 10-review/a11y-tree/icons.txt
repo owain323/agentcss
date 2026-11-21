@@ -1,0 +1,287 @@
+# icons — 图标资产：注入路径的可访问名约定（img alt / inline aria-hidden / 语义 role+label）
+# 由 05-audit/a11y-ax.js 生成；这是可访问性树的线性转录，不是录音。
+# 改动的含义是「屏幕阅读器会念的东西变了」。刷新：node 05-audit/a11y-ax.js --update
+RootWebArea "icons · 图标资产"
+  link "跳到主内容"
+  banner "agentcss icons · 图标资产"
+    link "agentcss"
+  main
+    paragraph "图表与资源 · 资产"
+    heading "icons · 图标资产" [level=1]
+    paragraph "35 个 Lucide 图标：独立 SVG 文件 + manifest 溯源，两种消费方式与一条可访问名约定"
+    list
+      listitem "README.md" [level=1]
+        ListMarker "• "
+        link "README.md"
+      listitem "manifest.json" [level=1]
+        ListMarker "• "
+        link "manifest.json"
+    heading "方式一：<img> 标签（无样式依赖）" [level=2]
+    paragraph "每个图标一个 alt （= manifest 的中文 label）。装饰场景由使用方改写为 alt="" 。"
+    list
+      listitem "revenue" [level=1]
+        image "收入"
+      listitem "expense" [level=1]
+        image "支出"
+      listitem "profit" [level=1]
+        image "利润"
+      listitem "balance" [level=1]
+        image "资产负债"
+      listitem "cashflow" [level=1]
+        image "现金流"
+      listitem "invoice" [level=1]
+        image "发票"
+      listitem "bank" [level=1]
+        image "银行"
+      listitem "wallet" [level=1]
+        image "钱包"
+      listitem "report" [level=1]
+        image "报表"
+      listitem "chart-bar" [level=1]
+        image "柱状图"
+      listitem "chart-line" [level=1]
+        image "折线图"
+      listitem "pie-chart" [level=1]
+        image "饼图"
+      listitem "trend-up" [level=1]
+        image "上涨"
+      listitem "trend-down" [level=1]
+        image "下跌"
+      listitem "calculator" [level=1]
+        image "计算器"
+      listitem "search" [level=1]
+        image "搜索"
+      listitem "dashboard" [level=1]
+        image "仪表盘"
+      listitem "settings" [level=1]
+        image "设置"
+      listitem "user" [level=1]
+        image "用户"
+      listitem "users" [level=1]
+        image "团队"
+      listitem "alert" [level=1]
+        image "警告"
+      listitem "check" [level=1]
+        image "完成"
+      listitem "close" [level=1]
+        image "关闭"
+      listitem "download" [level=1]
+        image "导出"
+      listitem "upload" [level=1]
+        image "上传"
+      listitem "filter" [level=1]
+        image "筛选"
+      listitem "calendar" [level=1]
+        image "日历"
+      listitem "folder" [level=1]
+        image "文件夹"
+      listitem "document" [level=1]
+        image "文档"
+      listitem "refresh" [level=1]
+        image "刷新"
+      listitem "help" [level=1]
+        image "帮助"
+      listitem "menu" [level=1]
+        image "菜单"
+      listitem "external-link" [level=1]
+        image "外链"
+      listitem "eye" [level=1]
+        image "查看"
+      listitem "lock" [level=1]
+        image "锁定"
+    heading "方式二：inline SVG（currentColor 继承文字颜色）" [level=2]
+    paragraph "下面的 .icon-slot 由本页脚本按 manifest 注入几何——与文档化的消费流一致。 装饰性图标 aria-"
+    paragraph "颜色继承演示 ：stroke 跟随容器的文字颜色（当前 #fff）。"
+    image "上涨（图标）"
+    image "下跌（图标）"
+    heading "a11y 约定（本页负责证什么）" [level=2]
+    list
+      listitem "<img> 方式： alt 必填——语义场景用中文 label，装饰场景 alt="" 。" [level=1]
+        ListMarker "• "
+      listitem "inline 方式：纯装饰 aria-hidden="true" ；需要被朗读时 role="img" + aria-l" [level=1]
+        ListMarker "• "
+      listitem "不许出现「裸 SVG 无名」——下方表格与两个网格由 icons-check 门禁逐个核对。" [level=1]
+        ListMarker "• "
+    heading "manifest 全量（35 条）" [level=2]
+    region "图标清单（可横向滚动）"
+      table "图标清单"
+        row
+          columnheader "文件"
+          columnheader "name"
+          columnheader "label"
+          columnheader "分组"
+        row
+          cell "revenue.svg"
+          cell "revenue"
+          cell "收入"
+          cell "财务与业务"
+        row
+          cell "expense.svg"
+          cell "expense"
+          cell "支出"
+          cell "财务与业务"
+        row
+          cell "profit.svg"
+          cell "profit"
+          cell "利润"
+          cell "财务与业务"
+        row
+          cell "balance.svg"
+          cell "balance"
+          cell "资产负债"
+          cell "财务与业务"
+        row
+          cell "cashflow.svg"
+          cell "cashflow"
+          cell "现金流"
+          cell "财务与业务"
+        row
+          cell "invoice.svg"
+          cell "invoice"
+          cell "发票"
+          cell "财务与业务"
+        row
+          cell "bank.svg"
+          cell "bank"
+          cell "银行"
+          cell "财务与业务"
+        row
+          cell "wallet.svg"
+          cell "wallet"
+          cell "钱包"
+          cell "财务与业务"
+        row
+          cell "report.svg"
+          cell "report"
+          cell "报表"
+          cell "财务与业务"
+        row
+          cell "chart-bar.svg"
+          cell "chart-bar"
+          cell "柱状图"
+          cell "财务与业务"
+        row
+          cell "chart-line.svg"
+          cell "chart-line"
+          cell "折线图"
+          cell "财务与业务"
+        row
+          cell "pie-chart.svg"
+          cell "pie-chart"
+          cell "饼图"
+          cell "财务与业务"
+        row
+          cell "trend-up.svg"
+          cell "trend-up"
+          cell "上涨"
+          cell "财务与业务"
+        row
+          cell "trend-down.svg"
+          cell "trend-down"
+          cell "下跌"
+          cell "财务与业务"
+        row
+          cell "calculator.svg"
+          cell "calculator"
+          cell "计算器"
+          cell "财务与业务"
+        row
+          cell "search.svg"
+          cell "search"
+          cell "搜索"
+          cell "通用界面"
+        row
+          cell "dashboard.svg"
+          cell "dashboard"
+          cell "仪表盘"
+          cell "通用界面"
+        row
+          cell "settings.svg"
+          cell "settings"
+          cell "设置"
+          cell "通用界面"
+        row
+          cell "user.svg"
+          cell "user"
+          cell "用户"
+          cell "通用界面"
+        row
+          cell "users.svg"
+          cell "users"
+          cell "团队"
+          cell "通用界面"
+        row
+          cell "alert.svg"
+          cell "alert"
+          cell "警告"
+          cell "通用界面"
+        row
+          cell "check.svg"
+          cell "check"
+          cell "完成"
+          cell "通用界面"
+        row
+          cell "close.svg"
+          cell "close"
+          cell "关闭"
+          cell "通用界面"
+        row
+          cell "download.svg"
+          cell "download"
+          cell "导出"
+          cell "通用界面"
+        row
+          cell "upload.svg"
+          cell "upload"
+          cell "上传"
+          cell "通用界面"
+        row
+          cell "filter.svg"
+          cell "filter"
+          cell "筛选"
+          cell "通用界面"
+        row
+          cell "calendar.svg"
+          cell "calendar"
+          cell "日历"
+          cell "通用界面"
+        row
+          cell "folder.svg"
+          cell "folder"
+          cell "文件夹"
+          cell "通用界面"
+        row
+          cell "document.svg"
+          cell "document"
+          cell "文档"
+          cell "通用界面"
+        row
+          cell "refresh.svg"
+          cell "refresh"
+          cell "刷新"
+          cell "通用界面"
+        row
+          cell "help.svg"
+          cell "help"
+          cell "帮助"
+          cell "通用界面"
+        row
+          cell "menu.svg"
+          cell "menu"
+          cell "菜单"
+          cell "通用界面"
+        row
+          cell "external-link.svg"
+          cell "external-link"
+          cell "外链"
+          cell "通用界面"
+        row
+          cell "eye.svg"
+          cell "eye"
+          cell "查看"
+          cell "通用界面"
+        row
+          cell "lock.svg"
+          cell "lock"
+          cell "锁定"
+          cell "通用界面"

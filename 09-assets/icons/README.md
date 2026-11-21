@@ -21,6 +21,15 @@
   用 inline 方式时颜色自动跟随文字 `color`
 - `<img>` 方式颜色固定为 SVG 文件内的 `currentColor`（即黑），需变色请用 inline
 
+## 可访问名约定（0.27.22 起，icons-check 门禁核对）
+
+- `<img>` 方式：`alt` 必填——语义场景用 manifest 的中文 label，装饰场景 `alt=""`
+- inline 方式：纯装饰 `aria-hidden="true"`；需要被朗读时 `role="img"` + `aria-label`
+- 不许出现「裸 SVG 无名」——`05-audit/icons-check.js` 逐个核对
+  （文件完整性 / viewBox·stroke·线宽三统一 / demo 页注入 / a11y 约定，
+  判据带喂坏夹具的 selftest）
+- live 示例：[demo.html](demo.html)
+
 ## 查找
 
 ```bash

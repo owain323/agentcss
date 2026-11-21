@@ -126,6 +126,10 @@ const TYPE_REPS = [
   ['type-wide-table', '/04-recipes/table/demo.html', 7],       // wide 370px / 9 张表
   ['type-form', '/02-primitives/choice/demo.html', 5],          // form 13 个控件
   ['type-grid-media', '/02-primitives/upload/demo.html', 6],    // grid 4 列 / media 28 个 svg
+  /* 🔴 0.27.22：icons demo（35 图标 ×2 消费方式 = 70 个 media 元素）是全集
+     media 类型**度量最大**的实例——⑦ 要求代表落在最大那一档，不进集合
+     就是 G2-02 批判的「覆盖很虚」。预算数字待首跑实测后按 ×1.4 校准。 */
+  ['type-media-icons', '/09-assets/icons/demo.html', 6],     // 实测 4 页 × 1.4 = 5.6 → 6
 ];
 /* 第三个数字 = 页数预算（⑬）。**只在这里改，不从基线文件读** ——
    基线是 `--update` 写的，预算要是也写进基线，"翻倍之后重录一次"就把证据洗掉了。
@@ -948,6 +952,18 @@ async function render(url, scheme) {
     await p.emulateMediaType('print');
     await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
     await p.evaluate(() => (document.fonts ? document.fonts.ready.then(() => 1) : 1));
+    /* 🔴 0.27.22（E316 家族 · 观测条件）：`<img>` 没等加载完就出 PDF ⇒
+       未加载的图片渲染成 **alt 文本的灰色替代**（实测 #ABABAB / 2.30:1，
+       17 段全是 alt 文字）⇒ 对比度判据假红、run 数漂移（984↔1033）。
+       ⇒ 与 fonts.ready 同层：等全部 document.images 完成（成功或失败），
+         观测条件稳定后再出产物。 */
+    await p.evaluate(async () => {
+      const imgs = Array.from(document.images);
+      await Promise.all(imgs.map((im) => (im.complete
+        ? Promise.resolve(1)
+        : new Promise((res) => { im.onload = im.onerror = () => res(1); }))));
+      return imgs.length;
+    });
     /* 🔴 E316：切到 print 媒体之后，iframe 内部会重新应用打印样式并重排。
        原来「等布局静止」只量顶层 `body.scrollHeight` —— 而 iframe 的框高是
        inline style 写死的，顶层高度从一开始就固定，**对 iframe 内部有没有
