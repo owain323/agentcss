@@ -362,7 +362,11 @@ jobs:
         #     但把判定写进 step summary——「未判定」继续可见，不是悄悄吞掉。
         #     1 / 2 / 4 照旧红。
         run: |
-          MODE=component bash 05-audit/check-all.sh; code=$?
+          # ⚠️ GitHub 的 run 默认 bash -e：check-all 退出 3 会让 shell 当场
+          #    中止，code=$? 根本执行不到（run 44943881582 实测：firefox
+          #    照旧 exit 3）。用 || 惯用法把退出码接住。
+          MODE=component bash 05-audit/check-all.sh || code=$?
+          code=${code:-0}
           if [ "$code" -eq 3 ]; then
             echo "⯈ ${{ matrix.engine }}：已执行判据全部通过；部分门禁未判定（显式 SKIP，逐道理由见上方日志）—— 第三态，未判定 ≠ 通过" >> "$GITHUB_STEP_SUMMARY"
             exit 0

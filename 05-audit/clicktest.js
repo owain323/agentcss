@@ -409,6 +409,23 @@ const CASES = {
       out.push({ ok: focusable, label: '卡片内的链接可被键盘聚焦',
                  note: focusable ? '可聚焦' : '聚焦不到', detail: '' });
       // hover 抬起：位移必须是 transform（不引起回流）
+      /* 🔴 0.27.24（第三态立法的正用，判据一字未动）：hover 保证定义在
+         「有可悬停指针」的环境上，而 card.css 的抬起规则本就被
+         @media (hover: hover) and (pointer: fine) 门控——环境报 hover:none
+         ⇒ 判据**不可观测**。CI chromium 实测（run 44940962508 探针：
+         hover媒体=✗/fine=✗，指针确实在卡上；run 44943881582 缓解探针：
+         桌面仿真/触摸关/不仿触摸/移动仿真/清除 五种 CDP 原语全部无效，
+         hfa 恒定；--blink-settings 20 组合零翻转）。
+         ⇒ 无可悬停指针 ⇒ 显式 SKIP（未判定 ≠ 通过 ≠ 失败），不冒充通过。
+           回归由本地 Windows 与 firefox/webkit CI 继续承担。 */
+      const envHover = await p.evaluate(() => matchMedia('(hover: hover)').matches);
+      if (!envHover) {
+        out.push({ skip: true,
+                   label: 'hover 抬起：用 transform 而不是改 margin',
+                   note: '环境无可悬停指针（hover:none）——判据不可观测',
+                   detail: '第三态：未判定 ≠ 通过 ≠ 失败；缓解探针证据见台账第六批' });
+        return out;
+      }
       const hover = await p.evaluate(() => {
         const c = document.querySelector('.card--linked');
         const before = c.getBoundingClientRect().top;
@@ -454,40 +471,6 @@ const CASES = {
       /* 🔴 README 铁律：hover 只动 transform/shadow，**不能改 margin/padding**
          —— 那会引起回流，卡片下面的内容会跳。 */
       const lifted = hover.before - after.top;
-      /* 🔴 0.27.24（缓解探针，只在 (hover)/(pointer) 不成立时跑，健康引擎零开销）：
-         run 44940962508 探针指认 CI chromium 报 pointer:none（本地同二进制
-         Windows 报 fine ⇒ Linux ozone-headless 无输入设备的环境差异）；
-         --blink-settings 全系实测无效（20 组合零翻转，Chrome 153）。
-         ⇒ 把可用的观测环境原语逐个试一遍并回报，下一轮 nightly 直接指认
-           哪种能翻转 CI 的 pointer:none；全部无效则按第三态立法处理
-           （无指针环境不可观测 hover 保证）。 */
-      let probeNote = '';
-      if (!after.media.hover || !after.media.fine) {
-        try {
-          const cdp = await p.createCDPSession();
-          const q = () => p.evaluate(() =>
-            (matchMedia('(hover: hover)').matches ? 'H' : 'h') +
-            (matchMedia('(pointer: fine)').matches ? 'F' : 'f') +
-            (matchMedia('(any-pointer: fine)').matches ? 'A' : 'a'));
-          const probes = {};
-          await cdp.send('Emulation.setDeviceMetricsOverride',
-            { mobile: false, width: 1200, height: 1000, deviceScaleFactor: 1 });
-          probes['桌面仿真'] = await q();
-          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
-          probes['触摸关'] = await q();
-          await cdp.send('Emulation.setEmitTouchEventsForMouse', { enabled: false });
-          probes['不仿触摸'] = await q();
-          await cdp.send('Emulation.setDeviceMetricsOverride',
-            { mobile: true, width: 390, height: 844, deviceScaleFactor: 3 });
-          probes['移动仿真'] = await q();
-          await cdp.send('Emulation.clearDeviceMetricsOverride');
-          probes['清除'] = await q();
-          await cdp.detach();
-          probeNote = '，缓解探针=' + JSON.stringify(probes);
-        } catch (e) {
-          probeNote = '，缓解探针失败=' + String(e.message).slice(0, 80);
-        }
-      }
       const hitAt = await p.evaluate(() => {
         const c = document.querySelector('.card--linked');
         const r = c.getBoundingClientRect();
@@ -502,8 +485,7 @@ const CASES = {
                    + '/fine=' + (after.media.fine ? '√' : '✗')
                    + '/reduced=' + (after.media.reduced ? '√' : '✗')
                    + '，指针在卡上=' + (after.mouse.inCard ? '√' : '✗')
-                   + '(' + after.mouse.n + '次@' + after.mouse.x + ',' + after.mouse.y + ')'
-                   + probeNote,
+                   + '(' + after.mouse.n + '次@' + after.mouse.x + ',' + after.mouse.y + ')',
                  detail: '改 margin 会让下方内容跳' });
       return out;
     },
@@ -695,7 +677,7 @@ const CASES = {
      开着它，那条判据才有牙。 */
   const b = await launch({ showScrollbars: true });
 
-  let total = 0, passed = 0;
+  let total = 0, passed = 0, failed = 0, skipped = 0;
   for (const name of names) {
     const c = CASES[name];
     if (!c) { console.log('没有这个用例：' + name); continue; }
@@ -705,7 +687,13 @@ const CASES = {
     await p.goto(c.url, { waitUntil: 'networkidle0' });
     const rows = await c.run(p);
     for (const r of rows) {
-      total++; if (r.ok) passed++;
+      if (r.skip) {
+        /* 🔴 0.27.24：第三态行——不冒充通过，也不计失败（判据不可观测时用） */
+        skipped++;
+        console.log('  [SKIP] ' + r.label.padEnd(30) + r.note.padEnd(22) + r.detail);
+        continue;
+      }
+      total++; if (r.ok) passed++; else failed++;
       console.log('  [' + (r.ok ? 'PASS' : 'FAIL') + '] ' +
                   r.label.padEnd(30) + r.note.padEnd(22) + r.detail);
     }
@@ -714,6 +702,8 @@ const CASES = {
   await b.close();
 
   console.log('\n' + '='.repeat(70));
-  console.log('真实鼠标点击：' + passed + ' / ' + total + ' 通过');
-  process.exit(passed === total ? 0 : 1);
+  console.log('真实鼠标点击：' + passed + ' / ' + total + ' 通过' +
+              (skipped ? '（另 ' + skipped + ' 条未判定，未判定 ≠ 通过）' : ''));
+  /* 退出码法典（与 check-all 同源）：有失败=1 / 无失败但有未判定=3 / 全绿=0 */
+  process.exit(failed > 0 ? 1 : skipped > 0 ? 3 : 0);
 })();
