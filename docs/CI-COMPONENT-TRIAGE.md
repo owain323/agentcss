@@ -78,14 +78,22 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | 静态三连（新发现） | —— | 流程事故 | 交接文档 `WO-交接版-v3.md` 被 `git add -A` 卷进根目录推上公开仓（738bd3e）：repo-hygiene 未登记条目 / leak 内部台账编号 / release 不在 npm files 白名单。push 快门禁当时被 cancel 没人看见，dispatch 一轮才现形 | `git rm`（内容移 internal/WO-HANDOFF-v3.md 本地留档）。⚠️ 它已进公开仓 **git 历史**——归入作者动作（与 key 轮换同批决策） |
 | zoom-reflow（overlay @200%） | webkit | 偶发 | run 44918395385 红（布局指标 1817ms 未稳定），run 44936823108 未复现 | 观察项不修；再复现两次以上再立案 |
 
-## 待诊断（收窄为 2 项，均带自指认探针）
+## 已修 · 第六批（run 44940962508 的探针证据，2026-11-22）
+
+| 门禁 | 引擎 | 分类 | 根因与证据 | 处置 |
+|------|------|------|-----------|------|
+| switch-geom | webkit（CI Linux） | 判据坏了（观测时机） | 四探针指认：250ms 时 OFF 的过渡**还在跑**（动画[running:transform]，transform 仍是 ON 的矩阵），**+1s 后正确结算**（左2 右20，transform=none）——状态本来就对，量早了。CSS 时长仅 120ms，慢的是 CI 上样式结算/动画启动的墙钟 | 盲等 250ms 改成**结算等待**：双 rAF（等过渡注册）→ `getAnimations().finished` → 3s 兜底。判据一字未动；三引擎本地绿 |
+| clicktest（hover 抬起） | chromium（CI Linux） | 环境差异（观测环境缺指针） | 三探针指认：`hover媒体=✗/fine=✗`（CI chromium 报 pointer:none——抬起规则被 `@media (hover: hover) and (pointer: fine)` 门控整个失效）；`reduced=✗`（排除减动效）、`指针在卡上=√`（排除鼠标问题）。同机 firefox/webkit 的 clicktest 过（它们报 fine）；同二进制 Windows 上报 fine ⇒ Linux ozone-headless 无输入设备的环境差异。`--blink-settings=primaryHoverType/primaryPointerType` 本地 20 组合实测**零翻转**（Chrome 153 已不认，业界流传的咒语失效） | ① `browser.js` 增 `extraArgs` 追加机制（供后续环境钉定用，本次未用到）② card 用例加**缓解探针**（仅在媒体缺失时跑）：桌面仿真 / 触摸关 / 不仿触摸 / 移动仿真 / 清除——下一轮 nightly 指认哪种 CDP 原语能翻转；全部无效则按第三态立法收口（无指针环境不可观测 hover 保证，显式 SKIP + 理由） |
+| a11y-ax（选择器按钮名） | chromium（Linux CI） | 快照无 locale 归一（同族第二例） | date 控件的「打开选择器」按钮名同为浏览器侧字符串且双词：快照 zh「显示日期选择器 显示日期选择器」 vs CI en「Show date picker Show date picker」（run 44940962508 diff）——0.27.24 的 `<date-part>` 归一生效后漂移行从旋钮移到按钮 | 同法归一 `<date-picker-toggle>`（枚举 chrome 词表 + 同 token 重复；作者自己的 hasPopup 按钮不受影响）；快照重录，本地判据失败 0 |
+| Linux 基线 | —— | 基线对齐（流程） | typography.css 变更移了渲染指纹 ⇒ 快门禁/发布资格的 visual-stamp 三态红（录于旧 head 指纹） | `record-baseline.yml` 重录（run 44941830147）→ fetch `baseline/linux-44941830147` → checkout shots+print 基线 → 随第六批提交。**PNG 零像素 diff**（只有 stamp 指纹更新）——overflow-wrap 在拍摄宽度下无可断 token |
+
+## 待诊断（收窄为 1 项）
 
 | 门禁 | 引擎 | 现象 | 备注 |
 |------|------|------|------|
-| clicktest（hover 抬起） | chromium（CI） | 中心命中=A.card__link，transform=无 | 三探针 + 鼠标轨迹已就位——下一轮 nightly 直接给出根因（媒体查询 or reduced-motion or 其他） |
-| switch-geom | webkit（CI Linux） | OFF 测得 ON 几何 | 四探针 + +1s 复测已就位——下一轮 nightly 区分过渡冻结 vs 状态未生效 |
+| clicktest（hover 抬起） | chromium（CI） | pointer:none 环境（根因已锁定） | 缓解探针已就位——下一轮 nightly 指认可用的观测原语；若全部无效，按第三态立法收口（显式 SKIP + 环境理由），不放宽判据 |
 
-已修待 CI 确认：skel-lever（骨架 overflow-wrap）、a11y-ax（双词归一 + 快照 `<date-part>`）。
+已修待 CI 确认：switch-geom（结算等待）、a11y-ax（`<date-picker-toggle>`）。skel-lever 已由 run 44940962508 CI 实证 ✓。
 
 ## 规矩（不因红片而变）
 

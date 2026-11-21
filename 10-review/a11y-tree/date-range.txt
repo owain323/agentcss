@@ -11,13 +11,13 @@ RootWebArea "date-range · 日期区间 · agentcss"
       spinbutton "<date-part>"
       spinbutton "<date-part>"
       spinbutton "<date-part>"
-      button "显示日期选择器 显示日期选择器" [hasPopup=menu]
+      button "<date-picker-toggle>" [hasPopup=menu]
     LabelText "结束"
     Date "结束"
       spinbutton "<date-part>"
       spinbutton "<date-part>"
       spinbutton "<date-part>"
-      button "显示日期选择器 显示日期选择器" [hasPopup=menu]
+      button "<date-picker-toggle>" [hasPopup=menu]
     button "清除"
     button "本季度"
     button "上季度"
@@ -30,13 +30,13 @@ RootWebArea "date-range · 日期区间 · agentcss"
       spinbutton "<date-part>"
       spinbutton "<date-part>"
       spinbutton "<date-part>"
-      button "显示日期选择器 显示日期选择器" [hasPopup=menu]
+      button "<date-picker-toggle>" [hasPopup=menu]
     LabelText "结束"
     Date "结束"
       spinbutton "<date-part>"
       spinbutton "<date-part>"
       spinbutton "<date-part>"
-      button "显示日期选择器 显示日期选择器" [hasPopup=menu]
+      button "<date-picker-toggle>" [hasPopup=menu]
     button "清除"
     button "本季度"
     button "上季度"

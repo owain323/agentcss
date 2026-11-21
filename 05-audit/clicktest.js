@@ -454,6 +454,40 @@ const CASES = {
       /* 🔴 README 铁律：hover 只动 transform/shadow，**不能改 margin/padding**
          —— 那会引起回流，卡片下面的内容会跳。 */
       const lifted = hover.before - after.top;
+      /* 🔴 0.27.24（缓解探针，只在 (hover)/(pointer) 不成立时跑，健康引擎零开销）：
+         run 44940962508 探针指认 CI chromium 报 pointer:none（本地同二进制
+         Windows 报 fine ⇒ Linux ozone-headless 无输入设备的环境差异）；
+         --blink-settings 全系实测无效（20 组合零翻转，Chrome 153）。
+         ⇒ 把可用的观测环境原语逐个试一遍并回报，下一轮 nightly 直接指认
+           哪种能翻转 CI 的 pointer:none；全部无效则按第三态立法处理
+           （无指针环境不可观测 hover 保证）。 */
+      let probeNote = '';
+      if (!after.media.hover || !after.media.fine) {
+        try {
+          const cdp = await p.createCDPSession();
+          const q = () => p.evaluate(() =>
+            (matchMedia('(hover: hover)').matches ? 'H' : 'h') +
+            (matchMedia('(pointer: fine)').matches ? 'F' : 'f') +
+            (matchMedia('(any-pointer: fine)').matches ? 'A' : 'a'));
+          const probes = {};
+          await cdp.send('Emulation.setDeviceMetricsOverride',
+            { mobile: false, width: 1200, height: 1000, deviceScaleFactor: 1 });
+          probes['桌面仿真'] = await q();
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+          probes['触摸关'] = await q();
+          await cdp.send('Emulation.setEmitTouchEventsForMouse', { enabled: false });
+          probes['不仿触摸'] = await q();
+          await cdp.send('Emulation.setDeviceMetricsOverride',
+            { mobile: true, width: 390, height: 844, deviceScaleFactor: 3 });
+          probes['移动仿真'] = await q();
+          await cdp.send('Emulation.clearDeviceMetricsOverride');
+          probes['清除'] = await q();
+          await cdp.detach();
+          probeNote = '，缓解探针=' + JSON.stringify(probes);
+        } catch (e) {
+          probeNote = '，缓解探针失败=' + String(e.message).slice(0, 80);
+        }
+      }
       const hitAt = await p.evaluate(() => {
         const c = document.querySelector('.card--linked');
         const r = c.getBoundingClientRect();
@@ -468,7 +502,8 @@ const CASES = {
                    + '/fine=' + (after.media.fine ? '√' : '✗')
                    + '/reduced=' + (after.media.reduced ? '√' : '✗')
                    + '，指针在卡上=' + (after.mouse.inCard ? '√' : '✗')
-                   + '(' + after.mouse.n + '次@' + after.mouse.x + ',' + after.mouse.y + ')',
+                   + '(' + after.mouse.n + '次@' + after.mouse.x + ',' + after.mouse.y + ')'
+                   + probeNote,
                  detail: '改 margin 会让下方内容跳' });
       return out;
     },

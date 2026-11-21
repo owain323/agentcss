@@ -13,7 +13,29 @@ const { launch } = require(REPO + '/05-audit/browser.js');
   let bad = 0;
   for (const st of [false, true]) {
     await p.evaluate((v)=>{document.getElementById('ios-sw').checked=v;}, st);
-    await new Promise(r=>setTimeout(r,250));
+    /* 🔴 0.27.24（结算等待，判据不变）：盲等 250ms 在 CI webkit-linux 不够——
+       探针实测（run 44940962508）：250ms 时 OFF 的过渡还在跑
+       （动画[running:transform]，transform 仍是 ON 的矩阵），+1s 后
+       正确结算（左2 右20，transform=none）。状态本来就对，量早了。
+       ⇒ 改成「等滑块的 transition 真正结束再量」：双 rAF 等样式
+         （过渡在样式结算时才注册）→ getAnimations finished → 兜底 3s。
+       健康引擎上 ≈ 150ms（同旧盲等），慢引擎上自动等够。 */
+    await p.evaluate(() => new Promise((res) => {
+      const th = document.querySelector('.switch__thumb');
+      let settled = false;
+      const done = () => { if (!settled) { settled = true; res(); } };
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        try {
+          const anims = th.getAnimations();
+          if (anims.length) {
+            Promise.all(anims.map((a) => a.finished.catch(() => {}))).then(done);
+            return;
+          }
+        } catch (e) { /* 引擎无 getAnimations：走兜底 */ }
+        done();
+      }));
+      setTimeout(done, 3000);
+    }));
     const g = await p.evaluate(()=>{
       const tr=document.querySelector('.switch__track');
       const th=document.querySelector('.switch__thumb');
