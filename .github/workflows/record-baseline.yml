@@ -80,7 +80,10 @@ jobs:
           git config user.name  'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -B "$BR"
-          git add -A 10-review/shots
+          # 🔴 0.27.23：print 基线（平台分集）与视觉基线**同次提交**——
+          #    print-baseline-linux.json 在 05-audit/，只 add shots 会漏掉它
+          #    （首跑实测：runner 写了文件、提交步没带上 ⇒ 白录）。
+          git add -A 10-review/shots 05-audit/print-baseline-*.json
           git commit -m "chore(baseline): Linux 视觉基线（run ${{ github.run_id }}）" \
             || { echo '没有变化 ⇒ 不推'; exit 0; }
           git push origin "$BR"
