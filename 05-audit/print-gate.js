@@ -91,7 +91,14 @@ const pdfPages = require('../ai/pdf-pages.js');
 
 const ROOT = path.dirname(__dirname);
 const BASE = process.env.BASE || 'http://127.0.0.1:8000';
-const OUT = path.join(ROOT, '05-audit', 'print-baseline.json');
+/* 🔴 0.27.23（基线平台分集）：run 数等基线**按平台各存一套**（文字度量随
+   平台字体而变——win32 录 984、linux 跑 1033，同一文件装不下两个真值）。
+   ⇒ 基线文件按平台分：print-baseline-<platform>.json；record-baseline
+     工作流在 Linux 上 --update 出 -linux 集，两边的判据都跑真的。
+   （旧 print-baseline.json 迁移为 -win32；没有平台文件时回退旧名读。） */
+const OUT = path.join(ROOT, '05-audit',
+  'print-baseline-' + process.platform + '.json');
+const OUT_LEGACY = path.join(ROOT, '05-audit', 'print-baseline.json');
 
 /* ============================================================================
  * 页面集：为什么是这三段，而不是"挑 6 个有代表性的"
@@ -1208,6 +1215,12 @@ async function main() {
   let baseline = null;
   if (fs.existsSync(OUT)) {
     try { baseline = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) { baseline = null; }
+  } else if (fs.existsSync(OUT_LEGACY)) {
+    /* 迁移回退：旧单文件按 platform 字段认领 */
+    try {
+      const legacy = JSON.parse(fs.readFileSync(OUT_LEGACY, 'utf8'));
+      if (!legacy.platform || legacy.platform === process.platform) baseline = legacy;
+    } catch (e) { baseline = null; }
   }
   assertBaselinePlatform();
 
