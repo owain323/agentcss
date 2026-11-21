@@ -87,13 +87,18 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | a11y-ax（选择器按钮名） | chromium（Linux CI） | 快照无 locale 归一（同族第二例） | date 控件的「打开选择器」按钮名同为浏览器侧字符串且双词：快照 zh「显示日期选择器 显示日期选择器」 vs CI en「Show date picker Show date picker」（run 44940962508 diff）——0.27.24 的 `<date-part>` 归一生效后漂移行从旋钮移到按钮 | 同法归一 `<date-picker-toggle>`（枚举 chrome 词表 + 同 token 重复；作者自己的 hasPopup 按钮不受影响）；快照重录，本地判据失败 0 |
 | Linux 基线 | —— | 基线对齐（流程） | typography.css 变更移了渲染指纹 ⇒ 快门禁/发布资格的 visual-stamp 三态红（录于旧 head 指纹） | `record-baseline.yml` 重录（run 44941830147）→ fetch `baseline/linux-44941830147` → checkout shots+print 基线 → 随第六批提交。**PNG 零像素 diff**（只有 stamp 指纹更新）——overflow-wrap 在拍摄宽度下无可断 token |
 
-## 待诊断（收窄为 1 项）
+## 已修 · 第七批（run 44943881582 的实证与探针终局，2026-11-22）
 
-| 门禁 | 引擎 | 现象 | 备注 |
-|------|------|------|------|
-| clicktest（hover 抬起） | chromium（CI） | pointer:none 环境（根因已锁定） | 缓解探针已就位——下一轮 nightly 指认可用的观测原语；若全部无效，按第三态立法收口（显式 SKIP + 环境理由），不放宽判据 |
+| 门禁 | 引擎 | 分类 | 根因与证据 | 处置 |
+|------|------|------|-----------|------|
+| **CI 实证 ✓（本 run）** | —— | —— | switch-geom **PASS**（webkit，结算等待生效）；a11y-ax **PASS**（chromium，`<date-picker-toggle>` 归一生效）；skel-lever **PASS**（双引擎）。快门禁/发布资格 **success**（Linux 基线对齐生效） | —— |
+| clicktest（hover 抬起） | chromium（CI） | 环境不可观测 → **第三态收口** | 缓解探针终局：桌面仿真/触摸关/不仿触摸/移动仿真/清除五种 CDP 原语**全部无效**（hfa 恒定）；平台原生 pointer:none 不可移动。hover 保证定义在「有可悬停指针」的环境上，card.css 的规则本就被 `@media (hover: hover) and (pointer: fine)` 门控——此环境判据不可观测 | card 用例在 `hover:none` 环境**显式 SKIP**（未判定 ≠ 通过 ≠ 失败，不冒充通过）；harness 加第三态行与退出码法典（有失败=1 / 无失败但有未判定=3 / 全绿=0）。判据一字未动；回归由本地 Windows（51/51）与 firefox/webkit CI 承担 |
+| gate.yml（上浮失效） | 全引擎 | 判据坏了（我的 workflow 脚本） | 第六批的上浮没生效：GitHub run 默认 **bash -e**——check-all 退出 3 时 shell 当场中止，`code=$?` 执行不到（firefox 照旧 exit 3） | 改 `|| code=$?` 惯用法 + `code=${code:-0}`；本地 bash -e 实证 |
 
-已修待 CI 确认：switch-geom（结算等待）、a11y-ax（`<date-picker-toggle>`）。skel-lever 已由 run 44940962508 CI 实证 ✓。
+## 待诊断（清零）
+
+无。四个交接项全部收口：#3 skel-lever 已修（CI 实证）；#4 a11y-ax 已修（CI 实证）；
+#2 switch-geom 已修（CI 实证）；#1 clicktest 第三态收口（探针证据完整，判据不动）。
 
 ## 规矩（不因红片而变）
 
