@@ -94,7 +94,86 @@ def fmt(n):
     return '%.1f KB' % (n / 1024.0)
 
 
+def selftest():
+    """文件级判据的自检——临时合成树 + 真跑 main()，逐分支断言退出码。
+
+    🔴 为什么存在：判据与注释的矛盾（比率项单独拦小文件）活了 12 个版本，
+       因为这道门禁的日常输出是 OK——写错的分支日常一百次也看不出来。
+       selftest-all 按源码字面量自动发现 --selftest ⇒ 每次自检批都会
+       端到端跑到这里（与 budget-selftest 用临时账本逼 perf-gate 同一手法）。
+    """
+    import shutil
+    import subprocess
+    import tempfile
+    import hashlib
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    tmp = tempfile.mkdtemp(prefix='size-baseline-selftest-')
+    bad = []
+    try:
+        # ROOT 由脚本位置推导 ⇒ 把脚本复制进临时树，量的是副本自己的树
+        os.makedirs(os.path.join(tmp, '01-tokens'))
+        os.makedirs(os.path.join(tmp, '05-audit'))
+        for f in ('size-baseline.py', '_bytes.py'):
+            shutil.copy(os.path.join(here, f), os.path.join(tmp, '05-audit', f))
+
+        def put(rel, n, filler='/* x */\n'):
+            """写入 n 字节左右的合成内容（默认高可压缩——专门暴露 raw 视角）"""
+            p = os.path.join(tmp, rel.replace('/', os.sep))
+            io.open(p, 'w', encoding='utf-8', newline='').write(filler * (n // len(filler)))
+
+        def run(*args):
+            r = subprocess.run(
+                [sys.executable, os.path.join('05-audit', 'size-baseline.py')] + list(args),
+                cwd=tmp, capture_output=True, text=True)
+            return r.returncode, r.stdout
+
+        put('01-tokens/small.css', 300)   # 300B 小文件
+        put('01-tokens/mid.css', 3000)    # 3KB 中文件
+        if run('--record')[0] != 0:
+            bad.append('基线记录失败')
+
+        # case 1｜小文件 +500B：比率爆表（~+50%），绝对增量 <1KB
+        #   ⇒ 修后放行。旧判据（d > tol 单独拦）在此红——这就是修掉的毛刺。
+        put('01-tokens/small.css', 800)
+        if run()[0] != 0:
+            bad.append('case1 小文件 +500B 被拦（判据又写回比率项了？）')
+
+        # case 2｜中文件 +600B（+20%，绝对 <1KB）⇒ 修后放行
+        put('01-tokens/mid.css', 3600)
+        if run()[0] != 0:
+            bad.append('case2 中文件 +600B/+20% 被拦（同上）')
+
+        # case 3｜+4KB 重复注释：gzip 几乎不动，raw 实打实（+4KB > 1KB）
+        #   ⇒ rabs 必须拦——「复制粘贴型膨胀」是这道门禁的本职（K10）
+        put('01-tokens/mid.css', 3000 + 4096)
+        rc, out = run()
+        if rc == 0 or 'mid.css' not in out:
+            bad.append('case3 复制粘贴型膨胀（raw +4KB）没被拦——绝对门槛失效')
+
+        # case 4｜+2KB 不可压缩文本（sha256 十六进制串）：gzip/raw 双超
+        #   ⇒ dabs 必须拦
+        big = ''.join(hashlib.sha256(('k%d' % i).encode()).hexdigest() for i in range(64))
+        p = os.path.join(tmp, '01-tokens', 'mid.css')
+        io.open(p, 'a', encoding='utf-8', newline='').write('/* ' + big + ' */\n')
+        rc, out = run()
+        if rc == 0 or 'mid.css' not in out:
+            bad.append('case4 不可压缩 +2KB 没被拦——dabs 门槛失效')
+
+        if bad:
+            for c in bad:
+                print('  X ' + c)
+            print('  ⇒ size-baseline 文件级判据自检失败')
+            return 1
+        print('  OK 文件级判据自检 4 用例全过（小额放行 ×2 / 重复注释拦截 / 不可压缩拦截）')
+        return 0
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main():
+    if '--selftest' in sys.argv:
+        return selftest()
     arg_tol = None
     if '--allow-growth' in sys.argv:
         i = sys.argv.index('--allow-growth')
@@ -175,7 +254,20 @@ def main():
         dabs = v['gzip'] - b['gzip']
         # ⭐ raw 涨 1KB 就报（重复内容在 raw 视角下是实打实的）
         rabs = v['raw'] - b['raw']
-        if d > tol or dabs > 1024 or rabs > 1024:
+        # 🔴 0.27.24 修判据与注释的矛盾（0.27.11 起的债，12 个版本原地不动）：
+        #   上面注释写的意图是「小文件涨 50% 可能只有几百字节，不值得拦」，
+        #   代码却一直是 `d > tol or dabs > 1024 or rabs > 1024` —— 比率项
+        #   单独就能拦：小文件涨 5% 即红（实测 typography.css +410B ⇒
+        #   +13.2% 被拦）。两轮（0.27.11 / 0.27.24）都只能「重录基线」绕行，
+        #   判断成本转给下一个人。
+        #   ⇒ 对齐注释的意图：gzip 或 raw 任一**绝对**增量 > 1KB 才拦。
+        #   这是判据域修正，不是放宽——要抓的「复制粘贴型膨胀」在 raw 视角
+        #   是实打实的（4KB 重复注释 gzip 只 +0.1KB 但 raw +4KB ⇒ rabs 拦住），
+        #   大额增长仍被双绝对门槛拦住；比率只剩展示作用。总量侧（①）不动：
+        #   总量的 5% 是几十 KB，比率项在总量尺度上语义成立。
+        #   判据本身现在有自检（--selftest，selftest-all 自动发现）——
+        #   这条矛盾能活 12 版，就是因为文件级逻辑没有反向控制。
+        if dabs > 1024 or rabs > 1024:
             grew.append((rel, b['gzip'], v['gzip'], d))
     if grew:
         grew.sort(key=lambda x: -(x[2] - x[1]))
@@ -184,7 +276,7 @@ def main():
             print('     %-44s %s → %s (%+.1f%%)' % (rel[:44], fmt(b0), fmt(c0), d))
         bad += len(grew)
     else:
-        print('  OK 单文件增长均在容差内')
+        print('  OK 单文件绝对增量均在 1KB 门槛内')
 
     # ③ 新增文件（也要记账，否则体积只增不减）
     added = [r for r in cur if r not in bfiles]
