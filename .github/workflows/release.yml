@@ -63,6 +63,7 @@ on:
 permissions:
   contents: write     # 建 GitHub Release
   id-token: write     # ✅ provenance 必需：OIDC 令牌由这里签
+  actions: read       # 🔴 0.27.24 发版门槛：preflight 要读 Actions run 列表（只读）
 
 concurrency:
   group: release-${{ github.ref }}
@@ -152,6 +153,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash 05-audit/release-run.sh probe >> "$GITHUB_OUTPUT"
+
+      # 🔴 0.27.24 发版门槛（问题 2 收口）：publish:check 只走 fast 档，
+      #    「发得出去 ≠ 三引擎全绿」——0.27.23 就是在矩阵连红三轮期间照发的。
+      #    ⇒ 这里硬卡一道：该 tag 指向的提交上**必须已有全绿的 dispatch run**
+      #      （六 job success）。没有 → 发布前守门失败 → 不上传 npm。
+      #    恢复路径写得很清楚：dispatch → 等全绿 → 重跑本 workflow。
+      - name: 发版门槛（该提交上必须已有全绿的三引擎 dispatch run）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash 05-audit/release-run.sh preflight "$GITHUB_SHA"
 
       # 🔴 0.27.21：装 Chromium 必须在**发布前门禁之前**——publish:check
       #    的 fast 层含 api-contract（运行时 ↔ 类型），它要真浏览器。

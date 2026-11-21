@@ -28,8 +28,16 @@
 #   退出码：0 状态一致；1 状态不一致（不许当成成功）；2 环境不可用（网络/git）
 #
 # 用法：
-#   bash 05-audit/release-run.sh probe     # 探测；不一致时非 0
-#   bash 05-audit/release-run.sh verify    # 收尾回执；任一缺失/不符则非 0
+#   bash 05-audit/release-run.sh probe      # 探测；不一致时非 0
+#   bash 05-audit/release-run.sh preflight [sha]  # 发版门槛：该提交上必须有全绿的三引擎 dispatch run
+#   bash 05-audit/release-run.sh verify     # 收尾回执；任一缺失/不符则非 0
+#
+# 🔴 0.27.24 发版门槛（preflight）：此前发版只走 fast 档
+#    （publish:check = 静态层 + pack-smoke），「发得出去 ≠ 三引擎全绿」——
+#    0.27.23 就是在矩阵连红三轮期间照发的（sparkline 320px 溢出是用户可见
+#    缺陷）。矩阵建成后（run 44945009886 六 job 全 success）把它接成门槛：
+#    **没有该提交上的全绿 dispatch run 就不许发布**。打 tag 前跑一次，
+#    release.yml 的发布前守门步也会再验一遍。
 # ============================================================================
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 2
@@ -143,6 +151,65 @@ provenance_state() {
   fi
   printf 'ok\n'
   return 0
+}
+
+# 矩阵回执：该提交上**最新**的 gate.yml workflow_dispatch run 是否全绿。
+#   输出 success / <conclusion> / in_progress / absent / unreadable。
+#   ⚠️ 只认 workflow_dispatch：push 事件会跳过 browsers job（三引擎矩阵
+#      只有 dispatch 才真跑）。取最新一条——旧的红 run 不算数。
+matrix_state() {
+  if ! command -v gh >/dev/null 2>&1; then
+    printf 'unreadable\n'; return 2
+  fi
+  local repo api out
+  repo="$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)" \
+    || { printf 'unreadable\n'; return 2; }
+  api="repos/$repo/actions/runs?head_sha=$1&event=workflow_dispatch&per_page=20"
+  if ! out="$(gh api "$api" 2>/dev/null)"; then
+    printf 'unreadable\n'; return 2
+  fi
+  # 解析用 python3 而不是 node —— 同 prov_commit_of 的理由（selftest 会在
+  # 没有 node 的环境跑本脚本，工具缺失不许伪装成结论）。
+  printf '%s' "$out" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+runs = [r for r in d.get("workflow_runs", []) if r.get("head_sha") == sys.argv[1]]
+runs.sort(key=lambda r: r["created_at"])
+if not runs:
+    print("absent")
+else:
+    print(runs[-1].get("conclusion") or "in_progress")
+' "$1"
+}
+
+do_preflight() {
+  local sha="${1:-}" m
+  if [ -z "$sha" ]; then
+    sha="$(git rev-parse HEAD)"
+  fi
+  m="$(matrix_state "$sha")"
+  case "$m" in
+    success)
+      log "  矩阵=success —— 该提交（${sha:0:12}）上有全绿的 dispatch run，发版门槛通过"
+      printf 'matrix=success\n'
+      ;;
+    absent)
+      log "  ⇒ 发版门槛未过：该提交（${sha:0:12}）上没有 gate.yml dispatch run"
+      log "    先跑：gh workflow run gate.yml --ref master"
+      log "    等它全绿（六 job success）再打 tag / 重跑发布"
+      log "    ——「发得出去 ≠ 矩阵绿」这个空隙，就是 0.27.23 带伤上线的入口"
+      exit 1
+      ;;
+    unreadable)
+      log "  gh / api 不可达 ⇒ 无法出矩阵回执（拒绝判定 ≠ 拒绝发布，环境问题不冒充门槛未过）"
+      exit 2
+      ;;
+    *)
+      log "  ⇒ 发版门槛未过：该提交上最新 dispatch run 结论 = $m"
+      log "    红的真实原因见该 run 日志；修完重新 dispatch，全绿后再发布"
+      exit 1
+      ;;
+  esac
 }
 
 do_probe() {
@@ -453,10 +520,11 @@ PY
 
 case "${1:-}" in
   probe)  do_probe ;;
+  preflight) do_preflight "${2:-}" ;;
   verify) do_verify ;;
   --selftest) selftest; exit $? ;;
   *)
-    log "用法: bash 05-audit/release-run.sh probe|verify|--selftest"
+    log "用法: bash 05-audit/release-run.sh probe|preflight|verify|--selftest"
     exit 2
     ;;
 esac
