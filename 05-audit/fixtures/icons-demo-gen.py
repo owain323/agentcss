@@ -48,7 +48,7 @@ TPL = """<!doctype html>
 <main class="wrap">
     <h1>icons · 图标资产</h1>
     <p class="lede">__COUNT__ 个 Lucide 图标：独立 SVG 文件 + manifest 溯源，两种消费方式与一条可访问名约定</p>
-    <ul class="g-meta"><li><a href="README.md"><code>README.md</code></a></li><li><a href="manifest.json"><code>manifest.json</code></a></li></ul>
+    <ul class="meta-links"><li><a href="README.md"><code>README.md</code></a></li><li><a href="manifest.json"><code>manifest.json</code></a></li></ul>
 
     <h2 id="s1">方式一：<code>&lt;img&gt;</code> 标签（无样式依赖）</h2>
     <p>每个图标一个 <code>alt</code>（= manifest 的中文 label）。装饰场景由使用方改写为 <code>alt=""</code>。</p>
@@ -117,5 +117,16 @@ html = (TPL
         .replace('__SEMANTIC_SLOTS__', chr(10).join(semantic_slots))
         .replace('__SLOTS__', chr(10).join(slots))
         .replace('__ROWS__', chr(10).join(rows)))
-io.open('09-assets/icons/demo.html', 'w', encoding='utf-8', newline=chr(10)).write(html)
+import os, sys
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(HERE, '..', '..', '09-assets', 'icons', 'demo.html')
+if '--check' in sys.argv:
+    cur = io.open(OUT, encoding='utf-8').read()
+    import hashlib
+    same = (hashlib.sha256(cur.encode('utf-8')).hexdigest()
+            == hashlib.sha256(html.encode('utf-8')).hexdigest())
+    print('  [OK  ] icons demo 与 manifest 同步' if same
+          else '  [FAIL] icons demo 已漂移 —— 重跑本脚本 --write 后提交')
+    sys.exit(0 if same else 1)
+io.open(OUT, 'w', encoding='utf-8', newline=chr(10)).write(html)
 print('demo written:', len(html), 'bytes,', d['count'], 'icons, semantic slots:', len(semantic_slots))

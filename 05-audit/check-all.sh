@@ -1001,6 +1001,9 @@ run "icons-anim-reduced" node 05-audit/icons-anim-reduced.js
 #   磁盘完整性 / 三统一 / demo 页注入与可访问名约定，判据带喂坏夹具的 selftest。
 run "icons"         node 05-audit/icons-check.js
 run "icons-rev"     node 05-audit/icons-check.js --selftest
+# 🔴 0.27.22：icons demo 是 manifest 的**生成物**——同步必须机器核（E31），
+#   make-tiersnippet 的同一课：生成物与源漂移 ⇒ 门禁显式红。
+run "icons-demo-gen" @serial $PY 05-audit/fixtures/icons-demo-gen.py --check
 run "accordion"  node 05-audit/accordion-contract.js
 run "chart"      node 05-audit/chart-check.js
 run "sparkline"  node 05-audit/sparkline-contract.js
