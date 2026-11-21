@@ -95,10 +95,16 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | clicktest（hover 抬起） | chromium（CI） | 环境不可观测 → **第三态收口** | 缓解探针终局：桌面仿真/触摸关/不仿触摸/移动仿真/清除五种 CDP 原语**全部无效**（hfa 恒定）；平台原生 pointer:none 不可移动。hover 保证定义在「有可悬停指针」的环境上，card.css 的规则本就被 `@media (hover: hover) and (pointer: fine)` 门控——此环境判据不可观测 | card 用例在 `hover:none` 环境**显式 SKIP**（未判定 ≠ 通过 ≠ 失败，不冒充通过）；harness 加第三态行与退出码法典（有失败=1 / 无失败但有未判定=3 / 全绿=0）。判据一字未动；回归由本地 Windows（51/51）与 firefox/webkit CI 承担 |
 | gate.yml（上浮失效） | 全引擎 | 判据坏了（我的 workflow 脚本） | 第六批的上浮没生效：GitHub run 默认 **bash -e**——check-all 退出 3 时 shell 当场中止，`code=$?` 执行不到（firefox 照旧 exit 3） | 改 `|| code=$?` 惯用法 + `code=${code:-0}`；本地 bash -e 实证 |
 
-## 待诊断（清零）
+## 待诊断（清零 · 终验）
 
-无。四个交接项全部收口：#3 skel-lever 已修（CI 实证）；#4 a11y-ax 已修（CI 实证）；
-#2 switch-geom 已修（CI 实证）；#1 clicktest 第三态收口（探针证据完整，判据不动）。
+无。四个交接项全部收口，**run 44945009886（df88907）六 job 全绿——夜间矩阵建成以来首次**：
+chromium/firefox/webkit 三矩阵 + 快门禁 + 发布资格 + API 契约全部 success。
+chromium 聚合「已执行 129 道全部通过 + 3 道未判定（engine / print-adv / clicktest）」→
+exit 3 → 上浮绿 + step summary 留痕「未判定 ≠ 通过」。
+clicktest 的 [SKIP] 行与 gate 级第三态在日志中可见，判据一字未动。
+
+观察项保留：zoom-reflow（overlay @200%，webkit）偶发——44918395385 红过一次、
+44940962508/44943881582 未复现；再复现两次以上再立案。
 
 ## 规矩（不因红片而变）
 
