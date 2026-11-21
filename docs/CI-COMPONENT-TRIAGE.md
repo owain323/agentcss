@@ -63,7 +63,7 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | workflow | 全引擎 | 判据坏了（我引入的回归） | record-baseline.yml 里 `pkill -f http-serve.py` 的裸脚本名被 workflow-gate 解析成不存在的引用 | 步骤重写：PID 跟踪 + kill（workflow-gate 本地绿） |
 | a11y-ax（date-range 旋钮名，locale 钉定后仍漂） | chromium（Linux CI） | 快照无 locale 归一 | 原生 `<input type=date>` 的内部旋钮名是 **Chromium 浏览器侧字符串**——`--lang`/Playwright locale 都改不动（CI en_US 转录 Month Month） | 转录归一：date 部分旋钮名 → `<date-part>`（浏览器 chrome 非作者内容，归一不损失回归能力） |
 | demo-claim（analysis-report 对照块） | firefox | 判据坏了（单引擎校准阈值） | data-bad `>250` 是 chromium mono 度量校准的——firefox mono 下同串量得 228 | 分界校准 200（good ≤200 / bad >200 两引擎都成立），配对断言语义不变 |
-| print-adv | chromium（Linux） | 判据坏了（平台敏感） | 对抗夹具的**等值断言**（unbreakable↔breakable run 数一致）按 win32 文字度量校准——Linux 度量下断言必假红 | E153 第三态：牙齿在录制平台已验；Linux 上 print 门禁本体走基线分集照跑 |
+| print-adv | chromium（Linux） | 判据坏了（平台敏感） | 对抗夹具的**等值断言**（unbreakable↔breakable run 数一致）按 win32 文字度量校准——Linux 度量下断言必假红 | 「跑不了 ≠ 通过」第三态 第三态：牙齿在录制平台已验；Linux 上 print 门禁本体走基线分集照跑 |
 | skel-lever（溢出无元素名） | chromium+webkit（Linux） | 可诊断性 | 页级 scrollWidth 无元素身份——sparkline 6px 排查三轮无元素名 | 溢出时顺带报最宽前三个元素（nightly 自指认） |
 
 ## 待诊断（红保持，下一轮 nightly 带证据后继续）
