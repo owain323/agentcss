@@ -243,7 +243,9 @@
   <!-- cmp--clip：这一块演示的就是"长串把列撑开"，栏内必须允许算得比栏宽更宽；
        越出栏框的部分裁掉（不裁的话 320px 下整页横向溢出 64px，WCAG 1.4.10 红）。 -->
   <div class="cmp cmp--clip">
-    <div class="cmp__pane cmp__bad" data-bad=".ar-cell.ar-long|w|>200"   <!-- 🔴 0.27.23：250 是 chromium mono 度量校准的——firefox mono 下同串量得 228。分界改 200（good ≤200 / bad >200 两引擎都成立），配对断言语义不变 -->>
+    <!-- 🔴 0.27.23：data-bad 阈值 250 是 chromium mono 度量校准的——firefox mono
+         下同串量得 228。分界改 200（good ≤200 / bad >200 两引擎都成立），配对断言语义不变 -->
+    <div class="cmp__pane cmp__bad" data-bad=".ar-cell.ar-long|w|>200">
       <h3>❌ 常见写法：栅格列写 <code>1fr</code></h3>
         <div class="ar-g" aria-hidden="true">
           <div class="ar-cell">正文一栏：营收同比 +18%。</div>
