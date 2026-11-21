@@ -417,11 +417,20 @@ async function transcript(page) {
           中间隔一个空格——浏览器侧把标签与值串了起来）。
           0.27.23 的正则只收单个词 ⇒ 归一一条都没命中（run 44925795198 的
           diff 两侧都是裸名：快照「年 年」 vs CI「Month Month」）。
-          这里收「同一 token 重复一到多次」——仍是枚举浏览器 chrome 词表，
+          这里收「同一 token 重复」——仍是枚举浏览器 chrome 词表，
           不是放宽：作者内容的 spinbutton（真滑杆/数值输入）不落此表。 */
     if (role === 'spinbutton' &&
         /^(year|month|day|week|年|月|日|周)(\s*\1)*$/i.test(name)) {
       name = '<date-part>';
+    }
+    /* 🔴 0.27.24（同族第二例）：date 控件的「打开选择器」按钮名也是
+       Chromium 浏览器侧字符串（zh「显示日期选择器 显示日期选择器」/
+       en「Show date picker Show date picker」，同样双词、hasPopup=menu）——
+       run 44940962508 的 diff：快照 zh vs CI en。归一为 `<date-picker-toggle>`。
+       仍是枚举 chrome 词表：作者自己的 hasPopup 按钮不受影响。 */
+    if (role === 'button' &&
+        /^(show date picker|显示日期选择器)(\s*\1)*$/i.test(name)) {
+      name = '<date-picker-toggle>';
     }
 
     const keep = !raw.ignored && !ROLE_IGNORE.has(role) &&

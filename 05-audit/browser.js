@@ -276,6 +276,10 @@ async function launchChromium(opts) {
   const tmpRoot = process.env.FL_TMPDIR || os.tmpdir();
   const profile = path.join(tmpRoot,
     'fe-cache-' + process.pid + '-' + Date.now());
+  /* ⭐ 0.27.24：extraArgs —— 个别门禁需要钉观测环境（如 hover/pointer 媒体），
+     又不该让调用方整个替换 args 数组（那会把禁缓存/临时 profile 全丢了）。
+     追加语义：基准参数照旧，extraArgs 追加在后（后者可覆盖前者同项）。 */
+  const { extraArgs, ...restOpts } = opts || {};
   const browser = await puppeteer.launch({
     executablePath: CHROME,
     headless: 'new',
@@ -288,9 +292,10 @@ async function launchChromium(opts) {
       '--disable-application-cache',
       '--disable-http-cache',
       '--user-data-dir=' + profile,
+      ...(extraArgs || []),
     ],
     ...launchArgsFor(opts),
-    ...(opts || {}),
+    ...restOpts,
   });
   browser.__profile = profile;
   /* ⭐ puppeteer 的 version() 是 **Promise**，Playwright 的是同步字符串。
