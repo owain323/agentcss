@@ -13,8 +13,8 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1087336,
-    "distGzip": 129654
+    "sourceBytes": 1088116,
+    "distGzip": 129673
   },
   "files": [
     {
@@ -237,15 +237,15 @@
     },
     {
       "source": "01-tokens/typography.css",
-      "sourceSha256": "c4d90c90b0a9b46b0a0c576b484cdc6274d1458bff42b5df10b5cdf588e2cc15",
-      "sourceBytes": 7113,
-      "sourceGzip": 3384,
+      "sourceSha256": "ca1bcb26587bb2a3ff6cdcf89421a09c3ec9ca60565b3251f6252cb95b504a0c",
+      "sourceBytes": 7893,
+      "sourceGzip": 3830,
       "outputs": [
         {
           "path": "dist/01-tokens/typography.css",
           "kind": "minified",
-          "bytes": 909,
-          "gzip": 377
+          "bytes": 934,
+          "gzip": 396
         }
       ]
     },

@@ -80,6 +80,16 @@ body {
 /* 代码片段（行内）—— 与 content.css 的 .prose > code 呼应 */
 code {
   font-family: var(--mono);
+  /* 🔴 0.27.24（长 token 的度量稳健性）：行内代码常含无断点的长 token
+     （文件路径 / API 名）。实测（skel-lever，guide/sparkline.html @320px）：
+     `preserveAspectRatio="none"` 在 Windows 度量下 right≈318 贴边，
+     Linux 的 mono/CJK 度量略宽即 326 ⇒ 页级横向溢出 6px（nightly 自指认
+     code right=326，chromium+webkit 双引擎同值）。
+     ⇒ overflow-wrap: break-word：token 单独成行也放不下时才在 token 内断行，
+       正常宽度下一字不动，任何度量下都不再横向溢出。
+     代码块不受影响：pre 的 code 是 white-space:pre，无软换行点，
+     overflow-wrap 在其中天然失效（代码块仍走横向滚动）。 */
+  overflow-wrap: break-word;
 }
 
 /* ============================================================================

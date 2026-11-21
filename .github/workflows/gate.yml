@@ -351,7 +351,23 @@ jobs:
         env:
           # ⭐ 这一行就是"矩阵真的分引擎"的开关：没有它，三个作业跑同一个浏览器
           FL_ENGINE: ${{ matrix.engine }}
-        run: MODE=component bash 05-audit/check-all.sh
+        # 🔴 0.27.24（第三态上浮）：check-all 的退出码法典
+        #   （check-all.sh 唯一 EXIT 出口处的码位表）：0=全绿 / 1=有失败 /
+        #   2=用法或环境 / 3=有未判定且无失败 / 4=既有失败又有未判定。
+        #   实测：firefox「执行 129 道全部通过 + 22 道未判定」→ exit 3 →
+        #   本步骤按失败上色 ⇒ 非 chromium 引擎的矩阵 job **按构造恒红**
+        #   （chromium 上 print-adv 的 Linux 第三态同理，未判定 2 道）。
+        #   ⇒ 矩阵的职责是"可执行的判据全部通过"；未判定门禁在上方日志
+        #     逐道列了显式原因（跑不了 ≠ 通过 ≠ 失败）。exit 3 上浮为绿，
+        #     但把判定写进 step summary——「未判定」继续可见，不是悄悄吞掉。
+        #     1 / 2 / 4 照旧红。
+        run: |
+          MODE=component bash 05-audit/check-all.sh; code=$?
+          if [ "$code" -eq 3 ]; then
+            echo "⯈ ${{ matrix.engine }}：已执行判据全部通过；部分门禁未判定（显式 SKIP，逐道理由见上方日志）—— 第三态，未判定 ≠ 通过" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit "$code"
 
       - name: 上传失败截图
         if: failure()

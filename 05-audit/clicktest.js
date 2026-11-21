@@ -414,6 +414,23 @@ const CASES = {
         const before = c.getBoundingClientRect().top;
         return { before: Math.round(before) };
       });
+      /* 🔴 0.27.24（三探针，只为定位 CI 红根因，判据不变）：
+         run 44925795198 已证「中心命中=A.card__link」——命中元素就是卡片本尊，
+         样式仍没应用 ⇒ 剩两类嫌疑：
+           ① (hover)/(pointer) 媒体查询在 CI headless 不成立
+              （抬起规则被 @media (hover: hover) and (pointer: fine) 门控）
+           ② prefers-reduced-motion: reduce（card.css 在其下对 :hover 显式
+              transform: none）
+         三探针 + 鼠标轨迹一轮裁决：matchMedia 三个值 + mousemove 落点
+         （p.hover 是否真把指针送进了卡片矩形）。 */
+      await p.evaluate(() => {
+        window.__mouse = { n: 0, x: -1, y: -1 };
+        document.addEventListener('mousemove', (e) => {
+          window.__mouse.n += 1;
+          window.__mouse.x = e.clientX;
+          window.__mouse.y = e.clientY;
+        }, true);
+      });
       await p.hover('.card--linked');
       /* 🔴 0.27.23（可诊断性 + 帧结算）：CI chromium 实测 hover 后 transform=无
          且上移 0px（本地同代码绿）⇒ 加双 rAF 等样式结算过 compositor，
@@ -424,8 +441,15 @@ const CASES = {
         const c = document.querySelector('.card--linked');
         const r = c.getBoundingClientRect();
         const cs = getComputedStyle(c);
+        const m = window.__mouse;
         return { top: Math.round(r.top), transform: cs.transform,
-                 boxShadow: cs.boxShadow !== 'none' };
+                 boxShadow: cs.boxShadow !== 'none',
+                 media: { hover: matchMedia('(hover: hover)').matches,
+                          fine: matchMedia('(pointer: fine)').matches,
+                          reduced: matchMedia('(prefers-reduced-motion: reduce)').matches },
+                 mouse: { n: m.n, x: m.x, y: m.y,
+                          inCard: m.x >= r.left && m.x <= r.right &&
+                                  m.y >= r.top && m.y <= r.bottom } };
       });
       /* 🔴 README 铁律：hover 只动 transform/shadow，**不能改 margin/padding**
          —— 那会引起回流，卡片下面的内容会跳。 */
@@ -439,7 +463,12 @@ const CASES = {
       out.push({ ok: lifted > 0 && after.transform !== 'none' && after.boxShadow,
                  label: 'hover 抬起：用 transform 而不是改 margin',
                  note: '上移 ' + lifted + 'px，transform=' + (after.transform !== 'none' ? '有' : '无')
-                   + '，中心命中=' + hitAt,
+                   + '，中心命中=' + hitAt
+                   + '，hover媒体=' + (after.media.hover ? '√' : '✗')
+                   + '/fine=' + (after.media.fine ? '√' : '✗')
+                   + '/reduced=' + (after.media.reduced ? '√' : '✗')
+                   + '，指针在卡上=' + (after.mouse.inCard ? '√' : '✗')
+                   + '(' + after.mouse.n + '次@' + after.mouse.x + ',' + after.mouse.y + ')',
                  detail: '改 margin 会让下方内容跳' });
       return out;
     },

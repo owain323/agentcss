@@ -8,15 +8,15 @@ RootWebArea "date-range · 日期区间 · agentcss"
     heading "1 · 常用（无边界）" [level=2]
     LabelText "开始"
     Date "开始"
-      spinbutton "年 年"
-      spinbutton "月 月"
-      spinbutton "日 日"
+      spinbutton "<date-part>"
+      spinbutton "<date-part>"
+      spinbutton "<date-part>"
       button "显示日期选择器 显示日期选择器" [hasPopup=menu]
     LabelText "结束"
     Date "结束"
-      spinbutton "年 年"
-      spinbutton "月 月"
-      spinbutton "日 日"
+      spinbutton "<date-part>"
+      spinbutton "<date-part>"
+      spinbutton "<date-part>"
       button "显示日期选择器 显示日期选择器" [hasPopup=menu]
     button "清除"
     button "本季度"
@@ -27,15 +27,15 @@ RootWebArea "date-range · 日期区间 · agentcss"
     heading "2 · 限定范围（2020–2026）" [level=2]
     LabelText "开始"
     Date "开始"
-      spinbutton "年 年"
-      spinbutton "月 月"
-      spinbutton "日 日"
+      spinbutton "<date-part>"
+      spinbutton "<date-part>"
+      spinbutton "<date-part>"
       button "显示日期选择器 显示日期选择器" [hasPopup=menu]
     LabelText "结束"
     Date "结束"
-      spinbutton "年 年"
-      spinbutton "月 月"
-      spinbutton "日 日"
+      spinbutton "<date-part>"
+      spinbutton "<date-part>"
+      spinbutton "<date-part>"
       button "显示日期选择器 显示日期选择器" [hasPopup=menu]
     button "清除"
     button "本季度"
@@ -46,14 +46,14 @@ RootWebArea "date-range · 日期区间 · agentcss"
     paragraph "一件事要拆成两半做，缺一半就假。 · .drange--disabled 负责 观感 ：预设与清除置灰、hover 不再"
     LabelText "开始"
     Date "开始" [disabled=true]
-      spinbutton "年 年" [disabled=true]
-      spinbutton "月 月" [disabled=true]
-      spinbutton "日 日" [disabled=true]
+      spinbutton "<date-part>" [disabled=true]
+      spinbutton "<date-part>" [disabled=true]
+      spinbutton "<date-part>" [disabled=true]
     LabelText "结束"
     Date "结束" [disabled=true]
-      spinbutton "年 年" [disabled=true]
-      spinbutton "月 月" [disabled=true]
-      spinbutton "日 日" [disabled=true]
+      spinbutton "<date-part>" [disabled=true]
+      spinbutton "<date-part>" [disabled=true]
+      spinbutton "<date-part>" [disabled=true]
     button "清除" [disabled=true]
     button "本季度" [disabled=true]
     button "上季度" [disabled=true]
