@@ -1,0 +1,401 @@
+{
+  "note": "print-gate 基线：页数 / 文字 run 数 / 颜色直方图 + 采样页与结构类型快照。只由 --update 写入；判据不从这份快照读（它只是给人看的记录）。",
+  "minContrast": 7,
+  "sampled": [
+    "/index.html",
+    "/guide/index.html",
+    "/guide/button.html",
+    "/04-recipes/report/demo.html",
+    "/04-recipes/analysis-report/demo.html",
+    "/examples/finance-report/index.html",
+    "/04-recipes/table/demo.html",
+    "/02-primitives/choice/demo.html",
+    "/02-primitives/upload/demo.html",
+    "/09-assets/icons/demo.html"
+  ],
+  "types": {
+    "wide": {
+      "what": "横向溢出风险",
+      "metric": "maxOverflow",
+      "members": 16,
+      "pages": [
+        "/02-primitives/choice/demo.html",
+        "/02-primitives/switch/demo.html",
+        "/03-patterns/list/demo.html",
+        "/03-patterns/nav/demo.html",
+        "/02-primitives/popover/demo.html",
+        "/02-primitives/upload/demo.html",
+        "/03-patterns/accordion/demo.html",
+        "/03-patterns/pagination/demo.html",
+        "/04-recipes/table/demo.html",
+        "/04-recipes/analysis-report/demo.html",
+        "/04-recipes/app-shell/demo.html",
+        "/04-recipes/report/demo.html",
+        "/04-recipes/data-showcase/demo.html",
+        "/09-assets/scientific-plot/demo.html",
+        "/examples/finance-report/index.html",
+        "/guide/button.html"
+      ]
+    },
+    "tall": {
+      "what": "分页必然发生",
+      "metric": "docH",
+      "members": 41,
+      "pages": [
+        "/02-primitives/button/demo.html",
+        "/02-primitives/input/demo.html",
+        "/02-primitives/card/demo.html",
+        "/02-primitives/badge/demo.html",
+        "/02-primitives/delta/demo.html",
+        "/02-primitives/choice/demo.html",
+        "/02-primitives/switch/demo.html",
+        "/02-primitives/date-range/demo.html",
+        "/02-primitives/metric/demo.html",
+        "/02-primitives/timeline/demo.html",
+        "/02-primitives/separator/demo.html",
+        "/03-patterns/list/demo.html",
+        "/03-patterns/content/demo.html",
+        "/03-patterns/states/demo.html",
+        "/03-patterns/form-validation/demo.html",
+        "/03-patterns/nav/demo.html",
+        "/03-patterns/overlay/demo.html",
+        "/03-patterns/tooltip/demo.html",
+        "/02-primitives/popover/demo.html",
+        "/02-primitives/progress/demo.html",
+        "/02-primitives/skeleton/demo.html",
+        "/02-primitives/upload/demo.html",
+        "/03-patterns/accordion/demo.html",
+        "/03-patterns/pagination/demo.html",
+        "/03-patterns/tabs/demo.html",
+        "/03-patterns/reveal/demo.html",
+        "/09-assets/model-viewer/demo.html",
+        "/09-assets/sparkline/demo.html",
+        "/09-assets/icons/demo.html",
+        "/04-recipes/table/demo.html",
+        "/09-assets/bar/demo.html",
+        "/10-review/composition/demo.html",
+        "/04-recipes/analysis-report/demo.html",
+        "/04-recipes/app-shell/demo.html",
+        "/04-recipes/report/demo.html",
+        "/04-recipes/data-showcase/demo.html",
+        "/09-assets/scientific-plot/demo.html",
+        "/examples/finance-report/index.html",
+        "/index.html",
+        "/guide/index.html",
+        "/guide/button.html"
+      ]
+    },
+    "grid": {
+      "what": "多栏栅格",
+      "metric": "maxCols",
+      "members": 12,
+      "pages": [
+        "/02-primitives/skeleton/demo.html",
+        "/02-primitives/upload/demo.html",
+        "/03-patterns/reveal/demo.html",
+        "/09-assets/icons-anim/demo.html",
+        "/09-assets/icons/demo.html",
+        "/04-recipes/analysis-report/demo.html",
+        "/04-recipes/app-shell/demo.html",
+        "/04-recipes/report/demo.html",
+        "/04-recipes/detail-page/full.html",
+        "/04-recipes/detail-page/partial.html",
+        "/04-recipes/detail-page/null.html",
+        "/examples/finance-report/index.html"
+      ]
+    },
+    "overlay": {
+      "what": "叠层（position:fixed）",
+      "metric": "fixedCount",
+      "members": 2,
+      "pages": [
+        "/03-patterns/nav/demo.html",
+        "/examples/finance-report/index.html"
+      ]
+    },
+    "media": {
+      "what": "矢量/位图",
+      "metric": "mediaCount",
+      "members": 14,
+      "pages": [
+        "/02-primitives/button/demo.html",
+        "/02-primitives/choice/demo.html",
+        "/02-primitives/metric/demo.html",
+        "/02-primitives/upload/demo.html",
+        "/09-assets/sparkline/demo.html",
+        "/09-assets/icons-anim/demo.html",
+        "/09-assets/icons/demo.html",
+        "/09-assets/bar/demo.html",
+        "/04-recipes/analysis-report/demo.html",
+        "/04-recipes/app-shell/demo.html",
+        "/04-recipes/report/demo.html",
+        "/04-recipes/data-showcase/demo.html",
+        "/09-assets/scientific-plot/demo.html",
+        "/examples/finance-report/index.html"
+      ]
+    },
+    "form": {
+      "what": "表单控件",
+      "metric": "controls",
+      "members": 12,
+      "pages": [
+        "/02-primitives/input/demo.html",
+        "/02-primitives/choice/demo.html",
+        "/02-primitives/switch/demo.html",
+        "/02-primitives/select/demo.html",
+        "/02-primitives/combobox/demo.html",
+        "/02-primitives/date-range/demo.html",
+        "/03-patterns/content/demo.html",
+        "/03-patterns/form-validation/demo.html",
+        "/02-primitives/popover/demo.html",
+        "/02-primitives/upload/demo.html",
+        "/10-review/composition/demo.html",
+        "/guide/index.html"
+      ]
+    },
+    "table": {
+      "what": "表格",
+      "metric": "tables",
+      "members": 13,
+      "pages": [
+        "/03-patterns/content/demo.html",
+        "/02-primitives/popover/demo.html",
+        "/03-patterns/accordion/demo.html",
+        "/03-patterns/pagination/demo.html",
+        "/09-assets/model-viewer/demo.html",
+        "/09-assets/icons/demo.html",
+        "/04-recipes/table/demo.html",
+        "/10-review/composition/demo.html",
+        "/04-recipes/analysis-report/demo.html",
+        "/04-recipes/report/demo.html",
+        "/04-recipes/data-showcase/demo.html",
+        "/examples/finance-report/index.html",
+        "/guide/button.html"
+      ]
+    },
+    "code": {
+      "what": "代码块",
+      "metric": "preChars",
+      "members": 4,
+      "pages": [
+        "/02-primitives/timeline/demo.html",
+        "/03-patterns/content/demo.html",
+        "/04-recipes/analysis-report/demo.html",
+        "/guide/button.html"
+      ]
+    }
+  },
+  "pages": {
+    "root-index": {
+      "light": {
+        "pages": 5,
+        "runs": 1546,
+        "worst": 21,
+        "hist": {
+          "#000000": 1546
+        }
+      },
+      "dark": {
+        "pages": 5,
+        "runs": 1546,
+        "worst": 21,
+        "hist": {
+          "#000000": 1546
+        }
+      }
+    },
+    "guide-index": {
+      "light": {
+        "pages": 6,
+        "runs": 2119,
+        "worst": 21,
+        "hist": {
+          "#000000": 2119
+        }
+      },
+      "dark": {
+        "pages": 6,
+        "runs": 2119,
+        "worst": 21,
+        "hist": {
+          "#000000": 2119
+        }
+      }
+    },
+    "guide-button": {
+      "light": {
+        "pages": 8,
+        "runs": 3325,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 3309,
+          "#7D1C11": 12,
+          "#1C4526": 4
+        }
+      },
+      "dark": {
+        "pages": 8,
+        "runs": 3325,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 3309,
+          "#7D1C11": 12,
+          "#1C4526": 4
+        }
+      }
+    },
+    "recipe-report": {
+      "light": {
+        "pages": 5,
+        "runs": 2344,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 2304,
+          "#7D1C11": 17,
+          "#1C4526": 23
+        }
+      },
+      "dark": {
+        "pages": 5,
+        "runs": 2344,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 2304,
+          "#7D1C11": 17,
+          "#1C4526": 23
+        }
+      }
+    },
+    "recipe-analysis-report": {
+      "light": {
+        "pages": 4,
+        "runs": 1626,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 1587,
+          "#5A3A00": 5,
+          "#7D1C11": 15,
+          "#1C4526": 19
+        }
+      },
+      "dark": {
+        "pages": 4,
+        "runs": 1626,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 1587,
+          "#5A3A00": 5,
+          "#7D1C11": 15,
+          "#1C4526": 19
+        }
+      }
+    },
+    "example-finance-report": {
+      "light": {
+        "pages": 7,
+        "runs": 3092,
+        "worst": 10.29,
+        "hist": {
+          "#000000": 3088,
+          "#5A3A00": 4
+        }
+      },
+      "dark": {
+        "pages": 7,
+        "runs": 3092,
+        "worst": 10.29,
+        "hist": {
+          "#000000": 3088,
+          "#5A3A00": 4
+        }
+      }
+    },
+    "type-wide-table": {
+      "light": {
+        "pages": 5,
+        "runs": 2653,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 2587,
+          "#1C4526": 35,
+          "#7D1C11": 31
+        }
+      },
+      "dark": {
+        "pages": 5,
+        "runs": 2653,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 2587,
+          "#1C4526": 35,
+          "#7D1C11": 31
+        }
+      }
+    },
+    "type-form": {
+      "light": {
+        "pages": 3,
+        "runs": 1457,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 1418,
+          "#101010": 8,
+          "#7D1C11": 12,
+          "#1C4526": 19
+        }
+      },
+      "dark": {
+        "pages": 3,
+        "runs": 1457,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 1418,
+          "#101010": 8,
+          "#7D1C11": 12,
+          "#1C4526": 19
+        }
+      }
+    },
+    "type-grid-media": {
+      "light": {
+        "pages": 4,
+        "runs": 1255,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 1195,
+          "#7D1C11": 44,
+          "#1C4526": 16
+        }
+      },
+      "dark": {
+        "pages": 4,
+        "runs": 1255,
+        "worst": 10.26,
+        "hist": {
+          "#000000": 1195,
+          "#7D1C11": 44,
+          "#1C4526": 16
+        }
+      }
+    },
+    "type-media-icons": {
+      "light": {
+        "pages": 3,
+        "runs": 1307,
+        "worst": 21,
+        "hist": {
+          "#000000": 1307
+        }
+      },
+      "dark": {
+        "pages": 3,
+        "runs": 1307,
+        "worst": 21,
+        "hist": {
+          "#000000": 1307
+        }
+      }
+    }
+  },
+  "platform": "linux"
+}
