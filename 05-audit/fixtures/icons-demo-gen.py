@@ -42,6 +42,17 @@ TPL = """<!doctype html>
 .icon-demo-color { padding: var(--sp-3); background: var(--accent); color: #fff;
                    border-radius: var(--r-sm); margin: 0 0 var(--sp-4); }
 .icon-demo-color .icon-slot { margin-inline-end: var(--sp-2); }
+.meta-links { list-style: none; padding: 0; margin: 0 0 var(--sp-4);
+              display: flex; gap: var(--sp-3); font-size: var(--fs-sm); }
+
+/* 🔴 打印设计（print 门禁实测抓出）：两个图标网格 + 颜色继承演示是
+   **屏幕上的注入演示**——35 个 2px 描边的小图标打印成 2.3:1 的灰色栅格，
+   纸上无信息量。语义示例与 manifest 表保留在纸上。
+   ⚠️ 本文件的 <style>/打印设计/表格 label 都在模板里——改 demo 请改这里
+      再重跑本脚本，直接手改 demo 会在下次生成时被覆盖（实测两次）。 */
+@media print {
+  .icon-grid, .icon-demo-color, .meta-links { display: none; }
+}
 </style>
 </head>
 <body class="page">
