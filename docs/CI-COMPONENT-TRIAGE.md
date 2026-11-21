@@ -44,6 +44,18 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | print / print-adv | chromium（Linux） | 判据坏了（基线平台绑定） | run 数基线按 win32 录制（984），Linux 文字度量跑出 1033——基线无平台标记 ⇒ 假红 | 基线带 platform 字段（--update 写入）+ 平台不匹配时第三态 SKIP（与 shot-baseline 平台分集同一课）|
 | skel-lever / zoom-reflow | chromium（Linux） | 产品缺陷（demo/指南页）·**部分已修** | model-viewer/demo.html 两张**裸表**（320px 下 min-content 溢出 5px，Linux 字体度量触发）——已套 .table 滚动壳 + 补 table.css；guide/sparkline.html 的 6px 溢出元素待定位（Windows 无法复现，Linux 字体度量专属） | model-viewer 已修；sparkline 待 Linux 环境定位元素 |
 
+## 已修 · 第三批（shim 根因 + 引擎差异，dispatch run 44788562329 的证据）
+
+| 门禁 | 引擎 | 分类 | 根因与证据 | 处置 |
+|------|------|------|-----------|------|
+| clicktest / analysis-report / report / responsive / demo-claim | firefox+webkit | 判据坏了（垫片缺） | shimPage.setViewport 带 isMobile 时**换 context 新页丢已加载文档**——先 goto 再 setViewport(mobile) 的门禁拿到 about:blank ⇒ 全部「缺元素/NaN/截断误报」。puppeteer 语义是只改视口 | 换页前重导航当前 URL（本地 firefox/webkit 全绿） |
+| scrollbar（scrollbar-width 断言） | firefox | 引擎观测限制 | Playwright 的 headless Firefox 对 scrollbar-width 的 getComputedStyle **恒报 none**（inline thin 也算 none，CSS.supports=true 同页对照） | firefox 下降级为 CSSOM 规则存在性核对（理由入断言文本） |
+| responsive（截断判据） | firefox | 判据坏了（判据域） | display:inline 的 scrollWidth/clientWidth 无意义——Firefox 对 nowrap inline span 恒报溢出，1440 桌面宽也报 20 个 table__unit「截断」（Chromium 不暴露语义差 ⇒ 本地全绿掩盖） | 截断判据跳过 inline 元素（与省略号跳过同型） |
+| a11y-ax（date-range 旋钮名） | chromium（Linux CI） | 快照无 locale 钉定 | 原生 date 控件内部旋钮的可访问名跟浏览器 UI locale 走（zh「年 年」/ en「Month Month」） | browser.js 两分支钉 locale=zh-CN（快照从此跨机器确定） |
+| nav-drawer（焦点陷阱） | webkit | 🔴 产品缺陷 | nav 抽屉焦点陷阱只在首/尾边界拦截，中间依赖原生 Tab 顺序——WebKit 在 tabindex=-1 容器 + inert 正文下把 BODY 当下一站，第一次 Tab 焦点就逃出抽屉（chromium/firefox 掩蔽） | nav.js 改显式全循环陷阱（三引擎行为一致，nav-drawer 三引擎绿） |
+| switch-geom / skel-lever / zoom-reflow | webkit/chromium | 同 shim 缺陷连带 | setViewport 丢文档的同族表现 | 同上，本地 webkit 全绿 |
+| print ⑦ 强度（media 代表） | chromium（Linux） | 产品缺陷（新页缺打印设计） | icons demo（70 media 元素）成为全集 media 最大实例；其 35 张 img 图标打印成 2.3:1 灰栅格 | demo 加 @media print 收起装饰网格（print-policy omit 先例）+ 进 print 样本作 media 代表（预算 6） |
+
 ## 待诊断（红保持，下一轮 nightly 带证据后继续）
 
 | 门禁 | 引擎 | 现象 | 备注 |
