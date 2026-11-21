@@ -47,6 +47,13 @@ import importlib.util
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS = os.path.join(ROOT, '10-review', 'shots')
+# 🔴 0.27.24（基线对齐自动化）：过期/缺失时落**机器可读标记**，
+#    gate.yml 的快门禁 / 发布资格 job 读到它就自动派发 record-baseline。
+#    此前 5 次失败 run 的 29 处失败里这两道占 10 处，成因全是同一个：
+#    win32 当场能录、Linux 要靠人记得 gh workflow run + 合并——摩擦点
+#    就是"记得去 dispatch"。标记不是豁免：门禁照旧红，基线分支的合并
+#    仍是像素 diff 的人工复核点（自动化掉的只是"记得派发"这一步）。
+MARKER = os.path.join(ROOT, '05-audit', '.stamp-stale.json')
 
 # 🔴 三套，不是两套（2026-10-29 加 RTL）：新加的基线集如果不在
 #   这张表里，它就会成为**唯一没人看守的基线** —— 改了 CSS 不重录，
@@ -137,6 +144,7 @@ def main():
     plat = mod.PLAT
     sets = cases(plat)
     bad = False
+    stale = []
     for label, dirname, flag in sets:
         stamp = read_stamp(os.path.join(SHOTS, dirname))
         state, msg = evaluate(stamp, now)
@@ -144,11 +152,27 @@ def main():
             print('  OK   %s  %s' % (label, msg))
             continue
         bad = True
+        stale.append({'dir': dirname, 'state': state})
         print('  FAIL %s（%s）%s' % (label, dirname, msg))
         if state in ('stale', 'missing', 'norecord'):
             print('       → 若这些 CSS/JS/HTML 改动是有意的：')
             print('         python 05-audit/shot-baseline.py --update%s' % flag)
             print('       → 若不是有意的，说明源码被改坏了，先看 visual 的 diff 图')
+
+    # 🔴 0.27.24：写/清标记（本机 CI 每次 run 都是新 workspace，不存在残留；
+    #    本地跑完 OK 时也清掉，保持标记始终反映"最近一次判定"）
+    if bad:
+        try:
+            io.open(MARKER, 'w', encoding='utf-8').write(json.dumps(
+                {'platform': plat, 'fingerprint': now, 'entries': stale},
+                ensure_ascii=False, indent=2))
+        except OSError:
+            pass
+    else:
+        try:
+            os.remove(MARKER)
+        except OSError:
+            pass
 
     if bad:
         print('  ⇒ 基线不是当前代码拍的：像素比对此刻**不能证明任何事**')

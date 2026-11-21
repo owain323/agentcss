@@ -69,6 +69,10 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      # 🔴 0.27.24 S4 修订：actions:write 只为一件事——stamp 过期时自动派发
+      #    record-baseline（见"基线过期 → 自动派发重录"步）。不给
+      #    contents:write；被派发的 record-baseline.yml 自己持有 contents:write。
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -95,6 +99,27 @@ jobs:
 
       - name: 发布前门禁（与 prepublishOnly / release.yml 同一套）
         run: npm run publish:check
+
+      # 🔴 0.27.24（基线对齐自动化）：visual-stamp 过期/缺失 ⇒ 自动派发
+      #    record-baseline。抽样 5 次失败 run 的 29 处失败里这两道占 10 处，
+      #    成因全是同一个："记得去 dispatch"这道摩擦。门禁照旧红（不掩盖）；
+      #    基线分支的合并仍是像素 diff 的人工复核点——自动化掉的只是派发。
+      #    ⚠️ 只在 master 上派发：PR 的指纹与 master 无关，别制造噪音。
+      - name: 基线过期 → 自动派发重录
+        if: always() && github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f 05-audit/.stamp-stale.json ]; then
+            cat 05-audit/.stamp-stale.json
+            gh workflow run record-baseline.yml -f dir=all --ref master
+            {
+              echo "⯈ 视觉基线过期/缺失 —— 已自动派发 record-baseline.yml"
+              echo "⯈ run 完成后：git fetch origin 'refs/heads/baseline/linux-<runid>:refs/remotes/origin/baseline-<runid>'"
+              echo "    git checkout origin/baseline-<runid> -- 10-review/shots/ 05-audit/print-baseline-*.json"
+              echo "    git commit + push  ← 像素 diff 的人工复核点，别跳过"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
   # ==================================================================
   # ① PR 快门禁 —— 纯静态，零浏览器，秒级
   # ==================================================================
@@ -102,6 +127,11 @@ jobs:
     name: 快门禁（静态 + 视觉，Linux）
     runs-on: ubuntu-latest
     timeout-minutes: 15 # 兜底：卡住就掐掉，不烧额度（含 Chromium 安装 ≈ 6-8 分钟）
+    permissions:
+      contents: read
+      # 🔴 0.27.24 S4 修订：同 release-qualify——只为了 stamp 过期时自动派发
+      #    record-baseline；不持有 contents:write。
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -212,6 +242,25 @@ jobs:
       #   Windows 上 `PY` 指向托管 python —— 两边脚本同源，只是解释器不同。
       - name: 版本四处一致（手改版本号是最常见的自相矛盾来源）
         run: python3 05-audit/bump-version.py --check
+
+      # 🔴 0.27.24（基线对齐自动化）：同 release-qualify 的自动派发步——
+      #    visual-stamp 过期/缺失 ⇒ 自动派发 record-baseline（master 上）。
+      #    门禁照旧红；合并基线分支仍是人工像素复核点。
+      - name: 基线过期 → 自动派发重录
+        if: always() && github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f 05-audit/.stamp-stale.json ]; then
+            cat 05-audit/.stamp-stale.json
+            gh workflow run record-baseline.yml -f dir=all --ref master
+            {
+              echo "⯈ 视觉基线过期/缺失 —— 已自动派发 record-baseline.yml"
+              echo "⯈ run 完成后：git fetch origin 'refs/heads/baseline/linux-<runid>:refs/remotes/origin/baseline-<runid>'"
+              echo "    git checkout origin/baseline-<runid> -- 10-review/shots/ 05-audit/print-baseline-*.json"
+              echo "    git commit + push  ← 像素 diff 的人工复核点，别跳过"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: 打包实装冒烟（npm pack → 装进空项目 → 核对）
         run: bash 05-audit/pack-smoke.sh
