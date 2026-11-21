@@ -412,9 +412,15 @@ async function transcript(page) {
        en_US CI 转录「Month Month」，`--lang` / Playwright locale 都改不动它。
        这些名字是浏览器 chrome，不是作者内容 ⇒ 转录归一为 `<date-part>`。
        归一不损失回归能力：作者可控制的部分（input 本身的名字、disabled
-       状态、行序）原样保留。 */
+       状态、行序）原样保留。
+       🔴 0.27.24 补完：实测名字是**双词形式**（zh「年 年」/ en「Month Month」，
+          中间隔一个空格——浏览器侧把标签与值串了起来）。
+          0.27.23 的正则只收单个词 ⇒ 归一一条都没命中（run 44925795198 的
+          diff 两侧都是裸名：快照「年 年」 vs CI「Month Month」）。
+          这里收「同一 token 重复一到多次」——仍是枚举浏览器 chrome 词表，
+          不是放宽：作者内容的 spinbutton（真滑杆/数值输入）不落此表。 */
     if (role === 'spinbutton' &&
-        /^(year|month|day|week|年|月|日|周)(\s*)?$/.test(name)) {
+        /^(year|month|day|week|年|月|日|周)(\s*\1)*$/i.test(name)) {
       name = '<date-part>';
     }
 

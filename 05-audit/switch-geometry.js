@@ -18,11 +18,25 @@ const { launch } = require(REPO + '/05-audit/browser.js');
       const tr=document.querySelector('.switch__track');
       const th=document.querySelector('.switch__thumb');
       const t=tr.getBoundingClientRect(), h=th.getBoundingClientRect();
+      const cs=getComputedStyle(th);
+      /* 🔴 0.27.24（可诊断性，判据不变）：webkit-linux 上 OFF 测得 ON 几何
+         （run 44925795198：左20 右2），Windows webkit 不复现 ⇒ 四探针一轮裁决：
+           checked —— set 是否真的写进去了
+           transform —— 卡在 translateX（transition 冻结/未结算）还是 none
+           getAnimations —— transition 的 playState（stuck = 永远 running）
+           reduced-motion —— 引擎是否处于"减动效"（会让位移瞬跳或冻结） */
+      let anims='getAnimations不可用';
+      try{ anims=th.getAnimations().map(a=>(a.playState||'?')+
+            (a.transitionProperty?':'+a.transitionProperty:'')).join(',')||'无'; }catch(e){}
       return { T:+(h.top-t.top).toFixed(1), B:+(t.bottom-h.bottom).toFixed(1),
                L:+(h.left-t.left).toFixed(1), R:+(t.right-h.right).toFixed(1),
                tw:+t.width.toFixed(1), th_:+t.height.toFixed(1),
                hw:+h.width.toFixed(1), hh:+h.height.toFixed(1),
-               ratio:+(t.width/t.height).toFixed(3) };
+               ratio:+(t.width/t.height).toFixed(3),
+               checked:document.getElementById('ios-sw').checked,
+               transform:cs.transform,
+               reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,
+               anims };
     });
     const okV = Math.abs(g.T-g.B) < 0.5;   // 上下对称
     /* 水平：滑块必须**贴住一边**（关=左，开=右）。
@@ -51,6 +65,23 @@ const { launch } = require(REPO + '/05-audit/browser.js');
     console.log('    垂直间隙 上'+g.T+' 下'+g.B+' '+(okV?'✅ 对称':'❌ 歪了'));
     console.log('    水平间隙 左'+g.L+' 右'+g.R+' 差='+Math.abs(g.L-g.R)+
       ' （应贴边 '+want.L+'/'+want.R+'）'+(okH?' ✅ 贴边到位':' ❌'));
+    console.log('    诊断 checked='+g.checked+' transform='+g.transform+
+      ' reduced-motion='+g.reduced+' 动画['+g.anims+']');
+    if (!okH) {
+      /* +1s 复测：区分「transition 慢/冻结」（位置还在动）与
+         「状态根本没变」（1s 后仍在同位）——两者修法不同。 */
+      await new Promise(r=>setTimeout(r,1000));
+      const g2 = await p.evaluate(()=>{
+        const tr=document.querySelector('.switch__track');
+        const th=document.querySelector('.switch__thumb');
+        const t=tr.getBoundingClientRect(), h=th.getBoundingClientRect();
+        return { L:+(h.left-t.left).toFixed(1), R:+(t.right-h.right).toFixed(1),
+                 transform:getComputedStyle(th).transform };
+      });
+      console.log('    诊断 +1s 复测：左'+g2.L+' 右'+g2.R+' transform='+g2.transform+
+        (g2.L!==g.L ? '（250ms 时还在动——transition 未结算）'
+                    : '（1s 后仍在同位——非过渡滞后）'));
+    }
     if (g.ratio < 1.7 || g.ratio > 1.8) console.log('    ❌ 宽高比应 1.75');
   }
   await b.close();

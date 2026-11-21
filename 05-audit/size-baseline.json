@@ -61,8 +61,8 @@
       "raw": 66548
     },
     "01-tokens/typography.css": {
-      "gzip": 3384,
-      "raw": 7113
+      "gzip": 3830,
+      "raw": 7893
     },
     "02-primitives/badge/badge.css": {
       "gzip": 2813,
@@ -330,6 +330,6 @@
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 432607,
-  "total_raw": 1087336
+  "total_gzip": 433053,
+  "total_raw": 1088116
 }

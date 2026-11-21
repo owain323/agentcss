@@ -66,14 +66,26 @@ Windows/Chromium 本地跑过；首跑在 Linux + 三引擎上红了一片。**�
 | print-adv | chromium（Linux） | 判据坏了（平台敏感） | 对抗夹具的**等值断言**（unbreakable↔breakable run 数一致）按 win32 文字度量校准——Linux 度量下断言必假红 | 「跑不了 ≠ 通过」第三态 第三态：牙齿在录制平台已验；Linux 上 print 门禁本体走基线分集照跑 |
 | skel-lever（溢出无元素名） | chromium+webkit（Linux） | 可诊断性 | 页级 scrollWidth 无元素身份——sparkline 6px 排查三轮无元素名 | 溢出时顺带报最宽前三个元素（nightly 自指认） |
 
-## 待诊断（红保持，下一轮 nightly 带证据后继续）
+## 已修 · 第五批（run 44936823108 的证据 + 本地探针，2026-11-22）
+
+| 门禁 | 引擎 | 分类 | 根因与证据 | 处置 |
+|------|------|------|-----------|------|
+| skel-lever（sparkline 6px） | chromium+webkit（Linux） | 产品缺陷（长 token 度量稳健性） | nightly 自指认 `code right=326`：guide/sparkline.html h3 内 `preserveAspectRatio="none"`（25 字符无断点）；Windows 度量下 right≈318 本就贴边，Linux mono/CJK 度量略宽即溢出。本地探针（逐档加宽 mono 度量）**第一个推页的就是它** | 骨架 typography.css 的 `code` 规则加 `overflow-wrap: break-word`（token 独行放不下才断，常宽零影响；`pre` 内 white-space:pre 无换行点不受影响）。注入式复验：+0.5px/字符仍无页级溢出；三态基线重录后 **PNG 零像素 diff**（只有 stamp 指纹更新） |
+| a11y-ax（date-range 旋钮名） | chromium（Linux CI） | 判据坏了（归一没修完整） | 0.27.23 的归一正则只收**单个** token；实测名字是**双词形式**（快照「年 年」/ CI「Month Month」，中间一空格）⇒ 归一零命中——两轮 nightly diff 两侧都是裸名 | 正则改「同一 token 重复一到多次」（反向引用 + `i` 标志；「年 月」混合 token 与作者命名不误伤，17 用例自验）；快照重录 → 旋钮名统一为 `<date-part>`，本地判据失败 0 |
+| clicktest（hover 抬起） | chromium（CI） | 可诊断性（根因未定，带证据再修） | run 44936823108：`中心命中=A.card__link`——鼠标确实点在卡片本尊上，transform 仍为无 ⇒ 剩两嫌疑：① `(hover)/(pointer)` 媒体查询在 CI headless 不成立（抬起规则被 `@media (hover: hover) and (pointer: fine)` 门控）② `prefers-reduced-motion: reduce`（card.css 在其下对 :hover 显式 transform:none） | card 用例加**三探针**（matchMedia hover/pointer/reduced-motion）+ **鼠标轨迹**（mousemove 落点是否在卡矩形内）——判据一字未动，下一轮 nightly 一次裁决 |
+| switch-geom | webkit（CI Linux） | 可诊断性（根因未定） | run 44936823108：OFF 测得 ON 几何（左20 右2），垂直对称正常；Windows webkit 不复现；`--dur-fast`=120ms < 250ms 等待 ⇒ 过渡"慢"说不成立，剩「transition 冻结 / 状态未生效」两嫌疑 | 加四探针：`checked` 回读 / computed `transform`（卡在 translateX 还是 none）/ `getAnimations` playState（stuck=永远 running）/ reduced-motion；失败时 **+1s 复测**区分「过渡未结算」与「状态没变」 |
+| 矩阵 job（新发现） | firefox/webkit（chromium 同） | 观测条件（workflow 未兑现第三态立法） | firefox「执行 129 道全部通过 + 22 道未判定」→ 聚合退出 3 → workflow 步骤按失败上色 ⇒ **矩阵 job 按构造恒红**——四项全修绿它也红（chromium 上 print-adv 的 Linux 第三态同理，未判定 2 道） | gate.yml 组件层步骤上浮 exit 3：绿 + step summary 显式写「已执行判据全部通过；未判定 ≠ 通过」（逐道 SKIP 理由仍在日志）；退出码 1/2/4 照旧红。改的是 workflow 对退出码的解释，判据与门禁本体零改动 |
+| 静态三连（新发现） | —— | 流程事故 | 交接文档 `WO-交接版-v3.md` 被 `git add -A` 卷进根目录推上公开仓（738bd3e）：repo-hygiene 未登记条目 / leak 内部台账编号 / release 不在 npm files 白名单。push 快门禁当时被 cancel 没人看见，dispatch 一轮才现形 | `git rm`（内容移 internal/WO-HANDOFF-v3.md 本地留档）。⚠️ 它已进公开仓 **git 历史**——归入作者动作（与 key 轮换同批决策） |
+| zoom-reflow（overlay @200%） | webkit | 偶发 | run 44918395385 红（布局指标 1817ms 未稳定），run 44936823108 未复现 | 观察项不修；再复现两次以上再立案 |
+
+## 待诊断（收窄为 2 项，均带自指认探针）
 
 | 门禁 | 引擎 | 现象 | 备注 |
 |------|------|------|------|
-| clicktest（hover 抬起） | chromium（CI） | 待 nightly 带诊断重跑 | 已加双 rAF settle + 中心命中元素诊断——nightly 会自指认 hover 点的命中元素（Windows 复现不了，CI 驱动组合专属） |
-| switch-geom | webkit（CI Linux） | OFF 态滑块渲染在右（应左）——Windows webkit 不复现 | WebKit-Linux 渲染差异，证据已留 CI 日志；待 Linux 环境复现或渲染层分析 |
-| skel-lever（sparkline 6px） | chromium+webkit（Linux） | 页级溢出无元素名 | 已加最宽三元素诊断——下一轮 nightly 自指认元素后修复 |
-| a11y-ax（date-range locale） | 已修 | 转录归一 `<date-part>`（浏览器 chrome 非作者内容） | 本地绿；CI 待 nightly 确认 |
+| clicktest（hover 抬起） | chromium（CI） | 中心命中=A.card__link，transform=无 | 三探针 + 鼠标轨迹已就位——下一轮 nightly 直接给出根因（媒体查询 or reduced-motion or 其他） |
+| switch-geom | webkit（CI Linux） | OFF 测得 ON 几何 | 四探针 + +1s 复测已就位——下一轮 nightly 区分过渡冻结 vs 状态未生效 |
+
+已修待 CI 确认：skel-lever（骨架 overflow-wrap）、a11y-ax（双词归一 + 快照 `<date-part>`）。
 
 ## 规矩（不因红片而变）
 
