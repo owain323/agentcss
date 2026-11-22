@@ -51,10 +51,18 @@ const BLOCKED = [
   'http://172.16.0.1/', 'http://192.168.1.8/',
   'http://169.254.169.254/latest/meta-data/', 'http://100.64.0.1/',
   'http://[::1]/', 'http://[::ffff:127.0.0.1]/',
+  /* 🔴 0.27.24：IPv6 过渡地址（外部审计实证的漏判族） */
+  'http://[::7f00:1]/',            /* IPv4-compatible */
+  'http://[64:ff9b::7f00:1]/',     /* NAT64 */
+  'http://[2002:7f00:1::1]/',      /* 6to4 */
+  'http://[2001:0:9c5e:5d2:14ce:4a0:369d:cf27]/',  /* Teredo */
+  'http://[2001:db8::1]/',         /* 文档前缀 */
   'http://user:pw@example.com/', 'http://foo.local/', 'http://198.18.0.1/'
 ];
 const ALLOWED = [
   'https://example.com/report', 'http://93.184.216.34/a',
+  'http://[2606:2800:220:1:248:1893:25c8:1946]/',   /* 公网 IPv6 */
+  'http://[::ffff:93.184.216.34]/',                 /* 映射公网（0.27.24 起精确判定） */
   'data:text/html,x', 'file:///tmp/a.html', 'blob:https://example.com/x'
 ];
 let missed = BLOCKED.filter((u) => !p.violationForUrl(u));
@@ -82,17 +90,27 @@ check('② 响应来自私网 IP ⇒ 抓住',
   !!p.responseViolation({ response: { remoteIPAddress: '10.0.0.5' } }));
 check('② 响应来自公网 IP 不误拒',
   !p.responseViolation({ response: { remoteIPAddress: '93.184.216.34' } }));
-/* 系统开了本地代理时，Chrome 连的是 127.0.0.1，把所有公网渲染一起拒掉
-   比没有策略更糟。这三条守住"代理可用"与"内网仍拦"的分界。 */
-check('② 环回代理 + 公网域名 URL ⇒ 放行（不误伤）',
+/* 🔴 0.27.24：环回代理豁免从"默认放行"改为显式开关（外部审计实证
+   默认放行可被 DNS rebinding 绕过——rebind.evil.com 解析到 127.0.0.1，
+   C 层把它当代理放行）。这三组守住新分界：默认拒绝 / 开关放行 /
+   字面量环回任何形态都拒绝。 */
+check('② 默认：环回 IP + 公网域名 URL ⇒ 违规（rebind 绕过已堵）',
+  !!p.responseViolation({ response: {
+    remoteIPAddress: '127.0.0.1', url: 'https://rebind.evil.com/secret' } }),
+  String(p.responseViolation({ response: {
+    remoteIPAddress: '127.0.0.1', url: 'https://rebind.evil.com/secret' } })));
+check('② 显式 --allow-loopback-proxy：环回 IP + 公网域名 ⇒ 放行（代理可用）',
   !p.responseViolation({ response: {
-    remoteIPAddress: '127.0.0.1', url: 'https://example.com/' } }));
-check('② 环回代理 + 环回 URL ⇒ 仍拒绝',
+    remoteIPAddress: '127.0.0.1', url: 'https://example.com/' } },
+    { allowLoopbackProxy: true }));
+check('② 开关态下环回 URL 字面量 ⇒ 仍拒绝',
   !!p.responseViolation({ response: {
-    remoteIPAddress: '127.0.0.1', url: 'http://127.0.0.1/admin' } }));
-check('② 非环回私网 IP 即使 URL 是公网也拒绝',
+    remoteIPAddress: '127.0.0.1', url: 'http://127.0.0.1/admin' } },
+    { allowLoopbackProxy: true }));
+check('② 非环回私网 IP 即使 URL 是公网也拒绝（开关态同理）',
   !!p.responseViolation({ response: {
-    remoteIPAddress: '10.0.0.5', url: 'https://example.com/' } }));
+    remoteIPAddress: '10.0.0.5', url: 'https://example.com/' } },
+    { allowLoopbackProxy: true }));
 
 const patterns = p.blockedUrlPatterns();
 check('② 浏览器侧黑名单非空且含关键前缀',
@@ -138,11 +156,53 @@ async function dnsChecks() {
     v6.pinned === null && v6.chromeArgs.length === 0);
 }
 
+/* ---------- ③b D 层：Fetch 拦截的单请求判定（0.27.24 新增） ---------- */
+async function requestGateChecks() {
+  const cache = {};
+  let calls = 0;
+  const resolver = async (host) => {
+    calls += 1;
+    if (host === 'rebind.evil.com') return [{ address: '127.0.0.1', family: 4 }];
+    if (host === 'partial.example.com') return [
+      { address: '93.184.216.34', family: 4 },
+      { address: '10.0.0.9', family: 4 }];
+    if (host === 'fail.example.com') throw new Error('ENOTFOUND');
+    return [{ address: '93.184.216.34', family: 4 }];
+  };
+  let v1 = await p.checkRequestUrl('https://rebind.evil.com/secret', cache, resolver);
+  check('③b 攻击域名解析到环回 ⇒ 拦（审计 PoC 的 D 层堵法）',
+    !!v1, String(v1));
+  let v2 = await p.checkRequestUrl('https://rebind.evil.com/other', cache, resolver);
+  check('③b 同域第二请求走缓存（不重复解析）',
+    calls === 1 && !!v2, 'calls=' + calls);
+  check('③b 公网域名 ⇒ 放行',
+    !(await p.checkRequestUrl('https://cdn.example.com/a.png', cache, resolver)));
+  check('③b 公网+私网混合解析 ⇒ 拦（不能只看第一条）',
+    !!await p.checkRequestUrl('https://partial.example.com/x', cache, resolver));
+  check('③b DNS 失败 ⇒ 拦（拿不准即拒绝）',
+    !!await p.checkRequestUrl('https://fail.example.com/x', cache, resolver));
+  check('③b 字面量私网 URL 不走 DNS 也拦',
+    !!await p.checkRequestUrl('http://127.0.0.1/admin', cache, resolver));
+  check('③b 本地子资源（data:/blob:/file:）不拦',
+    !(await p.checkRequestUrl('data:text/html,x', cache, resolver))
+    && !(await p.checkRequestUrl('blob:https://example.com/x', cache, resolver))
+    && !(await p.checkRequestUrl('file:///tmp/a.html', cache, resolver)));
+}
+
 /* ---------- ④ 静态接线：防止有人把策略从渲染路径上摘掉 ---------- */
 function wiringChecks() {
-  const r = fs.readFileSync(RENDERER, 'utf8');
+  /* 🔴 0.27.24：B/C/D 三层的 CDP 接线收进 netPolicy.attach（renderer 与
+     shot 共用一条实现）⇒ Network 与 Fetch 的 CDP 调用去策略模块里查；
+     renderer / shot 只查"真的调用了 attach 并把开关传到位"。 */
+  const pol = fs.readFileSync(POLICY, 'utf8');
   for (const token of ['Network.enable', 'Network.setBlockedURLs',
     'Network.requestWillBeSent', 'Network.responseReceived',
+    'Fetch.enable', 'Fetch.requestPaused', 'Fetch.failRequest',
+    'Fetch.continueRequest']) {
+    check('④ policy 接线 ' + token, pol.indexOf(token) >= 0);
+  }
+  const r = fs.readFileSync(RENDERER, 'utf8');
+  for (const token of ['netPolicy.attach', 'allowLoopbackProxy',
     'netPolicy.policyError', 'policy.chromeArgs']) {
     check('④ renderer 接线 ' + token, r.indexOf(token) >= 0);
   }
@@ -150,12 +210,22 @@ function wiringChecks() {
   check('④ CLI 白名单包含 network-policy',
     /'chrome',\s*'network-policy'/.test(c) || /network-policy',/.test(c));
   check('④ CLI 退出码表包含 network-policy', /'network-policy':\s*4/.test(c));
+  check('④ CLI 提供 --allow-loopback-proxy 显式开关',
+    /allow-loopback-proxy/.test(c));
   const d = fs.readFileSync(PDF, 'utf8');
   check('④ exportPdf 把 networkPolicy 传给子进程',
     /networkPolicy:\s*networkPolicy/.test(d));
+  check('④ exportPdf 把环回代理开关传给子进程',
+    /allowLoopbackProxy:\s*allowLoopbackProxy/.test(d));
   check('④ 代理降级会如实回传给调用方',
     /networkPolicyDegraded/.test(r) && /networkPolicyDegraded/.test(c)
       && /networkPolicyDegraded/.test(d));
+  /* 🔴 0.27.24：ai shot 必须同接一套策略（审计指出 shot 无网络策略） */
+  const s = fs.readFileSync(path.join(ROOT, 'ai', 'shot.js'), 'utf8');
+  for (const token of ['netPolicy.prepare', 'netPolicy.attach',
+    'allowLoopbackProxy', 'network-policy']) {
+    check('④ shot 接线 ' + token, s.indexOf(token) >= 0);
+  }
 }
 
 /* ---------- ⑤ 元反向：判据必须能抓到"策略被改坏" ---------- */
@@ -191,6 +261,7 @@ async function main() {
   tableChecks();
   wiringChecks();
   await dnsChecks();
+  await requestGateChecks();
   mutationProbe();
   console.log('  => ' + (bad ? bad + ' 条判据未通过' : '全部通过'));
   return bad ? 1 : 0;

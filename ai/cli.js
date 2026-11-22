@@ -1128,7 +1128,7 @@ function cmdPdf(args) {
     bad('用法：agentcss pdf <页面.html|URL> --out <file.pdf> '
       + '[--paper=a4|letter|a5|a3|legal] [--margin="18mm 15mm"] '
       + '[--max-pages=N] [--wait-ms=800] [--ready-selector=<CSS>] [--chrome=<path>] '
-      + '[--network-policy=off|strict] [--json]');
+      + '[--network-policy=off|strict] [--allow-loopback-proxy] [--json]');
   }
   var remote = /^https?:\/\//i.test(src);
   var outFile = flag('out', null);
@@ -1158,6 +1158,16 @@ function cmdPdf(args) {
     bad('--network-policy 只能是 off | strict，收到 '
       + JSON.stringify(String(networkPolicy)));
   }
+  /* 🔴 0.27.24：环回代理豁免从"默认放行"改成显式开关（外部审计实证
+     默认放行可被 DNS rebinding 绕过）。proxy 用户显式开它；
+     开着也只是 C 层复核的豁免，D 层的逐域 DNS 校验照跑。 */
+  var allowLoopbackProxy = flag('allow-loopback-proxy', false);
+  if (allowLoopbackProxy !== true && allowLoopbackProxy !== 'true'
+    && allowLoopbackProxy !== false && allowLoopbackProxy !== null
+    && allowLoopbackProxy !== undefined) {
+    bad('--allow-loopback-proxy 是开关，不带值（收到 ' + JSON.stringify(String(allowLoopbackProxy)) + '）');
+  }
+  var allowProxy = allowLoopbackProxy === true || allowLoopbackProxy === 'true';
 
   var r = pdfExport.exportPdf({
     src: src,
@@ -1168,7 +1178,8 @@ function cmdPdf(args) {
     waitMs: waitRaw === null ? undefined : Number(waitRaw),
     readySelector: ready,
     chrome: chrome,
-    networkPolicy: networkPolicy
+    networkPolicy: networkPolicy,
+    allowLoopbackProxy: allowProxy
   });
 
   var box = r.mediaBox
@@ -1190,6 +1201,7 @@ function cmdPdf(args) {
     waitMs: r.waitMs === undefined ? null : r.waitMs,
     readySelector: r.readySelector || null,
     networkPolicy: networkPolicy,
+    allowLoopbackProxy: allowProxy,
     networkPolicyDegraded: r.networkPolicyDegraded === undefined
       ? null : r.networkPolicyDegraded,
     jsErrors: r.jsErrors || [],
@@ -1309,7 +1321,8 @@ function cmdShot(args) {
 
   if (!src) {
     bad('用法：agentcss shot <页面.html|URL> --out <file.png> [--width=390,1440] [--height=900] '
-      + '[--full] [--scale=2] [--wait=800] [--chrome=<path>] [--json]');
+      + '[--full] [--scale=2] [--wait=800] [--chrome=<path>] '
+      + '[--network-policy=off|strict] [--allow-loopback-proxy] [--json]');
   }
   var outFile = flag('out', null);
   if (!outFile || outFile === true) bad('缺 --out（多宽度时用 {width} 占位，例：shot-{width}.png）');
@@ -1349,6 +1362,19 @@ function cmdShot(args) {
   var fullFlag = flag('full', false);
   var full = fullFlag === true || fullFlag === 'true';
 
+  /* 🔴 0.27.24：ai shot 此前接受任意远程 URL 却完全没有网络策略
+     （外部审计实证）⇒ 与 pdf 同一套 off|strict + 环回代理显式开关。 */
+  var shotPolicy = flag('network-policy', 'off');
+  if (shotPolicy !== 'off' && shotPolicy !== 'strict') {
+    bad('--network-policy 只能是 off | strict，收到 '
+      + JSON.stringify(String(shotPolicy)));
+  }
+  var shotProxy = flag('allow-loopback-proxy', false);
+  if (shotProxy !== true && shotProxy !== 'true' && shotProxy !== false
+    && shotProxy !== null && shotProxy !== undefined) {
+    bad('--allow-loopback-proxy 是开关，不带值（收到 ' + JSON.stringify(String(shotProxy)) + '）');
+  }
+
   shot.shoot({
     src: src,
     out: outFile,
@@ -1357,7 +1383,9 @@ function cmdShot(args) {
     full: full,
     scale: scaleRaw === null ? undefined : Number(scaleRaw),
     wait: waitRaw === null ? undefined : Number(waitRaw),
-    chrome: chrome === null ? undefined : chrome
+    chrome: chrome === null ? undefined : chrome,
+    networkPolicy: shotPolicy,
+    allowLoopbackProxy: shotProxy === true || shotProxy === 'true'
   }).then(function (r) {
     /* 🔴 视口必须等于请求的宽度。不等就说明"设视口"这一步没生效
        （正是 `--screenshot --window-size` 那条老路会静默发生的失败）。
@@ -1457,9 +1485,10 @@ var FLAGS = {
   icons: ['query', 'group'],
   'icon-check': [],
   pdf: ['out', 'paper', 'margin', 'max-pages', 'wait-ms', 'ready-selector',
-    'chrome', 'network-policy'],
+    'chrome', 'network-policy', 'allow-loopback-proxy'],
   scaffold: ['out', 'css-prefix'],
-  shot: ['out', 'width', 'height', 'full', 'scale', 'wait', 'chrome']
+  shot: ['out', 'width', 'height', 'full', 'scale', 'wait', 'chrome',
+    'network-policy', 'allow-loopback-proxy']
 };
 
 function rejectUnknownFlags(cmd, allowed) {

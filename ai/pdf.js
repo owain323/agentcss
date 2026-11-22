@@ -329,6 +329,8 @@ function exportPdf(o) {
     return { ok: false, code: 'usage',
       message: '--network-policy 只能是 off | strict，收到 ' + JSON.stringify(networkPolicy) };
   }
+  /* 🔴 0.27.24：环回代理豁免显式开关（默认关）。仅在 strict 下有意义。 */
+  const allowLoopbackProxy = o.allowLoopbackProxy === true;
 
   const chrome = resolveChrome(o.chrome);
   if (chrome.error) return { ok: false, code: 'no-chrome', message: chrome.error };
@@ -370,6 +372,7 @@ function exportPdf(o) {
         readySelector: o.readySelector === undefined ? null : o.readySelector,
         timeoutMs: timeoutMs,
         networkPolicy: networkPolicy,
+        allowLoopbackProxy: allowLoopbackProxy,
       }),
       timeout: timeoutMs + 10000,
       encoding: 'utf8', windowsHide: true, maxBuffer: 1024 * 1024,
