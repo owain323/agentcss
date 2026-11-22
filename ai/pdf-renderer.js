@@ -79,22 +79,18 @@ async function render(o) {
 
     /* 三层里的 B / C：浏览器侧黑名单 + 事件侧复核。
        A（DNS pin）在 connect 的 chromeArgs 里，导航前就固定了解析结果。 */
+    /* B/C/D 三层统一走 netPolicy.attach（0.27.24）：B 浏览器侧黑名单、
+       C 事件侧复核（环回代理豁免改为显式 opts.allowLoopbackProxy——
+       默认拒绝公网域名连到环回，堵审计实证的 DNS rebinding 绕过）、
+       D Fetch 请求级拦截（子资源/重定向域名逐条 DNS 复核）。
+       violations 数组由 attach 内部的事件处理器持续填入。 */
     var violations = [];
     var degraded = false;   // 通过环回代理上网 ⇒ A 层 DNS pin 不生效，如实标注
     if (policy) {
-      await browser.send('Network.enable', {}, sid, left());
-      await browser.send('Network.setBlockedURLs',
-        { urls: policy.blockedPatterns }, sid, left());
-      browser.on('Network.requestWillBeSent', function (p) {
-        var v = netPolicy.requestViolation(p);
-        if (v && violations.length < 10) violations.push(v);
-      });
-      browser.on('Network.responseReceived', function (p) {
-        var v = netPolicy.responseViolation(p);
-        if (v && violations.length < 10) violations.push(v);
-        if (p && p.response
-            && netPolicy.isLoopback(p.response.remoteIPAddress || '')) degraded = true;
-      });
+      var netState = await netPolicy.attach(browser, sid, policy,
+        { allowLoopbackProxy: !!o.allowLoopbackProxy });
+      violations = netState.violations;
+      degraded = netState.degraded;
     }
     browser.on('Runtime.exceptionThrown', function (p) {
       if (jsErrors.length >= 20) return;

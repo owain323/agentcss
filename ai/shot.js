@@ -37,6 +37,7 @@ var path = require('path');
 var { pathToFileURL } = require('url');
 var pdf = require('./pdf.js');
 var connect = require('./cdp.js').connect;
+var netPolicy = require('./network-policy.js');
 var computeShotVerdict = require('./shot-verdict.js').computeShotVerdict;
 
 var DEFAULT_WIDTHS = [1440];
@@ -99,6 +100,8 @@ function slugWidth(w) { return String(w); }
  * @param {number} [o.wait]          加载后额外等待（毫秒），默认 800
  * @param {string} [o.chrome]
  * @param {number} [o.timeoutMs]
+ * @param {string} [o.networkPolicy]      off（默认）| strict —— 远程网络边界
+ * @param {boolean} [o.allowLoopbackProxy] strict 下显式豁免环回代理（C 层）
  * @returns {Promise<object>}
  */
 async function shoot(o) {
@@ -131,6 +134,32 @@ async function shoot(o) {
     o.src = srcAbs;
   }
 
+  /* 🔴 0.27.24：ai shot 此前接受任意远程 URL 却没有网络策略（外部审计）。
+     与 pdf 同一套 strict：A DNS 预解析+pin / B URL 黑名单 / C 事件复核 /
+     D Fetch 请求级拦截。默认 off —— 本地 file:// 渲染行为一字不变。 */
+  if (o.networkPolicy !== undefined && o.networkPolicy !== null
+    && o.networkPolicy !== 'off' && o.networkPolicy !== 'strict') {
+    return { ok: false, code: 'usage',
+      message: '--network-policy 只能是 off | strict，收到 '
+        + JSON.stringify(String(o.networkPolicy)) };
+  }
+  var policy = null;
+  if (o.networkPolicy === 'strict') {
+    var remoteTarget = /^https?:\/\//i.test(o.src || '');
+    try {
+      policy = remoteTarget
+        ? await netPolicy.prepare(o.src)
+        : { hostname: null, ips: [], pinned: null, chromeArgs: [],
+          blockedPatterns: netPolicy.blockedUrlPatterns() };
+    } catch (e) {
+      return { ok: false, code: 'network-policy',
+        message: String(e && e.message || e), chrome: null, shots: [],
+        verdict: { status: 'fail', reasons: [{ code: 'network-policy', severity: 'fail',
+          where: 'src', detail: String(e && e.message || e).slice(0, 120) }],
+          summary: '网络策略拒绝，判定不可信' } };
+    }
+  }
+
   var outTpl = String(o.out);
   if (widths.length > 1 && outTpl.indexOf('{width}') < 0) {
     return { ok: false, code: 'usage',
@@ -142,7 +171,7 @@ async function shoot(o) {
   if (chrome.error) return { ok: false, code: 'no-chrome', message: chrome.error };
 
   var profile = fs.mkdtempSync(path.join(os.tmpdir(), 'agentcss-shot-'));
-  var cdp = connect(chrome.path, profile);
+  var cdp = connect(chrome.path, profile, policy ? policy.chromeArgs : []);
   var shots = [];
   var consoleErrors = [];
   var budget = o.timeoutMs || 90000;
@@ -172,6 +201,13 @@ async function shoot(o) {
       consoleErrors.push('console.error: ' + parts.join(' '));
     });
 
+    /* strict 网络策略：B/C/D 三层统一接线（与 pdf-renderer 同一条实现）。 */
+    var netState = null;
+    if (policy) {
+      netState = await netPolicy.attach(cdp, sid, policy,
+        { allowLoopbackProxy: !!o.allowLoopbackProxy });
+    }
+
     for (var w = 0; w < widths.length; w++) {
       if (Date.now() > deadline) {
         return { ok: false, code: 'timeout', message: '超出时间预算 ' + budget + 'ms', chrome: chrome.path, shots: shots,
@@ -200,6 +236,17 @@ async function shoot(o) {
       await new Promise(function (r) {
         setTimeout(r, o.wait === undefined ? DEFAULT_WAIT : o.wait);
       });
+
+      /* strict 捕获到非公网访问 ⇒ 不把这张图交出去（与 pdf 同语义）。 */
+      if (netState && netState.violations.length) {
+        return { ok: false, code: 'network-policy',
+          message: '网络策略拒绝：' + netState.violations[0]
+            + '（strict 不允许访问非公网地址；本次不产出截图）',
+          chrome: chrome.path, shots: shots,
+          verdict: { status: 'fail', reasons: [{ code: 'network-policy', severity: 'fail',
+            where: 'w' + width, detail: 'strict 捕获到非公网访问——判定不可信' }],
+            summary: '网络策略拒绝，判定不可信' } };
+      }
 
       var probe = await cdp.send('Runtime.evaluate', {
         expression: PROBE_JS, returnByValue: true
@@ -255,6 +302,8 @@ async function shoot(o) {
     return {
       ok: true, code: null, message: null, chrome: chrome.path,
       scale: scale, wait: o.wait === undefined ? DEFAULT_WAIT : o.wait,
+      networkPolicy: policy ? 'strict' : 'off',
+      networkPolicyDegraded: !!(netState && netState.degraded),
       shots: shots, consoleErrors: consoleErrors,
       verdict: verdict, summary: verdictMod.summarize(verdict, shots.length),
       ms: Date.now() - t0
