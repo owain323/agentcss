@@ -349,7 +349,7 @@ CLAIMS = [
     ('components.total', 'README.zh-CN.md',  _num(r'个组件'),                          '中文 README 总数'),
     ('components.total', 'README.zh-CN.md',  r'共\s*' + _num(CN_TOTAL_TAIL),           '中文 README 概览'),
     ('components.byMaturity.stable', 'README.zh-CN.md',  _labelled('stable'),             '中文 README 成熟度'),
-    # 🔴 0.27.21（WO-04）：扫描作用域扩展后新暴露的正确声称——全部登记
+    # 🔴 0.27.21：扫描作用域扩展后新暴露的正确声称——全部登记
     ('components.total', 'package.json',          r'contract: ' + _num(r'components'),  'npm description 组件数'),
     # ARCHITECTURE.md 一条登记即覆盖全文件：check_claims 把一个条目的**全部**
     # 命中都计入登记区间，规模段（14/74 行）与命令示例（104 行 `… 全部 41 个
@@ -364,7 +364,7 @@ CLAIMS = [
 
 # 「未登记扫描」的范围：这些文件里出现下列任一形态，必须被 CLAIMS 全部覆盖。
 # CHANGELOG 是历史记录，不在此列。
-# 🔴 0.27.21（WO-04）：SCAN_FILES 从 8 文件白名单改为**排除清单**——
+# 🔴 0.27.21：SCAN_FILES 从 8 文件白名单改为**排除清单**——
 #   白名单枚举一定会漏（新增 docs/*.md 就在视野外，FACTS.md:118 自己承认）。
 #   排除清单比白名单更难漏：新产品 .md 自动进视野。
 SCAN_FILES = None  # 由 _gen_scan_files() 在运行时生成
@@ -385,7 +385,7 @@ def _gen_scan_files():
                     continue
                 rel = os.path.relpath(os.path.join(dirpath, fn), _r)
                 rel = rel.replace(os.sep, '/')
-                # 🔴 0.27.21（WO-04 收尾）：排除清单按**相对路径**匹配。
+                # 🔴 0.27.21：排除清单按**相对路径**匹配。
                 #   之前拿文件名（basename）比对清单里的 'docs/FACTS.md' 这类
                 #   条目永远匹配不上，7 个历史文件的 22 处当时值全被误判为
                 #   未登记声称。改成 rel 精确匹配，根 CHANGELOG.md 与

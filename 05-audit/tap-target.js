@@ -88,7 +88,7 @@ const PAGES = [
       await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     } catch (e) { continue; }
 
-    const found = await p.evaluate(({ sels, nonT }) => {   /* 🔴 0.27.21（WO-11 修复单）：单对象参数 */
+    const found = await p.evaluate(({ sels, nonT }) => {   /* 🔴 0.27.21：单对象参数 */
       const out = [];
       sels.forEach(([sel, label]) => {
         document.querySelectorAll(sel).forEach((el) => {

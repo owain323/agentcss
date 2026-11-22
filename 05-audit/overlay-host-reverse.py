@@ -40,7 +40,7 @@ import os
 import subprocess
 import sys
 import io   # 🔴 0.27.21：漏了这行 —— io.open 直接 NameError，
-             # 整个反向控制从未真正跑过（WO-16 同型：看起来在工作）
+             # 整个反向控制从未真正跑过
 
 
 def _sha(text):

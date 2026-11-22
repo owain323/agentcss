@@ -98,7 +98,7 @@
   display: inline-block;
   width: 10px;
   height: 10px;
-  border-radius: var(--r-2xs);             /* WO-23 */
+  border-radius: var(--r-2xs);
   background: var(--bar-c, var(--accent));
   flex: 0 0 auto;
 }

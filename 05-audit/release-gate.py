@@ -121,7 +121,7 @@ def git_anchor_problems(cwd, tag, ver_now, min_version=MIN_SOURCE_COMMIT):
             return None
 
     if g('rev-parse', '--git-dir') in (None, ''):
-        # 🔴 0.27.21（WO-17）：git 不可用 = **视野已空**，不是产品不合格。
+        # 🔴 0.27.21：git 不可用 = **视野已空**，不是产品不合格。
         #   哨兵前缀由 main() 归入 unverified 通道（退出码 3），不进 bad。
         return ['[视野已空] git 不可用 ⇒ 「tag 锚点」这条判据无法执行'
                 '（zip/tarball 解压出来的树没有 .git 是正常场景）']
@@ -310,7 +310,7 @@ def _site_scope_selftest():
 
 
 def main():
-    UNVERIFIED = []   # 🔴 0.27.21（WO-17）：「视野已空」走这里，退出码 3
+    UNVERIFIED = []   # 🔴 0.27.21：「视野已空」走这里，退出码 3
     print('  === 发布契约门禁 ===')
     print('')
     bad = 0
@@ -351,7 +351,7 @@ def main():
         # ---- ①b package-lock.json 的根包版本----
         #  package.json = 0.7.7，而 package-lock.json 的根包还是 0.3.0。
         #  ⚠️ 这不一定让 `npm ci` 失败 —— 正因为**不一定**失败，它才会一直没人发现：
-        #     锁文件里那个版本号是"我上一次 npm install 时的包版本"，
+        #     锁文件里那个版本号是"上一次 npm install 时的包版本"，
         #     它漂移时没有任何一处会报错，直到有人去读它。
         #  ⇒ 对一个把「我说什么，系统就是什么」当卖点的库，这是自己打自己的脸。
         lock = read_json('package-lock.json')
@@ -588,7 +588,7 @@ def main():
         bad += 1
     else:
         probs = git_anchor_problems(ROOT, tag, ver_now)
-        # 🔴 0.27.21（WO-17）：[视野已空] 哨兵 → unverified 通道（退出码 3），
+        # 🔴 0.27.21：[视野已空] 哨兵 → unverified 通道（退出码 3），
         #   不进 bad（"判据没跑起来"不是"产品不合格"——与 check-all 的 exit 3 立法对齐）
         if probs and probs[0].startswith('[视野已空]'):
             for pp in probs:
@@ -713,7 +713,7 @@ def main():
         print('  => 有 %d 项发布契约未闭环' % bad)
         return 1
     print('  OK 发布契约闭环')
-    # 🔴 0.27.21（WO-17）：三态判定尾——bad 与 unverified 分离。
+    # 🔴 0.27.21：三态判定尾——bad 与 unverified 分离。
     #   「判据视野已空」（git 不可用等）不算产品合格也不算不合格，
     #   走独立退出码 3（与 check-all 的 exit 3 立法对齐）。
     #   ⚠️ 这一尾原来被误贴进 _selftest（NameError：UNVERIFIED 未定义），

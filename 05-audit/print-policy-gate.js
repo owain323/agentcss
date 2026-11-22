@@ -83,7 +83,7 @@ const COVER = {
 
 const argv = process.argv.slice(2);
 
-/* 🔴 0.27.21（WO-11 修复单）：page.pdf / 打印产物判据是 **Chromium 专属**
+/* 🔴 0.27.21：page.pdf / 打印产物判据是 **Chromium 专属**
    API（Playwright 的 firefox/webkit 没有 page.pdf）⇒ 在这两个引擎上本
    门禁没有可用实现路径。按 E153 立法走**第三态**退出（跑不了 ≠ 通过，
    也不冒充失败）——nightly 报告里显式显示 SKIP 与原因，而不是一排

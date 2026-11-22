@@ -939,7 +939,7 @@ function cmdComponents(args) {
   process.exit(0);
 }
 
-// 🔴 ai assets —— 组件之外那批资产的机器可读目录（WO-03）
+// 🔴 ai assets —— 组件之外那批资产的机器可读目录
 // ---------------------------------------------------------------------------
 // 为什么要有这条：
 //   `ai components` 只认 `components.json`，而它只收「有独立 CSS 的目录」⇒ 37 个。

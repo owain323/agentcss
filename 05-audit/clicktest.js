@@ -128,7 +128,7 @@ const CASES = {
                true 而 :checked 样式疑似未结算——与 switch-geom 同族的
                观测时机问题，单次发生不盲修）。失败时 +1s 复测：
                复测有色 = 观测时机问题 → 走结算等待修法；
-               复测仍白 = 真对比缺陷 → 开产品修复单。 */
+               复测仍白 = 真对比缺陷 → 按缺陷修代码。 */
             const late = await p.evaluate((idx) => new Promise((res) => {
               setTimeout(() => {
                 const el = document.querySelectorAll('.choice__input')[idx];
@@ -438,7 +438,7 @@ const CASES = {
         out.push({ skip: true,
                    label: 'hover 抬起：用 transform 而不是改 margin',
                    note: '环境无可悬停指针（hover:none）——判据不可观测',
-                   detail: '第三态：未判定 ≠ 通过 ≠ 失败；缓解探针证据见台账第六批' });
+                   detail: '第三态：未判定 ≠ 通过 ≠ 失败；缓解探针的终局证据见提交历史' });
         return out;
       }
       const hover = await p.evaluate(() => {

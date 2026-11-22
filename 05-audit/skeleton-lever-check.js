@@ -137,7 +137,7 @@ function serve() {
   });
 }
 
-const MEASURE = ({ sel, prop }) => {   /* 🔴 0.27.21（WO-11 修复单）：单对象参数 */
+const MEASURE = ({ sel, prop }) => {   /* 🔴 0.27.21：单对象参数 */
   const el = document.querySelector(sel);
   if (!el) return null;
   return getComputedStyle(el)[prop];

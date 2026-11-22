@@ -37,7 +37,7 @@ WHITELIST = {
     # puppeteer-core 内部类名（accent-gate 捕获的启动错误输出里出现），
     # 非内部代号
     'BrowserLauncher',
-    # CSS 强制色调色板关键字（WO-26 select 的 forced-colors 块），
+    # CSS 强制色调色板关键字（select 的 forced-colors 块），
     # 规范名，非内部代号
     'HighlightText',
     # 平台 API 名（android-bench 测试脚本触达的浏览器/CDP 接口），非内部代号

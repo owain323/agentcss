@@ -63,7 +63,7 @@ function maxPerProp(frames) {
 
 /* 页面内：翻 done 属性并读动画对象 + 采样并发 */
 async function probe(page) {
-  /* 🔴 0.27.21（WO-11 修复单）：多参数 evaluate 在 firefox/webkit 上
+  /* 🔴 0.27.21：多参数 evaluate 在 firefox/webkit 上
      被 Playwright 拒收（"Too many arguments…"，chromium 不报 ⇒ 本地
      全绿掩盖）。按报错指示包成单对象；浏览器内解构参数，语义不变。 */
   return page.evaluate(async ({ sel, toggles, gap, sampleMs }) => {

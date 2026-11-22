@@ -100,7 +100,7 @@ jobs:
           set -eu
           npm install -g npm@11.5.1
           npm ci --no-audit --no-fund
-      # 🔴 0.27.21（WO-11 修复单）：publish:check 的 fast 层含 api-contract，
+      # 🔴 0.27.21：publish:check 的 fast 层含 api-contract，
       #   要真浏览器——不装则发布资格在 CI 上永远假红（实测）。
       - name: 安装 Chromium（api-contract 的运行时形状需要）
         run: npx playwright install --with-deps chromium
@@ -176,7 +176,7 @@ jobs:
       - name: 补齐远端分支引用（tag 锚点判据需要）
         run: git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
 
-      # 🔴 0.27.21（WO-11 修复单）：fast 层含 api-contract（运行时 ↔ 类型），
+      # 🔴 0.27.21：fast 层含 api-contract（运行时 ↔ 类型），
       #   它要真浏览器——此前靠 runner 镜像预装 Chrome，镜像换版本后首推
       #   假红。装上，同时把「纯静态零浏览器」的旧声明作废。
       - name: 安装 Chromium（api-contract 的运行时形状需要）
@@ -338,7 +338,7 @@ jobs:
     # PR 不跑（省额度）；push 也不跑（只留 quick）；nightly / 手动跑全矩阵。
     if: github.event_name != 'pull_request' && github.event_name != 'push'
     runs-on: ubuntu-latest
-    # 🔴 0.27.21（WO-11）：组件层 127 道首次进 CI（此前手挑 10 个）⇒
+    # 🔴 0.27.21：组件层 127 道首次进 CI（此前手挑 10 个）⇒
     #    20 分钟是按手挑清单估的，换 MODE=component 后不够用，提到 45
     #    （与 quick 同级；本地实测组件层分钟级，CI 加引擎安装余量）。
     timeout-minutes: 45
@@ -366,7 +366,7 @@ jobs:
         with:
           node-version: '20'
 
-      # 🔴 0.27.21（WO-11 修复单 · 环境类）：print / a11y-ax / zoom-reflow /
+      # 🔴 0.27.21：print / a11y-ax / zoom-reflow /
       #   skel-lever 在首跑全引擎齐红（chromium 也红，本地 Windows 全绿）——
       #   ubuntu 镜像没有 CJK/阿拉伯/希伯来字体，文字度量变了 ⇒ 溢出、
       #   行数、可访问名全漂。quick job 早有这条（42 张基线全红的教训），
@@ -391,16 +391,16 @@ jobs:
           FL_ENGINE: ${{ matrix.engine }}
 
       # 视觉基线是本机生成的，跨平台必然不一致 ⇒ nightly 只跑不依赖截图的
-      # 🔴 0.27.21（WO-11/12/13）：手挑 10 个文件换成 check-all 的**组件层**。
-      #   WO-11  127 道 component 门禁此前从未进过 CI（grep 全仓零命中）——
+      # 🔴 0.27.21：手挑 10 个文件换成 check-all 的**组件层**。
+      #   ① 127 道 component 门禁此前从未进过 CI（grep 全仓零命中）——
       #          手挑清单是"另一份哪些门禁重要的表述"，与 check-all.sh 的
       #          注册表必然漂移（E31 同源病，0.8.9 在静态层已经吃过一次）。
       #          ⇒ 首跑预计红一片：**红是真实状态**，分类处置
-      #            （产品缺陷开修复单 / 环境写 README），不许为绿改判据。
-      #   WO-12  手挑清单里 accordion-check.js / tabs-check.js 根本不存在
+      #            （产品缺陷修代码 / 环境写 README），不许为绿改判据。
+      #   ② 手挑清单里 accordion-check.js / tabs-check.js 根本不存在
       #          （真名是 -contract.js），`if [ -f ]` 没有 else ⇒ **静默跳过
       #          = 没查**，报告里还显示绿。
-      #   WO-13  `python3 -m http.server` 的 listen backlog=5 在浏览器并发
+      #   ③ `python3 -m http.server` 的 listen backlog=5 在浏览器并发
       #          拉资源时被内核拒绝 ⇒ 工具门禁偶发假红（check-all.sh 立法
       #          同源）。改由 check-all 自己起 http-serve.py：带
       #          X-FL-Gate-Server 身份戳，backlog 足量，且复用判定与本地一致。

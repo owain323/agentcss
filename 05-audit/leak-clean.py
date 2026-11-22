@@ -35,7 +35,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SUBS = [(_w, '某项目') for _w in terms.HARD_BAN]
 SUBS += [(_w, '') for _w in terms.PROCESS_WORDS]
 
-# 工单编号（W-01 之类）—— 只在注释里出现
+# 任务编号（W-01 之类）—— 只在注释里出现
 TICKET_RE = re.compile(r'[（(]?\s*W-\d+(?:-\d+)*\s*[）)]?')
 # 版本表述
 TIER_RE = re.compile(

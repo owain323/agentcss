@@ -99,7 +99,7 @@ def candidates():
     out = []
     me = os.path.basename(os.path.abspath(__file__))
     for f in sorted(os.listdir(AUDIT)):
-        # 🔴 0.27.21（WO-17b）：候选不再只认 .py/.js —— .sh（bash 也能实现
+        # 🔴 0.27.21：候选不再只认 .py/.js —— .sh（bash 也能实现
         #    --selftest）与 .mjs（node 一样跑）同样进视野。谁哪天给 .sh/.mjs
         #    加了 --selftest 分支，这里看不见就是静默漏检。
         if not (f.endswith('.py') or f.endswith('.js')
@@ -161,7 +161,7 @@ def ensure_server():
     """确保 :8000 上跑的是**这棵树**。返回 (状态, 说明)。
 
     为什么由本脚本负责，而不是靠调用者（check-all.sh 已经会起）：
-      `selftest-all` 同时也是**可单跑的**（"我改了个门禁，先跑它的自检"），
+      `selftest-all` 同时也是**可单跑的**（"改了个门禁，先跑它的自检"），
       而 `MODE=fast` 那一档为了不抢用户端口**故意不起服务**。
       前提不自己造 ⇒ 结果由"今天谁先跑"决定，这正是交接纪律第 8 条。
 
@@ -218,7 +218,7 @@ def run_one(fname):
     p = os.path.join(AUDIT, fname)
     # 解释器按扩展名选：JS/MJS 的自检必须用 node 跑（用 python 跑 JS 会 RC=1，
     # 看起来像"自检失败"，实际是跑错了语言 —— 那种红会让人怀疑整个清单）；
-    # .sh 用 bash（WO-17b：.sh 也能实现 --selftest）。
+    # .sh 用 bash（.sh 也能实现 --selftest）。
     if fname.endswith(('.js', '.mjs')):
         exe = 'node'
     elif fname.endswith('.sh'):

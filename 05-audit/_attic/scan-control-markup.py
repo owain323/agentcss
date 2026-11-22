@@ -53,7 +53,7 @@ def scan(path):
     bad = []
     rel = os.path.relpath(path, ROOT).replace(os.sep, '/')
 
-    # 🔴 **改判据**（我上一轮的判断是错的）：
+    # 🔴 **改判据**（上一轮的判断是错的）：
     #   原来写「外层必须是 <label>」⇒ 报 choice/demo.html 有问题。
     #   **实测两种写法都能点**（demo 的 div 版点空白 false->true ✅）。
     #   真正的原因是 **input 必须铺满整个包裹层**（`inset:0 + 100%`），

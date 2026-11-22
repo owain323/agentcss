@@ -201,7 +201,7 @@ def profile_for(base: str, names=None):
     #    🔴 不能依赖 PROFILES 的列表顺序：实测顺序是
     #       button, select, choice, input, card, link
     #       `.choice` 同时匹配 choice 和 input，按"取最后一个"会判成 input，
-    #       于是要求它有 error / readonly —— 那是**我改这行时引入的回归**。
+    #       于是要求它有 error / readonly —— 那是**改这行时引入的回归**。
     hay = base + ' ' + ' '.join(names)
     matched = [p for p in PROFILES if re.search(p['match'], hay, re.I)]
     if matched:

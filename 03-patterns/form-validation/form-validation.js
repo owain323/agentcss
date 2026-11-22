@@ -110,7 +110,7 @@
     err.textContent = '';
   }
 
-  /* ---------- 汇总条：DOM API 构建，不碰 innerHTML（见 SECURITY.md 的 sink 台账） */
+  /* ---------- 汇总条：DOM API 构建，不碰 innerHTML（见 SECURITY.md 的 sink 清单） */
   function buildSummary(form, slot, bad, labels) {
     while (slot.firstChild) slot.removeChild(slot.firstChild);
     if (!bad.length) return null;

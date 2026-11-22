@@ -237,7 +237,7 @@ const occludedProbe = () => {
 const STABLE = { need: 3, timeout: 1500, maxEls: 600 };
 
 /* 在页面里执行：返回 {ok, frames, ms} 或 {ok:false, ...}。 */
-function watchLayout({ need, timeout, maxEls }) {   /* 🔴 0.27.21（WO-11 修复单）：单对象参数，firefox/webkit 兼容 */
+function watchLayout({ need, timeout, maxEls }) {   /* 🔴 0.27.21：单对象参数，firefox/webkit 兼容 */
   const fingerprint = () => {
     const de = document.scrollingElement || document.documentElement;
     const parts = [de.scrollWidth, de.clientWidth, de.scrollHeight, de.clientHeight,

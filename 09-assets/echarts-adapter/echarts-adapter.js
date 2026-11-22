@@ -271,7 +271,7 @@
    * 创建一个已应用本库主题的 ECharts 实例。
    * ECharts 不在 ⇒ 返回 null（调用方自己决定怎么办）。
    *
-   * 🔴 修正：初版我写了个蠢流程（init → setOption → dispose → 再 init）。
+   * 🔴 修正：初版走的是 init → setOption → dispose → 再 init 这条路。
    *    ECharts 5 的主题就是**一个名字**，两种正规用法：
    *      ① init(dom, themeName)
    *      ② setOption(option, themeName)

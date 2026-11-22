@@ -74,7 +74,7 @@ if (process.env.FL_SKIP_CANARY !== '1') { try { _canary.assertOurs(); } catch(e)
 const fs = require('fs');
 const path = require('path');
 const { launch } = require('./browser.js');
-/* 🔴 0.27.21（WO-11 修复单）：CDP 仅 Chromium 有实现 ⇒ 非 Chromium 引擎
+/* 🔴 0.27.21：CDP 仅 Chromium 有实现 ⇒ 非 Chromium 引擎
    上整门按未判定处理（E153 第三态），不冒充通过也不假红。 */
 require('./browser.js').requireChromium('强制色仿真走 CDP');
 

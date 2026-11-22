@@ -196,7 +196,7 @@ def _mk_root(tmp, n=3):
     w('VERSION', '1.2.3\n')
     w('package.json', _dump({
         'name': 'demo', 'version': '1.2.3', 'bin': {'agentcss': './ai/cli.js'},
-        # 🔴 0.27.21：CLAIMS 有「contract: N components」判据（WO-04 收尾），
+        # 🔴 0.27.21：CLAIMS 有「contract: N components」判据，
         #    description 必须含同款句式。
         'description': 'contract: %d components' % n,
         'files': ['ai/'], 'dependencies': {},
@@ -229,7 +229,7 @@ def _mk_root(tmp, n=3):
     w('index.html', '<p>%d 个组件</p>\n' % n)
     w('404.html', '<p>—— %d 个组件</p>\n' % n)
     w('guide/index.html', '<p>%d 个组件</p>\n' % n)
-    # 🔴 0.27.21：CLAIMS 新增了 README.md 的 currently 句判据（WO-04 收尾），
+    # 🔴 0.27.21：CLAIMS 新增了 README.md 的 currently 句判据，
     #    夹具必须含同款句式，否则 S19/S28 在「找不到数字」上假红。
     w('README.md', '# demo\n\n**%d** components (stable %d / beta %d).\n\n'
       'All %d currently pass.\n\n%s\n'

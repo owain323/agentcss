@@ -52,7 +52,7 @@ CHECK_ALL = os.path.join(ROOT, '05-audit', 'check-all.sh')
 
 # 判红路径的形态。
 #
-# ⚠️ 第一版我写的是 `process\.exit\(\s*[1-9]` —— 实测**误报了 20+ 道门禁**，
+# ⚠️ 第一版写的是 `process\.exit\(\s*[1-9]` —— 实测**误报了 20+ 道门禁**，
 #    因为本库有一批 `*-check.js` 判红是**间接**的：
 #        process.exit(kit.report(r));      // ← kit.report 返回非 0 表示判红
 #    它们的判红能力是真的（门禁日志里确实会 FAIL），
@@ -101,7 +101,7 @@ ALLOW_NO_VERDICT = [
 def registered_gates():
     """从 check-all.sh 解析出注册的门禁（名字 → 命令行）。
 
-    🔴 0.27.21（WO-16 ②）：解析器抽到 `_gateindex.py` 单源（E31）——
+    🔴 0.27.21：解析器抽到 `_gateindex.py` 单源（E31）——
        gate-selfcheck 的重名检测也曾各写一份正则，只认字面 `run`，
        run_report / VAR= 前缀 / 循环批量注册的门禁对它全部隐形。
        认法明细见 `_gateindex.registered_pairs` 的 docstring。
@@ -119,7 +119,7 @@ def script_of(cmdline):
 def _strip_py(src):
     """py：注释/docstring/字符串**原位替换为空格** + AST 常量假 If 折为空行。
 
-    🔴 0.27.21（WO-02）：不能用 token join——join 会把 `sys.exit(1)` 变成
+    🔴 0.27.21：不能用 token join——join 会把 `sys.exit(1)` 变成
     `sys . exit ( 1 )`，`sys\\.exit\\(` 这类多 token 模式全部失配
     （实测：join 版把 100+ 道有牙的 py 门禁误报成"不可能失败"）。
     正解：保持字节偏移不变，只把剥掉的内容换成等长空格。"""
@@ -141,7 +141,7 @@ def _strip_py(src):
     except Exception:
         pass
     # tokenize 定位注释/字符串区间 → 原位替换为空格
-    # 🔴 0.27.21（WO-02）：跨行 STRING（docstring）需要按 (row, col) 换算
+    # 🔴 0.27.21：跨行 STRING（docstring）需要按 (row, col) 换算
     #   绝对偏移量覆写——只用 start[1]/end[1]（col）会漏掉跨行区间。
     try:
         import io as _io
@@ -274,7 +274,7 @@ def main():
             continue
 
         src = io.open(p, encoding='utf-8', errors='replace').read()
-        # 🔴 0.27.21（WO-02 第 1+3 步）：在**剥除注释/字符串/死分支后的证据
+        # 🔴 0.27.21：在**剥除注释/字符串/死分支后的证据
         #    文本**上匹配——全文匹配让注释里的 `# return 1`、docstring、
         #    `if False:` 死分支都"看起来有牙"（六用例矩阵实测 5 类绕过全绿）。
         ev = _evidence_text(ext, src)
@@ -380,7 +380,7 @@ def selftest():
         if not ok3:
             bad += 1
 
-        # 🔴 0.27.21（WO-02 六用例矩阵）：注释/docstring/死分支里的判红
+        # 🔴 0.27.21：注释/docstring/死分支里的判红
         # 不许冒充有牙——剥除后必须变红。反例三连 + 阳性对照已在 ①②。
         cases_456 = [
             ('④ in_comment',
@@ -417,7 +417,7 @@ def selftest():
             ('⑦ run_report 注册',
              'run "ok"        python3 05-audit/ok.py' + NLQ +
              'run_report "fx" python3 05-audit/fx.py' + NLQ),
-            ('⑧ VAR= 前缀注册（WO-02b）',
+            ('⑧ VAR= 前缀注册',
              'run "ok"   python3 05-audit/ok.py' + NLQ +
              'PY=python3 run "fx" python3 05-audit/fx.py' + NLQ),
             ('⑨ 循环批量注册展开',

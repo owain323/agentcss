@@ -89,7 +89,7 @@ const SCAN = function (hasTouch) {
       continue;
     }
     if (cs.display === 'inline') {
-      /* 🔴 0.27.21（WO-11 修复单）：display:inline 的 scrollWidth/clientWidth
+      /* 🔴 0.27.21：display:inline 的 scrollWidth/clientWidth
          无意义（inline 元素 clientWidth 恒 0）——Firefox 对 nowrap inline span
          恒报 scrollWidth>clientWidth，1440 桌面宽下也报「截断」（实测 20 个
          .table__unit 全是误报；Chromium 不暴露这个语义差 ⇒ 本地全绿掩盖）。

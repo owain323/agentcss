@@ -109,7 +109,7 @@ function chk(label, ok, extra) {
     let trapped = true;
     for (let i = 0; i < 8; i++) {
       await p.keyboard.press('Tab');
-      /* 🔴 0.27.21（WO-11 修复单）：WebKit 的焦点投递是**异步**的——
+      /* 🔴 0.27.21：WebKit 的焦点投递是**异步**的——
          press 之后立即读 activeElement 会读到旧值（chromium 同步落焦
          掩蔽了这个差异）。⇒ 等 50ms 再读。不是放宽：判定语义不变，
          仍是「8 次 Tab 后焦点必须还在抽屉内」。 */

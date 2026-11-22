@@ -65,7 +65,7 @@ SCRIPT = r'''
 const pages = %s, exempt = %s, LIMIT = %d, ACCENT = %s;
 (async () => {
   const puppeteer = require('puppeteer-core');
-  /* 🔴 0.27.21（WO-11 修复单）：executablePath 硬编码本机 Windows Chrome 路径
+  /* 🔴 0.27.21：executablePath 硬编码本机 Windows Chrome 路径
      —— 本机全绿、CI Linux 上必然 Browser was not found（实测 accent-gate
      0 秒即红一整天）。改走 browser.js 的浏览器发现（findPlaywrightChrome
      + 系统候选路径），与全库其余 39 个脚本同源。 */

@@ -42,7 +42,7 @@
   flex-direction: column;
   background: var(--surface);
   border-inline-start: 1px solid var(--border-decor);
-  box-shadow: var(--shadow-3);  /* WO-22：三级 = 最顶层页面级 chrome（抽屉） */
+  box-shadow: var(--shadow-3);  /* 三级 = 最顶层页面级 chrome（抽屉） */
   /* 焦点在抽屉里时，浏览器不会自动滚进视野 ⇒ 手动处理 */
   overflow: hidden;
 }

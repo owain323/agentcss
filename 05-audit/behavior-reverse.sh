@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# 🔴 0.27.21（WO-11 修复单）：本编排器的多个子门走 CDP（仅 Chromium 有实现）。
+# 🔴 0.27.21：本编排器的多个子门走 CDP（仅 Chromium 有实现）。
 #   非 Chromium 引擎上整门按未判定处理（E153 第三态）——子门各自 exit 3
 #   会被这里读成 FAIL，所以必须在最外层就跳。
 if [ "${FL_ENGINE:-chromium}" != "chromium" ]; then

@@ -71,9 +71,10 @@ PATTERNS = [
         r'(?<![A-Za-z0-9_])[A-Z]:[/' + re.escape(chr(92)) + r'][A-Za-z0-9_.-]+[/'
         + re.escape(chr(92)) + r']')),
     ('内部代号', re.compile('|'.join(re.escape(w) for w in terms.HARD_BAN), re.I)),
-    # 内部失误台账编号（E123）：指向一份不随包分发的台账 ⇒ 读者拿到的是死索引。
+    # 缺陷编号（E123）：编号指向的释义表在源码仓里（不随包分发），
+    # 包内读者拿到的是一个查不到的编号 ⇒ 必须挡在分发面外。
     # 边界与豁免见 terms.internal_id_pat / changelog_future。
-    ('内部台账编号', terms.internal_id_pat()),
+    ('缺陷编号', terms.internal_id_pat()),
     ('自有域名', terms.self_identity_pat()),
     ('内部流程', terms.process_pat()),
     # 回环与通配地址不是泄漏（本地测试的正常写法）
@@ -84,9 +85,8 @@ PATTERNS = [
 # ============================================================================
 # 🔴🔴 凭证类判据（2026-11-22 加 · 事故驱动）
 # ----------------------------------------------------------------------------
-# 事故：一枚 DeepSeek key（sk-0e… 35 位）被写进 WO-HANDOFF.md，随公开仓
-#       push 上 GitHub，6 秒后即公网可达（Pages 从 master 根发布）；
-#       账户 2 天内被刷穿。而当时这道门禁**只查内部痕迹**，对 `sk-` 零判据。
+# 由来：一枚真实 key 曾随一次 push 进入公开仓。而当时这道门禁
+#       **只查内部痕迹**，对 `sk-` 零判据。
 #       反向控制实测：注入假 key 后新增命中 0 —— 门禁根本看不见它。
 #
 # 设计要点：
@@ -321,12 +321,12 @@ def main():
             src = t
             # CHANGELOG 只判「以后」：0.26.0 及更早的条目是历史，
             # 改写历史才是篡改；但新写的条目不许再引内部编号。
-            if name == '内部台账编号' and rel == 'CHANGELOG.md':
+            if name == '缺陷编号' and rel == 'CHANGELOG.md':
                 src = terms.changelog_future(t)
-            elif name == '内部台账编号' and rel == 'docs/ERRORS-INDEX.md':
-                # 🔴 0.27.21（WO-18）：这个文件**就是**台账索引 —— 编号在
-                #    这里不是「指向不随仓分发的死索引」（E123 的病根），
-                #    而是随包分发的解析物；对它判内部台账泄漏 = 判据咬自己。
+            elif name == '缺陷编号' and rel == 'docs/ERRORS-INDEX.md':
+                # 🔴 这个文件**就是**编号释义表 —— 编号在这里不是
+                #    「查不到的引用」（E123 的病根），而是被解释了的东西；
+                #    对它判缺陷编号泄漏 = 判据咬自己。
                 #    豁免仅限这一个文件：别处再写 E### 照样红。
                 continue
             found = pat.findall(src)

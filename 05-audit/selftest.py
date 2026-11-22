@@ -65,7 +65,7 @@ PROBES = '<script>' + open(os.path.join(os.path.dirname(os.path.abspath(__file__
 
 
 def find_chrome():
-    # 🔴 0.27.21（WO-11 修复单）：发现逻辑与 browser.js 同源——
+    # 🔴 0.27.21：发现逻辑与 browser.js 同源——
     #    原来只有 Windows 注册表路径，CI Linux 上永远 None ⇒ 自检把
     #    「本该跑的环境验证」误判成环境类假红。顺序：CHROME_PATH →
     #    既有候选 → browser.js 的发现（Playwright 缓存 + 系统候选，E31

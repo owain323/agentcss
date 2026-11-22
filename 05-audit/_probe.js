@@ -43,7 +43,7 @@ setTimeout(function () {
 
   /* ---- checkbox：属性变 **且视觉跟着变**（实测到"显示已勾选但框是空的"）
          🔴 只查 checked 属性是不够的：属性变了而 CSS 选择器没命中，
-            框看着还是空的 —— 这正是我漏掉的那类 bug。 */
+            框看着还是空的 —— 这正是最容易漏掉的那类 bug。 */
   var cb = document.querySelector('#c1');
   if (cb) {
     var before = cb.checked;

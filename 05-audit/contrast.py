@@ -165,7 +165,7 @@ def check_inline_sync(tokens, root, mode='light'):
 
     🔴 为什么需要这条（本库真实发生过）：
        精简档 的单文件必须内联色板，那就成了 tokens.css 的**副本**。
-       我改版时改了 HTML 里的副本，**忘了改 tokens.css 这个源头** ——
+       改版时改了 HTML 里的副本，**忘了改 tokens.css 这个源头** ——
        于是 charter 里写着"暖褐色已移除"，而实际所有 demo 还在用暖色。
        没有任何门禁能发现这件事：对比度是对的、引用是全的、结构是对的，
        只是**两边不一致**。

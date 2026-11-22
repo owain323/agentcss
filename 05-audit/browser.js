@@ -377,7 +377,7 @@ function shimPage(page, browser) {
           deviceScaleFactor: vp.deviceScaleFactor || 1,
         });
         const np = await ctx.newPage();
-        /* 🔴 0.27.21（WO-11 修复单）：puppeteer 的 setViewport **只改视口、
+        /* 🔴 0.27.21：puppeteer 的 setViewport **只改视口、
            保留已加载的文档**。这里换成新 context 的新页 ⇒ 之前 goto 的
            内容全丢（about:blank）——analysis-report / report / clicktest
            等先 goto 再 setViewport 的门禁在 firefox/webkit 上全部
@@ -397,7 +397,7 @@ function shimPage(page, browser) {
        本来就不会跨运行复用磁盘缓存 ⇒ 语义上等价于"已关"。 */
     setCacheEnabled: async function () { return undefined; },
     /* puppeteer: emulateMediaType('print') → Playwright: emulateMedia({ media })。
-       🔴 0.27.21（WO-11 修复单）：consumer-smoke 的打印态判据在 firefox/webkit
+       🔴 0.27.21：consumer-smoke 的打印态判据在 firefox/webkit
        上崩（"emulateMediaType is not a function"）——playwright 没有这个
        方法名，补映射（与 emulateMediaFeatures 同型）。 */
     emulateMediaType: async function (m) {
@@ -471,7 +471,7 @@ module.exports = { launch, newPage, withPage, CHROME, engineOf,
   requireChromium: requireChromium,
   ENGINES: ['chromium', 'webkit', 'firefox'] };
 
-/* 🔴 0.27.21（WO-11 修复单）：CDP（Chrome DevTools Protocol）只有 Chromium 实现。
+/* 🔴 0.27.21：CDP（Chrome DevTools Protocol）只有 Chromium 实现。
    走 createCDPSession 的门禁在 firefox/webkit 上**没有可用实现路径**——
    按 E153 立法走第三态退出（跑不了 ≠ 通过，也不假红），nightly 报告里
    显式显示 SKIP 与原因。调用方：门禁入口 require('./browser.js').requireChromium('为什么')。 */

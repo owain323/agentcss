@@ -212,7 +212,7 @@ def _js_path(rel, js_name):
 
 
 def js_mechanisms(rel, js_name):
-    """JS 里**实测**承担了哪些机制 —— 表格里这一列是数出来的，不是我写的。"""
+    """JS 里**实测**承担了哪些机制 —— 表格里这一列是数出来的，不是写的。"""
     src = io.open(_js_path(rel, js_name), encoding='utf-8').read()
     return ' · '.join([
         '键盘 ' + ('✓' if PAT_KEY.search(src) else '—'),

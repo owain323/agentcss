@@ -7,11 +7,11 @@ _gateindex.py — check-all.sh 注册表的**唯一**解析器（E31：同一判
 消费者
 ---------------------------------------------------------------------------
   gate-verdict-gate.py   逐道门禁查判红路径（实查 vs 注册）
-  gate-selfcheck.py      判据 ① 可达性 / ② 重名检测（WO-16）
+  gate-selfcheck.py      判据 ① 可达性 / ② 重名检测
 
 🔴 为什么抽出来
 ---------------------------------------------------------------------------
-  两个消费者各自写过一份 `run "name"` 正则。WO-16 实测：gate-selfcheck
+  两个消费者各自写过一份 `run "name"` 正则。实测：gate-selfcheck
   判据 ② 的正则只认字面 `run` —— `run_report` 注册、`VAR= 前缀` 注册、
   `for g in …` 循环批量注册的门禁对重名检测**全部隐形**。
   解析只此一份，谁要新的认法就改这里，两个消费者同时受益。
@@ -25,7 +25,7 @@ _gateindex.py — check-all.sh 注册表的**唯一**解析器（E31：同一判
 import io
 import re
 
-# 逐条注册：行首可有若干 `VAR=值` 前缀（WO-02b），然后 run / run_report
+# 逐条注册：行首可有若干 `VAR=值` 前缀，然后 run / run_report
 _RUN_LINE = re.compile(
     r'^\s*(?:\w+=\S+\s+)*(run|run_report)\s+"([^"]+)"\s+(.+?)\s*$', re.M)
 # 循环批量注册：for g in ...; do ... run "$g" ... done

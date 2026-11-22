@@ -113,7 +113,7 @@
 .form__summary-link:focus-visible {
   outline: 2px solid var(--danger);
   outline-offset: 2px;
-  border-radius: var(--r-2xs);             /* WO-23 */
+  border-radius: var(--r-2xs);
 }
 
 /* ============================================================================

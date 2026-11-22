@@ -1,4 +1,4 @@
-/* 🔴 0.27.21（WO-11 修复单）：-webkit-tap-highlight-color 是 WebKit 专有属性，
+/* 🔴 0.27.21：-webkit-tap-highlight-color 是 WebKit 专有属性，
    Firefox 上 computed 值恒为空串——判据在 Firefox 上没有语义。
    按 E153 第三态退出（这门本来就是 iOS/WebKit 行为的守卫）。 */
 if ((process.env.FL_ENGINE || 'chromium') === 'firefox') {

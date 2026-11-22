@@ -52,7 +52,7 @@
 .select__btn[aria-expanded="true"] { border-color: var(--accent); }
 
 /* ---------------------------------------------------------------- 状态：error
-   🔴 0.27.21（WO-26，与 input 对齐）：input 有 aria-invalid 钩子，select 此前
+   🔴 0.27.21：input 有 aria-invalid 钩子，select 此前
    没有 ⇒ 表单里「下拉选错了」只能靠外层文字描述，控件本身无错误态。
    🔴 WCAG 1.4.1：不能只靠颜色传达 —— 红边框只是其一，必须配 role="alert"
    的错误文字。本库 JS **不自动加** aria-invalid —— 由复用者按校验结果维护
@@ -129,7 +129,7 @@
 .select__opt[data-state="active"] { background: var(--accent-soft); }
 
 /* ---------------------------------------------------------------- 强制色
-   🔴 0.27.21（WO-26，与 input 对齐）：强制色下作者背景全被剥掉，
+   🔴 0.27.21：强制色下作者背景全被剥掉，
    「键盘游标在这一行」的高亮失去第一条线索（只剩 aria 同步，视觉归零）。
    Highlight/HighlightText 是强制色调色板里「选中」的规范表达；
    aria-selected 的粗体与文字勾（形状线索）仍是非颜色第二线索。

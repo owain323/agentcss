@@ -1,7 +1,7 @@
 const _canary = require('./_canary.js');
 if (process.env.FL_SKIP_CANARY !== '1') { try { _canary.assertOurs(); } catch(e) { /* :8000 不存在时门禁会自己报观测错误 */ } }
 const { launch } = require('./browser.js');
-/* 🔴 0.27.21（WO-11 修复单）：触摸拖拽观测用 puppeteer 的
+/* 🔴 0.27.21：触摸拖拽观测用 puppeteer 的
    touchscreen.touchStart/touchMove 序列——Playwright 的 firefox/webkit
    只有 tap()，没有按下-拖动-抬起序列 ⇒ 本判据仅 Chromium 有实现路径，
    非 Chromium 引擎按 E153 第三态退出。 */

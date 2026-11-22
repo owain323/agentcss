@@ -152,7 +152,7 @@
   to { transform: translateX(100%); }
 }
 
-.skeleton--text   { height: 1em; margin-block: 0.35em; border-radius: var(--r-xs); }  /* WO-23：原字面 4px（4→3px） */
+.skeleton--text   { height: 1em; margin-block: 0.35em; border-radius: var(--r-xs); }  /* 原字面 4px（4→3px） */
 .skeleton--title  { height: 1.4em; width: 60%; }
 .skeleton--avatar { width: 40px; height: 40px; border-radius: var(--r-pill); }
 .skeleton--block  { height: 120px; }

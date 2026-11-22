@@ -335,7 +335,7 @@ def scan_component(cid, cdir, tier, meta, layer_dir, claimed):
     if not root:
         raise SystemExit('[FAIL] %s 在 components.meta.json 里没有 rootClass' % cid)
 
-    # 🔴 0.27.21（WO-25）：一个组件可以有**多个公开根类**（overlay = toast +
+    # 🔴 0.27.21：一个组件可以有**多个公开根类**（overlay = toast +
     #    dialog）。原实现只认 rootClass 一个 ⇒ .dialog 的部件/变体被归进
     #    foreign，契约里看不见它的解剖结构。meta 用 rootClassAlso 显式声明，
     #    与 rootClass 同一判据：声明了就必须真的在 CSS 里（双向验证的

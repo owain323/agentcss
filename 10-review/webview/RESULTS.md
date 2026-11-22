@@ -87,7 +87,7 @@
 |---|---|---|
 | A | iPhone · Safari（系统浏览器） | WKWebView 系（Safari 宿主） |
 | B | Android 14 · 微信 8.0.47 | XWEB / Chromium 146 |
-| C | 微信 8.0.79（用户口述为 iPad，UA 与视口均为 iPhone ⇒ 兼容模式） | WKWebView |
+| C | 微信 8.0.79（标注为 iPad；UA 与视口均为 iPhone ⇒ 兼容模式） | WKWebView |
 | D | 企业微信 5.0.12（同上，兼容模式） | wxwork / WKWebView |
 | E | Android 14 · 百度浏览器 13.51 | Chromium 97 |
 | F | iPad · Safari 26.6.1（桌面版 UA） | WebKit |
@@ -178,11 +178,11 @@ git blame --date=short -- docs/LAYER-BASELINE.md | grep 'MQQBrowser/20.6.6'
 
 ---
 
-## 2026-11-19 · 0.27.18 真机回归（bench35 + bench28）
+## 0.27.18 真机回归（bench35 + bench28）
 
 > 0.27.17/18 的全部真机相关改动（old-engine Runtime.enable、ime ③ 记红、
 > a11y ④ AX 硬判据、SERIAL 校验、connectPage reload、run-all 死导入清理）
-> 首次上真机验证。台账：`10-review/android/2026-11-19/report-bench35.json`。
+> 首次上真机验证。记录：`10-review/android/bench35/report-bench35.json`。
 
 | 项 | 实测 |
 |---|---|

@@ -33,7 +33,7 @@ import re
 import glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# 🔴 0.27.21（WO-27）：视野从 3 个目录扩到 5 —— 04-recipes / 09-assets 的
+# 🔴 0.27.21：视野从 3 个目录扩到 5 —— 04-recipes / 09-assets 的
 #    组件 CSS 此前在影响图与 --missing 判据里**双双缺席**（table 的
 #    --table-max-h、sparkline 的 --spark-* 系列根本没被看过）。
 LIB = ('01-tokens', '02-primitives', '03-patterns',
@@ -141,14 +141,14 @@ def main():
         #    收起后清掉。有 fallback 时**永远不会静默失效**。
         #    ⇒ 只查"CSS 里有没有定义这个变量"会误报。
         #
-        # 🔴 0.27.21（WO-27）：这一段曾经是**双重死代码**——
+        # 🔴 0.27.21：这一段曾经是**双重死代码**——
         #    ① 本文件头部漏了 `import io`，而 `except Exception: continue`
         #       把 NameError 一起吞掉 ⇒ 每个文件都被静默跳过、豁免永远为空
         #       （E41 同型：守卫"看起来在工作"）；
         #    ② 豁免集合存**带杠**名字（--acc-h），引用集合存**无杠**（acc-h）
         #       ⇒ 就算 ① 修了，两个集合也永远不相交。
         #    ⇒ 补 import + except 收窄到 OSError + lstrip('-') 统一命名。
-        # 🔴 视野同时扩到 demo.html / index.html（WO-27 m3：demo 教错令牌名，
+        # 🔴 视野同时扩到 demo.html / index.html：demo 教错令牌名，
         #    复用者抄走就是静默失效）。
         import glob as _glob
         import re as _re
@@ -182,7 +182,7 @@ def main():
                 bad.append((c, undef))
                 print('  🔴 %-18s 引用了未定义令牌: %s' % (c, ' '.join('--' + t for t in undef)))
 
-        # 🔴 0.27.21（WO-27）：demo.html 的 <style>、guide/*.css、index.html
+        # 🔴 0.27.21：demo.html 的 <style>、guide/*.css、index.html
         #    也在"教人用令牌"——只扫 <style> 块，<pre><code> 里的教学示例
         #    （如 conventions.html 教复用者自定义 --brand-accent）不算引用。
         extra_srcs = sorted(

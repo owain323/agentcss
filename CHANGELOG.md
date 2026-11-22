@@ -12,9 +12,9 @@
 - **次版本**：新增组件 / 新增能力（下游不改代码也能升级）
 - **修订号**：修 bug、修文案（下游无需任何改动）
 
-> **关于历史条目里的 `E123` 这类编号**：那是 0.26.0 及更早版本沿用的
-> 内部失误台账索引，台账本身不随包分发。从 0.27.0 起，本文件只描述
-> **改了什么、影响谁**，不再引用内部编号 —— 读者不需要一份查不到的索引。
+> **关于条目里的 `E123` 这类编号**：它是代码注释里的缺陷编号，释义在源码仓的
+> `docs/ERRORS-INDEX.md`（不随包分发）。从 0.27.0 起，本文件只描述
+> **改了什么、影响谁**，不再引用编号。
 
 ## [Unreleased]
 
@@ -60,6 +60,32 @@
   tag 就拒绝发布。手工发布仍然可能（token 在谁手里就是谁的），但"发出去了却
   在仓库里查无此提交"这条路在仓库内被堵住。
 - 新增 `.nvmrc`（22），把本机与发布通道的 Node 大版本对齐。
+
+### Changed — 分发面与文档措辞
+
+- **三份内部文档不再随 npm 包分发**：`docs/ROADMAP-DECISIONS.md`（上一版已排除）、
+  `docs/CI-COMPONENT-TRIAGE.md`、`docs/ERRORS-INDEX.md`。它们记录的是逐轮排障过程
+  与编号释义，对使用者没有信息价值；而 `files` 白名单原先按 `docs/` 整目录收
+  ⇒ 三份都进了 0.27.24 的包。`pack-hygiene-gate` ⑥ 的具名清单已扩到三份，
+  自检从硬编码单个名字改成**遍历清单**（每加一份都必须当场被证明有牙）。
+- **`docs/CI-COMPONENT-TRIAGE.md` 改写为「三引擎差异与处置」**：去掉批次编号与
+  逐轮排障过程，只留结论与判据；其中一段涉及本机凭据配置的记录已删除。
+- **`docs/ERRORS-INDEX.md` 从「索引」改为「缺陷编号释义」**：
+  它本来就是给 `E###` 引用做解析的，措辞不该让人以为背后有一份不给看的文件。
+- **清掉源码与文档里的任务编号**（`WO-xx`，61 个文件）：这些编号对外部读者
+  不可解析，替换成已有的版本号或直接删除。提交历史里的编号未改（改写历史
+  会让仓库领先于发布物）。
+- **几处措辞去内部化**：`START-HERE.md` 的"给你用/给我写"、`10-review/webview/
+  RESULTS.md` 的"用户口述"、`05-audit/README.md` 与 `CONTRIBUTING.md` 的
+  "内部错误登记"、`docs/LESSONS.md` 里一句直接引用、`docs/GUIDANCE.md` 里一段
+  关于公开面边界的自述。
+- **真机报告目录改名为 `10-review/android/bench35/`**（原按日期命名）。
+
+### Security
+
+- 三份含内部排障记录的文档曾随 `docs/` 目录进入 0.27.24 的 npm 包；本版起不再
+  分发（`package.json` 的 `files` 与 `pack-hygiene-gate` ⑥ 同时改，后者守"清单
+  没被撤掉"）。已发出的 0.27.24 无法撤回，重新安装即可覆盖本地副本。
 
 ## [0.27.24] - 2026-11-22
 
@@ -248,7 +274,7 @@
 > （deps 豁免死代码 / overlay-host-reverse 缺 import / release-gate 三态尾贴错函数）
 > 与一起 key 泄漏事故（见 Security）。
 
-### Fixed — 事实链与数字漂移（WO-04 收尾）
+### Fixed — 事实链与数字漂移
 - facts-gate 排除清单按**相对路径**匹配（旧代码拿文件名比对，7 个历史文件的
   22 处当时值全被误判未登记声称）；guide/accessibility.html 登记进 CLAIMS；
   a11y 扫描对象 40/38 → 真实 44（demo.html 与朗读快照实数）。
@@ -257,19 +283,19 @@
 - CSS 硬编码对比度快照清零：`/* 6.26 AA */` 实测 5.07/4.82、`/* 3.56 达标 */`
   实测 3.19/3.42——注释在说谎，7 处替换为「无障碍门禁实算」机制引用。
 
-### Added — CI 覆盖（WO-11/12/13/15）
+### Added — CI 覆盖
 - 127 道组件层门禁首次进 CI（nightly 三引擎矩阵）——此前 CI 手挑 10 个文件，
   其中 2 个名字根本不存在、`[ -f ]` 静默跳过。首跑红按三类处置协议分类
   （README「CI 覆盖」一节），**红是真实状态，不为绿改判据**。
 - `python3 -m http.server` 退场（listen backlog 5 的立法同源），服务由
   check-all 自起（身份戳 + 足量 backlog）；visual-stamp 补 @serial。
 
-### Fixed — npm 包可用性（WO-14）
+### Fixed — npm 包可用性
 - 包内 `npm test` 从 ENOENT 变为可用：单元测试子集（unit.test /
   behavior-cores.test / mini-dom.mjs）以**真文件原地**进 files 白名单，
   不复制不出第二份；实测空目录安装 71/71 全绿。门禁体系仍只随源码仓分发。
 
-### Fixed — 元门禁（WO-16/17b）
+### Fixed — 元门禁
 - gate-selfcheck 四判据重写：①可达性改「最后 exit 词元 + 裸顶层 exit 截断」
   双腿（旧实现被函数内缩进 exit 覆盖，把 198 条正常注册误判永不执行）；
   ②重名检测解析单源到 _gateindex.py；③set -u 判据**有了牙**（旧实现只打印
@@ -281,12 +307,12 @@
   overlay-host-reverse.py 缺 import io（整个变异反向控制从未跑过）、
   release-gate 三态尾贴进了 _selftest（NameError，main 始终无条件 return 0）。
 
-### Added — 台账索引（WO-18）
+### Added — 缺陷编号索引
 - docs/ERRORS-INDEX.md（93 条：编号 / 一句话 / CHANGELOG 首提版本 / 关联判据）
   + error-ref-gate.py：代码里每个 E### 必须可解析（306 处引用 / 90 编号），
   编号边界与 terms.INTERNAL_ID_RE 同课。
 
-### Fixed — 设计系统七条（WO-21…27）
+### Fixed — 设计系统七条
 - pagination 选中项 `box-shadow: var(--lift-sm)` 是非法值（位移令牌被当
   阴影用，整条声明被静默丢弃）→ --shadow-1。
 - 阴影三级制：--shadow-3 给最顶层页面级 chrome（dialog/toast/drawer），
@@ -402,7 +428,7 @@
   全绿（-full 深度版）；bench28 原生 Chrome 69.0.3497.100 old-engine 5/5；
   **鉴别力探针**（old-engine --inject-error）：注入 console.error ⇒ 判据
   精确捕获并 FAIL——Runtime.enable 修复在 2018 年内核上被证明活着。
-  报告归档 `10-review/android/2026-11-19/`。
+  报告归档 `10-review/android/bench35/`（原按日期命名的目录已迁移，见 Unreleased）。
 - **MODE=full 预算校准**：300→900（实测 6 轮 675-874s，--timing Top10 入档）；
   实训一条：跑全量不得开着安卓模拟器（perf-gate 首屏被 CPU 争用推成假红）。
 

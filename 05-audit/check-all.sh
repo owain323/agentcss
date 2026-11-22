@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # check-all.sh — 跑全部门禁，一条命令
 #
-# 🔴 建的。理由：这一晚我漏了 `--dir .` 参数，
+# 🔴 建的。理由：一次漏了 `--dir .` 参数，
 #    6 道门禁假报 FAIL —— **手动敲 16 条命令本身就是不可靠的**。
 #    门禁的价值在于"每次都跑"，跑不全等于没有。
 set -u
@@ -252,11 +252,10 @@ _should_skip() { # _should_skip <层>  → 0 表示本轮该跳过
 # ⚠️ 它们**不能替代** fast/full：浏览器判据、视觉基线、打包闭包都不在这里。
 #    precommit 绿只是"可以提交"，不是"可以发版"。
 _precommit_has() { # _precommit_has <名字> → 0 表示这一档要跑
-  # 🔴 2026-11-22：把 leak 放进提交前档（事故驱动）。
-  #   事故：API key 写进 WO-HANDOFF.md 后被直接 commit + push 到公开仓，
-  #   6 秒后公网可下载，账户 2 天内被刷穿。当时这一档只跑
-  #   ai-layer|html-check|prose|unit|tsc —— **泄漏类判据不在提交路径上**，
-  #   而 .git/hooks 里一个钩子都没装 ⇒ 整条链没有任何一处拦得住。
+  # 🔴 把 leak 放进提交前档（由一次真实泄漏推动）。
+  #   当时这一档只跑 ai-layer|html-check|prose|unit|tsc
+  #   —— **泄漏类判据不在提交路径上**，而 .git/hooks 里一个钩子都没装
+  #   ⇒ 整条链没有任何一处拦得住。凭证一旦 push 出去，撤销只能靠轮换。
   #   耗时实测 3.1s（1099 文件），加进来后 precommit 约 10s，可接受。
   case "$1" in
     ai-layer|html-check|prose|unit|tsc|leak) return 0 ;;
@@ -363,7 +362,7 @@ _print() { # _print <idx> —— 按注册顺序打印，诊断逻辑与旧版�
   [ -n "$TIMING" ] && echo "$dtv $name" >> "$TIMING"
 
   # 🔴 2026-10-30（E153）：第三态 —— 「跑了但判不了」不许冒充 PASS。
-  #   0.27.21（WO-01）码位表：0=全绿 / 1=有失败 / 2=用法或环境 / 3=有未判定
+  #   0.27.21码位表：0=全绿 / 1=有失败 / 2=用法或环境 / 3=有未判定
   #   且无失败 / 4=既有失败又有未判定（fail 只进日志，不再兼当退出码）。
   #   约定：门禁退出码 **3 = SKIP / UNVERIFIED**（环境不具备、数据为空，但本身无错）。
   #   之前只有 PASS / FAIL 两态 ⇒ 任何"我没跑"只能 return 0 ⇒ 日志里显示 PASS。
@@ -600,10 +599,10 @@ run "ai-contract" $PY 05-audit/gen-ai-contract.py --check
 #    五条判据各自配了反向控制（--selftest）。
 run "ai-token-desc" $PY 05-audit/ai-token-desc-gate.py
 # 🔴 `ai assets` 是**扫描生成**的：扫描逻辑写错、目录改名，输出会静默变少而没人发现。
-#    这里用另一个口径（磁盘 / 契约 / CLI 三方）对账，任一条不成立就红。（WO-03）
+#    这里用另一个口径（磁盘 / 契约 / CLI 三方）对账，任一条不成立就红。
 run "assets-catalog" $PY 05-audit/assets-catalog-gate.py
 # 🔴 「零第三方运行时依赖」是 README 的第一句承诺。2026-10-30 实测：此前**没有任何门禁
-#    读过 dependencies** —— 注入 lodash 后 doc-facts / dist:check / npm test 三道全部 RC=0。（WO-10）
+#    读过 dependencies** —— 注入 lodash 后 doc-facts / dist:check / npm test 三道全部 RC=0。
 run "zero-dep" $PY 05-audit/zero-dep-gate.py
 # 🔴 lock-source（2026-11-04 新增）：`npm ci` 按 lockfile 的 resolved 直取，
 #   不看 `.npmrc` 钉的官方源。实测漏过一条 npmmirror（0.7.9 那次 91 处替换的漏网），
@@ -1273,7 +1272,7 @@ run "coverage-rev" $PY 05-audit/coverage-gate.py --selftest
 #   这条不启动浏览器，秒级。
 run "fin-ties" $PY 05-audit/finance-example-ties.py
 run "visual-coverage" $PY 05-audit/visual-coverage-gate.py
-run "visual-stamp"    @serial $PY 05-audit/visual-stamp-gate.py   # 🔴 0.27.21（WO-15）：并发组里的 --selftest 会临时改写源码，visual-stamp 读到改到一半的树就假红 ⇒ 独占跑
+run "visual-stamp"    @serial $PY 05-audit/visual-stamp-gate.py   # 🔴 0.27.21：并发组里的 --selftest 会临时改写源码，visual-stamp 读到改到一半的树就假红 ⇒ 独占跑
 
 # 🔴 2026-10-29：这里原来按"装没装 Pillow"决定跑还是跳过。
 #   后果是：没装的机器上这两道门禁**永远 SKIP**，而本仓库的规矩是
@@ -1420,8 +1419,8 @@ run "md-links-rev"  $PY 05-audit/md-links.py --selftest
 #   每条都能被注入证伪（`--selftest` 四类注入 + 正例 + 隐藏区域不误报）。
 run "prose"         $PY 05-audit/prose-gate.py
 run "prose-rev"     $PY 05-audit/prose-gate.py --selftest
-# 🔴 0.27.21（WO-18）：代码里每个 E### 引用必须在 docs/ERRORS-INDEX.md 里
-#   可解析 —— 台账不随仓分发，编号悬空 = 外部读者拿到死索引。
+# 🔴 0.27.21：代码里每个 E### 引用必须在 docs/ERRORS-INDEX.md 里
+#   可解析 —— 编号不自解释，悬空 = 读者看得见编号、找不到内容。
 run "error-ref"      $PY 05-audit/error-ref-gate.py
 run "error-ref-rev"  $PY 05-audit/error-ref-gate.py --selftest
 # 🔴 pack-hygiene（2026-11-04 新增）：上面那道看的是**仓库这一棵树**，
@@ -1607,7 +1606,7 @@ if [ "$_el" -gt "$BUDGET" ]; then
   echo "   ⚠️ 超出预算 $(( _el - BUDGET ))s —— 看上面耗时最高的几道，别加门禁加在这一层。"
 fi
 
-# 🔴 0.27.21（WO-01）：退出码三态的**互斥码位**——fail 是计数，不能兼当退出码
+# 🔴 0.27.21：退出码三态的**互斥码位**——fail 是计数，不能兼当退出码
 #   （"3 道失败"与"未判定"撞码；_nojudge>0 时旧实现 exit 0 = 假绿总闸）。
 #   码位表：0=全部执行且全部通过 / 1=有判据失败 / 2=用法或环境不可用 /
 #           3=有未判定且无失败 / 4=既有失败又有未判定。

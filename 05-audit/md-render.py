@@ -196,7 +196,7 @@ class Check(HTMLParser):
                 self.h1_count += 1
         elif tag == 'img':
             # 🔴 这里原来只统计"缺 alt 的"，然后当成"图片总数"打印 ——
-            #    标签与数据不符，害我以为图片没渲染出来。图片总数要单独记。
+            #    标签与数据不符，看起来像图片没渲染出来。图片总数要单独记。
             self.imgs_total += 1
             if 'alt' not in a:
                 self.imgs_no_alt.append((line, a.get('src', '?')[:40]))

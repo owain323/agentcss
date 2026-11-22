@@ -1,5 +1,5 @@
 /**
- * _canary.js — :8000 身份校验共享库（WO-03 · 0.27.21）
+ * _canary.js — :8000 身份校验共享库（0.27.21）
  *
  * JS 门禁单跑前调用 `require('./_canary.js').assertOurs()`：
  * 不通过时 process.exit(3)——观测条件错误，不是产品不合格。

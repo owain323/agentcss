@@ -31,13 +31,17 @@ pack-hygiene-gate.py — 站在**装了包的人**那一边看：文档链接 + 
   ⑤ 包内不得出现反向控制 / 备份 / 临时文件（`.bak` / `.tmp` / `.pyc` …）
   ⑥ 包内不得出现**内部决策 / 会议材料**（语义层隐私判据，见下）
 
-🔴 ⑥ 的由来（0.27.24 隐私复核）：`docs/ROADMAP-DECISIONS.md` 是三角色评审后的
-   内部裁决记录（含"真实用户 = 作者本人 + 便宜模型"这类对外不该出现的判断），
-   它从 0.27.19 起随 `docs/` 目录进了 npm 包，连发 5 个版本。
+🔴 ⑥ 的由来（0.27.24 隐私复核，0.27.25 扩表）：`docs/ROADMAP-DECISIONS.md` 是
+   逐条取舍的裁决记录（含只对维护者成立的判断），它从 0.27.19 起随 `docs/`
+   目录进了 npm 包，连发 5 个版本。
    `leak-scan.py` 的词表抓不到它 —— 词表管**身份与路径**（用户名 / 域名 /
    内部目录 / 台账编号），不管**语义**。所以这里必须是**具名清单**，不是加宽正则：
    正则加宽会把"内部"这类正常词（组件内部、浮层内部）全部误报。
    清单只增不删；新增内部文档时同步登记这里。
+
+⚠️ 判据是「包内不得出现清单里的**文件名**」，不是「清单里的文件不许存在」。
+   它们仍可留在源码仓里（`error-ref-gate` 依赖 `docs/ERRORS-INDEX.md` 存在），
+   只是不能随包发给使用者。两者的边界是**分发面**，不是仓库面。
 
 🔴 ⑤ 的由来（同一次再探）：第一次 `npm pack --dry-run` 抓到包里有
    `02-primitives/combobox/combobox.js.__reverse.bak` —— 某个反向控制当时
@@ -121,10 +125,20 @@ TRANSIENT_SUFFIX = ('.bak', '.tmp', '.orig', '.rej', '.old', '.pyc', '.log', '~'
 #   由 package.json 的 `!**/__parity_probe.js` 排除；这里验证排除没被撤掉。
 TRANSIENT_NAMES = ('.DS_Store', 'Thumbs.db', '__parity_probe.js')
 
-# ⑥ 内部决策 / 会议材料。**具名清单**，不用正则 —— 理由见文件头 ⑥：
+# ⑥ 内部决策 / 会议材料 / 内部台账。**具名清单**，不用正则 —— 理由见文件头 ⑥：
 #   词表管身份与路径，管不了语义；而"内部"这种词加进正则会把
 #   "组件内部""浮层内部"全部误报。只增不删，新增内部文档时同步登记。
-INTERNAL_DOC_NAMES = ('ROADMAP-DECISIONS.md',)
+#
+#   ① ROADMAP-DECISIONS.md —— 逐条取舍的裁决记录（含只对维护者成立的判断）
+#   ② CI-COMPONENT-TRIAGE.md —— CI 逐轮分类台账（含 workflow run 号、批次
+#      编号、私下排障过程）；对使用者无信息价值，对维护者是工作日志
+#   ③ ERRORS-INDEX.md —— 缺陷编号索引（`E###` 指向的台账不在公开面，
+#      索引本身是给**门禁**用的解析物，不是给使用者的文档）
+INTERNAL_DOC_NAMES = (
+    'ROADMAP-DECISIONS.md',
+    'CI-COMPONENT-TRIAGE.md',
+    'ERRORS-INDEX.md',
+)
 
 
 def contentErrs(files, suffixes=TRANSIENT_SUFFIX, names=TRANSIENT_NAMES):
@@ -246,10 +260,14 @@ def selftest():
 
     # ---- ⑥ 内部决策材料 ----
     report(internalDocErrs(files) == [], '包内无内部决策材料 ⇒ 绿')
-    leaky = files | {'docs/ROADMAP-DECISIONS.md'}
-    e_leak = internalDocErrs(leaky)
-    report(any('ROADMAP-DECISIONS' in e for e in e_leak),
-           '包内混入内部裁决记录 ⇒ 红并点名', '; '.join(e_leak))
+    # 🔴 遍历清单，不硬编码单个名字：清单「只增不删」，每加一条都必须
+    #    当场被证明有牙 —— 否则新加的那一条从没验过（零对象静默通过）。
+    for name in INTERNAL_DOC_NAMES:
+        leaky = files | {'docs/' + name}
+        e_leak = internalDocErrs(leaky)
+        report(any(name in e for e in e_leak),
+               '包内混入 %s ⇒ 红并点名' % name, '; '.join(e_leak))
+    leaky = files | {'docs/' + INTERNAL_DOC_NAMES[0]}
     report(internalDocErrs(leaky, names=()) == [],
            '元反向：清单清空 ⇒ 同一份内部文档不再红')
     report(internalDocErrs(files | {'docs/PRINT.md'}) == [],

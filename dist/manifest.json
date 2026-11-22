@@ -13,7 +13,7 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1089928,
+    "sourceBytes": 1089599,
     "distGzip": 130004
   },
   "files": [
@@ -209,9 +209,9 @@
     },
     {
       "source": "01-tokens/tokens.core.css",
-      "sourceSha256": "a882114a9488f831394938f80e98d90c64e09920a401d8737a1cc641c3803f54",
-      "sourceBytes": 52210,
-      "sourceGzip": 19687,
+      "sourceSha256": "90487171178bc27aefb1e3fcc7bf32471fad0a29c6ee57e061ef07d0a33f1a76",
+      "sourceBytes": 52142,
+      "sourceGzip": 19644,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.core.css",
@@ -223,9 +223,9 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "26c688d438019277ef52e6f5870df81f2417f9cc5b926c4672bc17163212c7d1",
-      "sourceBytes": 66548,
-      "sourceGzip": 25651,
+      "sourceSha256": "cb8b43b6abe2e99b194fed0284408405f51889aa1038eff8b254b1fe40e1d29e",
+      "sourceBytes": 66480,
+      "sourceGzip": 25611,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
@@ -293,9 +293,9 @@
     },
     {
       "source": "02-primitives/choice/choice.css",
-      "sourceSha256": "e09e15aa86146a417d41d2625d4eba6f37409e216d291308006f4d26e5114c8e",
-      "sourceBytes": 17988,
-      "sourceGzip": 6435,
+      "sourceSha256": "98f160e23dbef124aa808d6698e3dde4eb516980e87ff581fc4e7b61fed22671",
+      "sourceBytes": 17972,
+      "sourceGzip": 6427,
       "outputs": [
         {
           "path": "dist/02-primitives/choice/choice.css",
@@ -407,9 +407,9 @@
     },
     {
       "source": "02-primitives/popover/popover.css",
-      "sourceSha256": "a929521217d41f387f79ac0d637c4fc69a901cb1b29985c09968524b85498c63",
-      "sourceBytes": 8018,
-      "sourceGzip": 2610,
+      "sourceSha256": "1b222b6e318d16b306a38903324089019d1c1ecfd81f34601043f6afa4ead400",
+      "sourceBytes": 8007,
+      "sourceGzip": 2601,
       "outputs": [
         {
           "path": "dist/02-primitives/popover/popover.css",
@@ -450,9 +450,9 @@
     },
     {
       "source": "02-primitives/select/select.css",
-      "sourceSha256": "c96e3951966462e2a4a2b0b9b4189caa1f9cb93c6eba4f2ed0b7727fefb42e80",
-      "sourceBytes": 5827,
-      "sourceGzip": 2623,
+      "sourceSha256": "33a7b47cba57412f52cda549e3369ac058a536cf7d9396e91f683223e882d7f8",
+      "sourceBytes": 5767,
+      "sourceGzip": 2606,
       "outputs": [
         {
           "path": "dist/02-primitives/select/select.css",
@@ -593,9 +593,9 @@
     },
     {
       "source": "03-patterns/content/content.css",
-      "sourceSha256": "0bda995205b8802b0eb10539f37d0a1fc0589ab824d19c2132ffbd5844e02c6c",
-      "sourceBytes": 12462,
-      "sourceGzip": 5126,
+      "sourceSha256": "904d6a039bc92aa8e18b67c30b7686232ded462de130bc70afa2ef5a5078c548",
+      "sourceBytes": 12454,
+      "sourceGzip": 5118,
       "outputs": [
         {
           "path": "dist/03-patterns/content/content.css",
@@ -607,9 +607,9 @@
     },
     {
       "source": "03-patterns/drawer/drawer.css",
-      "sourceSha256": "e948d3644326a8511d12a364140fbc321a9f37e7884fb9d5550b8a0100e5c8ff",
-      "sourceBytes": 6078,
-      "sourceGzip": 2758,
+      "sourceSha256": "7c3d6aea932a270aa5f734baf2b441d5d0d98922d1307003d741eab2cf0ea2c0",
+      "sourceBytes": 6070,
+      "sourceGzip": 2750,
       "outputs": [
         {
           "path": "dist/03-patterns/drawer/drawer.css",
@@ -665,9 +665,9 @@
     },
     {
       "source": "03-patterns/form-validation/form-validation.css",
-      "sourceSha256": "b0469d769e1e98497b508756dd208211dbd0055d8b7587d957ee31ba75a1435d",
-      "sourceBytes": 12218,
-      "sourceGzip": 5043,
+      "sourceSha256": "744a63cc9ac2e34ac1e7fbf13f27264201eb2632344f2d6898a8d4a4c5e632c4",
+      "sourceBytes": 12194,
+      "sourceGzip": 5030,
       "outputs": [
         {
           "path": "dist/03-patterns/form-validation/form-validation.css",
@@ -679,9 +679,9 @@
     },
     {
       "source": "03-patterns/form-validation/form-validation.js",
-      "sourceSha256": "1fb13cba303104996250fd16130b82c117504cf56ec1b67fa84da63f61b6ef71",
+      "sourceSha256": "1b455f537bce40304ece40fc43244893c142fa947614654e2a780823b04fc4a2",
       "sourceBytes": 11734,
-      "sourceGzip": 4519,
+      "sourceGzip": 4518,
       "outputs": [
         {
           "path": "dist/03-patterns/form-validation/form-validation.js",
@@ -767,9 +767,9 @@
     },
     {
       "source": "03-patterns/overlay/overlay.css",
-      "sourceSha256": "3349b5e3d185e45ed04f76f99069b567f46ec9be13c09c2ff62e3bb9ffef0ceb",
-      "sourceBytes": 13515,
-      "sourceGzip": 5656,
+      "sourceSha256": "79ab0b611ed95422e91bfb3ccea71afe81ac2496ca9584d6b4e36c26b7b8f72b",
+      "sourceBytes": 13499,
+      "sourceGzip": 5650,
       "outputs": [
         {
           "path": "dist/03-patterns/overlay/overlay.css",
@@ -796,9 +796,9 @@
     },
     {
       "source": "03-patterns/pagination/pagination.css",
-      "sourceSha256": "2afdd5f27684621e2613e5ee72f7c80210bd454213ce8115f8fcf7f57685e8f9",
-      "sourceBytes": 8250,
-      "sourceGzip": 3645,
+      "sourceSha256": "3c03a623933d8589e7fb23f7827b043237400df4de4853d546bf9c565caf3d13",
+      "sourceBytes": 8239,
+      "sourceGzip": 3638,
       "outputs": [
         {
           "path": "dist/03-patterns/pagination/pagination.css",
@@ -854,9 +854,9 @@
     },
     {
       "source": "03-patterns/states/states.css",
-      "sourceSha256": "5addc03613238eb6850d4550a78a0e8b7c0bcadcf323ee3c0d734a7dfb5d414b",
-      "sourceBytes": 11285,
-      "sourceGzip": 4523,
+      "sourceSha256": "ce65c91b12bba44a139be5b238fce7bd325d686a321d898abb81ad5870a78d8c",
+      "sourceBytes": 11277,
+      "sourceGzip": 4516,
       "outputs": [
         {
           "path": "dist/03-patterns/states/states.css",
@@ -1054,9 +1054,9 @@
     },
     {
       "source": "09-assets/bar/bar.css",
-      "sourceSha256": "ef0e48b54b2621dfae1b83f0c38e690ff91b101927ba9bc6239188b2da44df33",
-      "sourceBytes": 6709,
-      "sourceGzip": 3271,
+      "sourceSha256": "4792d0a40902c85debfbec57527bdf0380d061a0818e327b609135c166dad7eb",
+      "sourceBytes": 6685,
+      "sourceGzip": 3263,
       "outputs": [
         {
           "path": "dist/09-assets/bar/bar.css",
@@ -1083,9 +1083,9 @@
     },
     {
       "source": "09-assets/echarts-adapter/echarts-adapter.js",
-      "sourceSha256": "f70f69a3322a7465c0b8a206e9ec35c30fae6eba6b7a426a0b604c88a91ece5d",
-      "sourceBytes": 13874,
-      "sourceGzip": 5593,
+      "sourceSha256": "dd8aa0920e0ae509adcbc223bb7782c839372a1599bc3e7430330624f7f0dcdf",
+      "sourceBytes": 13867,
+      "sourceGzip": 5590,
       "outputs": [
         {
           "path": "dist/09-assets/echarts-adapter/echarts-adapter.js",

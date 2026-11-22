@@ -268,7 +268,7 @@ async function run(files, label) {
   const ok = await checkInBrowser(tested.map((e) => [e.prop, e.val]));
   const bad = [];        // 无前缀却不认 ⇒ 真错
   const warn = [];       // -webkit- 不认 ⇒ 可能是 Safari 专有
-  /* 🔴 0.27.21（WO-11 修复单）：目标引擎**已知不实现**、但声明本身合法且
+  /* 🔴 0.27.21：目标引擎**已知不实现**、但声明本身合法且
      优雅降级的属性 → WARN 不 FAIL。实测：Firefox 长期未实现 orphans/widows
      （分页排版属性），Chromium/WebKit 生效——这是引擎缺口，不是声明写错。
      与上面的 -webkit- WARN 同一形态：可见、注明理由、不阻断。 */

@@ -478,7 +478,7 @@ const settle = (p) => p.evaluate(async () => {
     }
   }
   await b.close();
-  /* 🔴  I1：**分项耗时**（先量再改 —— 之前我改启动方式结果没提速，
+  /* 🔴  I1：**分项耗时**（先量再改 —— 曾经只改启动方式，结果没提速，
      就是因为不知道时间到底花在哪）。单位：秒。 */
   const n = TASKS.length || 1;
   console.log('TIMING goto=' + (T.goto / 1000).toFixed(1) +

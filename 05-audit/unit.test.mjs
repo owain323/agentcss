@@ -93,7 +93,7 @@ test('addMonths(): 月末夹取（1/31 + 1 月 = 2/28，不是 3/3）', () => {
 
 test('quarterOf(): 返回 {y, q}，q 是 **0-based**', () => {
   /* ⚠️ 实际 API 返回对象而不是数字，且 q 从 0 起算 —— 单测必须按**真实契约**写，
-     不能按"我以为的"写（我第一版就写错了，抓到 2 个假红）。 */
+     不能按"我以为的"写（第一版就写错了，抓到 2 个假红）。 */
   assert.deepEqual(plain(DRAPI.quarterOf(new Date(2026, 0, 1))),  { y: 2026, q: 0 });
   assert.deepEqual(plain(DRAPI.quarterOf(new Date(2026, 3, 1))),  { y: 2026, q: 1 });
   assert.deepEqual(plain(DRAPI.quarterOf(new Date(2026, 11, 31))), { y: 2026, q: 3 });

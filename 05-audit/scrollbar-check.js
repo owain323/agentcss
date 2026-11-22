@@ -139,7 +139,7 @@ function toHex(c) {
   await p0.close();
 
   // ① 两套 API 都在
-  // 🔴 0.27.21（WO-11 修复单）：Firefox（headless）对 scrollbar-width 的
+  // 🔴 0.27.21：Firefox（headless）对 scrollbar-width 的
   //    getComputedStyle **恒报 none**——实测：inline thin 也算 none、CSS.supports
   //    却是 true、同页 scrollbar-color 算得出来 ⇒ 引擎观测限制，不是产品回归。
   //    ⇒ firefox 下该断言降级为 CSSOM 规则存在性核对（理由写在断言文本里），
