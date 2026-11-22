@@ -82,6 +82,50 @@ PATTERNS = [
 ]
 
 # ============================================================================
+# 🔴🔴 凭证类判据（2026-11-22 加 · 事故驱动）
+# ----------------------------------------------------------------------------
+# 事故：一枚 DeepSeek key（sk-0e… 35 位）被写进 WO-HANDOFF.md，随公开仓
+#       push 上 GitHub，6 秒后即公网可达（Pages 从 master 根发布）；
+#       账户 2 天内被刷穿。而当时这道门禁**只查内部痕迹**，对 `sk-` 零判据。
+#       反向控制实测：注入假 key 后新增命中 0 —— 门禁根本看不见它。
+#
+# 设计要点：
+#   · **工具文件也要查**：密钥不会因为写在 05-audit/ 里就不是密钥。
+#     旧逻辑对工具目录只跑 terms.identity_hits ⇒ 那里是盲区。
+#   · 不做熵值启发式：误报会让门禁被学会忽略，宁可窄而准。
+#   · 判据只描述"形状"，源码里不含任何完整凭证（不会匹配到自己）。
+#   · 上线前已对全部 1099 个跟踪文件试跑：TOTAL_HITS = 0（零误报）。
+# ============================================================================
+CREDENTIALS = [
+    ('API 密钥', re.compile(r'\bsk-[A-Za-z0-9_-]{20,}\b')),
+    ('GitHub 令牌', re.compile(
+        r'\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}\b'
+        r'|\bgithub_pat_[A-Za-z0-9_]{40,}\b')),
+    ('AWS 密钥', re.compile(r'\bAKIA[0-9A-Z]{16}\b')),
+    ('腾讯云密钥', re.compile(r'\bAKID[A-Za-z0-9]{13,}\b')),
+    ('私钥块', re.compile(
+        r'-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----')),
+    ('Slack 令牌', re.compile(r'\bxox[baprs]-[A-Za-z0-9-]{10,}\b')),
+    ('npm 令牌', re.compile(r'\bnpm_[A-Za-z0-9]{36}\b')),
+    ('URL 内嵌口令', re.compile(
+        r'\b[a-z][a-z0-9+.-]*://[^\s/:@]{2,}:[^\s/@]{8,}@')),
+    ('明文凭证赋值', re.compile(
+        r'(?i)\b(?:api[_-]?key|secret|token|passw(?:or)?d)\b\s*[:=]\s*'
+        r'["\']([A-Za-z0-9_\-]{24,})["\']')),
+]
+
+
+def credential_hits(text):
+    """返回 {判据名: 条数}。工具文件与内容文件走同一份判据（见上方事故说明）。"""
+    out = {}
+    for name, pat in CREDENTIALS:
+        n = len(pat.findall(text))
+        if n:
+            out[name] = n
+    return out
+
+
+# ============================================================================
 # 🆕 公开前体检
 # ----------------------------------------------------------------------------
 # 这三条不是「敏感信息」，是**公开可用性缺陷**。
@@ -218,6 +262,26 @@ def _selftest():
         print('  🔴 找不到可用的 companions 声明 —— 豁免判据没有被验证')
         bad += 1
 
+    # ---- 凭证类（2026-11-22 事故驱动）--------------------------------
+    # 这条判据的价值全在"宽度"：太宽会假红到被忽略，太窄就等于没加
+    # （事故当时正是**零判据**，注入假 key 后新增命中 0）。
+    # 所以每类都必须有一正一反，且反例要贴着边界（过短 / 公钥 / 无口令）。
+    def n_cred(s):
+        return sum(credential_hits(s).values())
+
+    chk('正：sk- 形态密钥', n_cred('k=sk-' + 'a1' * 17), 1)
+    chk('反：过短的 sk- 占位', n_cred('sk-xxxx'), 0)
+    chk('正：GitHub PAT', n_cred('ghp_' + '1' * 36), 1)
+    # ⚠️ 样例必须**拼接书写**：整段私钥头写进源码，等于门禁自己携带一处命中
+    #    （实测：加完这条判据后 leak-scan 报自己 1 处私钥块）。
+    _PEM_HEAD = '-----BEGIN RSA ' + 'PRIVATE KEY-----'
+    chk('正：私钥块', n_cred(_PEM_HEAD), 1)
+    chk('反：公钥块不算', n_cred('-----BEGIN PUBLIC KEY-----'), 0)
+    chk('正：URL 内嵌口令', n_cred('https://usr:' + 'p' * 12 + '@h.example'), 1)
+    chk('反：普通 URL', n_cred('https://example.com/owner/repo'), 0)
+    chk('正：明文凭证赋值', n_cred('api_key = "' + 'a' * 24 + '"'), 1)
+    chk('反：短值不算', n_cred('api_key = "abc"'), 0)
+
     if bad:
         print('  🔴 %d 条不符合预期' % bad)
         return 1
@@ -249,6 +313,9 @@ def main():
         if is_self_tool(rel):
             for name, found in terms.identity_hits(t).items():
                 hits.setdefault(name, []).append((rel, len(found)))
+            # 🔴 2026-11-22：凭证不分工具/内容 —— 工具目录曾是盲区。
+            for name, n in credential_hits(t).items():
+                hits.setdefault(name, []).append((rel, n))
             continue
         for name, pat in PATTERNS:
             src = t
@@ -278,6 +345,10 @@ def main():
             n = len(found)
             if n:
                 hits.setdefault(name, []).append((rel, n))
+
+        # ---- 凭证类（2026-11-22 加）--------------------------------------
+        for name, n in credential_hits(t).items():
+            hits.setdefault(name, []).append((rel, n))
 
         # ---- 公开可用性三条 --------------------------------------------
         # ⚠️ 2026-10-31：`05-audit/` 不再整目录跳过（见循环开头），
@@ -354,7 +425,7 @@ def main():
             if stamp:
                 hits.setdefault(CHECK_STAMP[0], []).append((rel, len(stamp)))
 
-    all_checks = list(PATTERNS) + CHECKS_EXTRA + [CHECK_STAMP]
+    all_checks = list(PATTERNS) + CREDENTIALS + CHECKS_EXTRA + [CHECK_STAMP]
 
     print('  扫了 %d 个文件' % len(files))
     print('')
