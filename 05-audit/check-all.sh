@@ -252,8 +252,14 @@ _should_skip() { # _should_skip <层>  → 0 表示本轮该跳过
 # ⚠️ 它们**不能替代** fast/full：浏览器判据、视觉基线、打包闭包都不在这里。
 #    precommit 绿只是"可以提交"，不是"可以发版"。
 _precommit_has() { # _precommit_has <名字> → 0 表示这一档要跑
+  # 🔴 2026-11-22：把 leak 放进提交前档（事故驱动）。
+  #   事故：API key 写进 WO-HANDOFF.md 后被直接 commit + push 到公开仓，
+  #   6 秒后公网可下载，账户 2 天内被刷穿。当时这一档只跑
+  #   ai-layer|html-check|prose|unit|tsc —— **泄漏类判据不在提交路径上**，
+  #   而 .git/hooks 里一个钩子都没装 ⇒ 整条链没有任何一处拦得住。
+  #   耗时实测 3.1s（1099 文件），加进来后 precommit 约 10s，可接受。
   case "$1" in
-    ai-layer|html-check|prose|unit|tsc) return 0 ;;
+    ai-layer|html-check|prose|unit|tsc|leak) return 0 ;;
   esac
   return 1
 }

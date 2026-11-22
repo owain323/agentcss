@@ -100,6 +100,7 @@
     "**/*.mjs"
   ],
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
     "test": "node --test 05-audit/unit.test.mjs 05-audit/behavior-cores.test.mjs",
     "gate": "bash 05-audit/check-all.sh",
     "gate:pre-commit": "bash 05-audit/check-all.sh --pre-commit",

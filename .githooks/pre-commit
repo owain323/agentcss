@@ -1,0 +1,22 @@
+#!/bin/sh
+# ============================================================================
+# 提交前闸门（2026-11-22 建立 · 事故驱动）
+# ----------------------------------------------------------------------------
+# 事故：一枚 API key 被写进交接文档，直接 commit + push 到公开仓，
+#       6 秒后公网可下载，2 天内账户被刷穿。
+#       当时仓库有 241 道门禁，却**一个钩子都没装**：
+#       `.git/hooks/` 全是 .sample，`gate:pre-commit` 脚本存在但从未被调用。
+#
+# 闸门 = `check-all.sh --pre-commit`，其中已含 leak（凭证/身份/本机路径）
+# 与 ai-layer / html-check / prose / unit / tsc。实测约 10 秒。
+#
+# 安装：克隆后 `npm install` 会自动执行 package.json 的 prepare
+#       （git config core.hooksPath .githooks）。也可手工：
+#         git config core.hooksPath .githooks
+#
+# 绕过：`git commit --no-verify` 在 git 层面仍然可能 —— 但 push 后 CI 会复跑
+#       同一份判据；不要把绕过当常规路径。
+# ============================================================================
+set -e
+cd "$(git rev-parse --show-toplevel)"
+bash 05-audit/check-all.sh --pre-commit
