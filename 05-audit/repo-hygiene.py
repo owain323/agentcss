@@ -64,6 +64,11 @@ INTERNAL_PATTERNS = [
 #   在索引里躺了几轮都没人发现。
 ROOT_ALLOWED_DIRS = {
     '.github',
+    # `.githooks`（2026-11-22 加 · 事故驱动）：**受版本管理**的钩子目录，
+    #   由 package.json 的 prepare 执行 `git config core.hooksPath .githooks`。
+    #   与 `.github` 同类：都是仓库的协作基础设施，不是产物垃圾。
+    #   ⚠️ 未登记时本门禁会拦（实测：加目录后 CI 报"根目录有 1 个未登记条目"）。
+    '.githooks',
     '01-tokens', '02-primitives', '03-patterns', '04-recipes', '05-audit',
     '09-assets', '10-review',
     'adapters', 'ai', 'benchmark', 'dist', 'docs', 'examples', 'guide',
