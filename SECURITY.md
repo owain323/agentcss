@@ -47,7 +47,12 @@
 | 文件 | 入口 | 净化钩子 | 谁负责净化 |
 |---|---|---|---|
 | `02-primitives/popover/popover.js` | `opts.html` | `opts.sanitize` / `Popover.setSanitizer(fn)` | 调用方（或接钩子） |
-| `03-patterns/drawer/drawer.js` | `opt.content`（字符串） | `opt.sanitize` / `Drawer.setSanitizer(fn)` | 调用方（或接钩子） |
+| `03-patterns/drawer/drawer.js` | `opt.unsafeHtml`（0.27.24 新增，显式） | `opt.sanitize` / `Drawer.setSanitizer(fn)` | 调用方（或接钩子） |
+| `03-patterns/drawer/drawer.js` | `opt.content`（字符串）—— 🔴 0.27.24 弃用 | `opt.sanitize` / `Drawer.setSanitizer(fn)` | 调用方（或接钩子） |
+
+**0.27.24 起抽屉正文有安全默认**：`Drawer.open({ text })` 用 `textContent`，
+用户输入可以直接放；只有 `unsafeHtml` / 弃用的 `content` 走 HTML 解析。
+弃用告警每次会话只打一次。
 
 **0.26.0 起有钩子，但默认不改变行为**：不传 `sanitize`、也不调 `setSanitizer()`
 时，两处仍然直接把字符串当 HTML 解析 —— 与 0.25.x 完全一致（静默"自动净化"
