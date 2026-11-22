@@ -295,6 +295,44 @@ function dirCase(place, cls, edge) {
       '⑩ 方位 left：贴内联起点': dirCase('left', 'drawer--left', 'left'),
       '⑩ 方位 top：贴上边': dirCase('top', 'drawer--top', 'top'),
       '⑩ 方位 bottom：贴下边': dirCase('bottom', 'drawer--bottom', 'bottom'),
+
+      /* ⑪ 正文三入口（0.27.24 · 外部审计 P0-2）：
+         text=安全默认（textContent，字面 HTML 不解析）/
+         unsafeHtml=显式 HTML（走净化钩子）/ content=弃用兼容
+         （字符串仍按 HTML 渲染 + 每会话一次弃用告警，Node 照旧 appendChild）。 */
+      '⑪ 正文三入口 text/unsafeHtml/content': async (p) => {
+        /* 弃用告警是"每会话一次"，而前面的方位判据已经点开过 demo 的抽屉
+           （demo 自己就是 content 的旧用法）⇒ 先 reload 拿新会话再截获。 */
+        await p.reload();
+        await new Promise((x) => setTimeout(x, 300));
+        const r = await p.evaluate(() => {
+          const out = {};
+          const h1 = window.Drawer.open({ text: '你好 <b>粗体</b>' });
+          const b1 = h1.el.querySelector('.drawer__body');
+          out.textLiteral = b1.textContent.indexOf('<b>') >= 0 && !b1.querySelector('b');
+          h1.close();
+          const h2 = window.Drawer.open({ unsafeHtml: '<b>粗体</b>' });
+          out.unsafeParsed = !!h2.el.querySelector('.drawer__body b');
+          h2.close();
+          const warns = [];
+          const orig = console.warn;
+          console.warn = function (m) { warns.push(String(m)); };
+          const h3 = window.Drawer.open({ content: '<i>旧</i>' });
+          console.warn = orig;
+          out.contentParsed = !!h3.el.querySelector('.drawer__body i');
+          out.warned = warns.some((m) => m.indexOf('弃用') >= 0);
+          h3.close();
+          const node = document.createElement('strong');
+          node.textContent = '节点';
+          const h4 = window.Drawer.open({ content: node });
+          out.nodeAppended = !!h4.el.querySelector('.drawer__body strong');
+          h4.close();
+          return out;
+        });
+        return { ok: r.textLiteral && r.unsafeParsed && r.contentParsed
+                     && r.warned && r.nodeAppended,
+                 note: JSON.stringify(r) };
+      },
     },
   });
   process.exit(kit.report(r));

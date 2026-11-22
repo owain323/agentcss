@@ -293,12 +293,22 @@
 
   /* HTML 净化钩子（F6 / 0.26.0）。
      🔴 默认**不改变任何行为**：没传 `sanitize` 也没有 `setSanitizer()` 时，
-        `opt.content` 仍然按"调用方已净化"处理（与 0.25.x 一致）。
+        `opt.unsafeHtml` / 兼容期的 `opt.content` 仍按"调用方已净化"处理
+        （与 0.25.x 一致）。
      ⇒ 想接入 DOMPurify 这类库：
           Drawer.setSanitizer(function (html) { return DOMPurify.sanitize(html); });
         或逐次传 `opt.sanitize` 覆盖（逐次优先于模块级）。
      ⚠️ 钩子只处理**字符串入口**；传 Node 的入口本来就绕过了 HTML 解析。 */
   var SANITIZER = null;
+
+  /* 弃用告警只在每次会话打一次（0.27.24）：抽屉可能被反复开关，
+     每次都 warn 会把控制台刷成噪音，反而没人看。 */
+  var WARNED = false;
+  function drawerWarn(msg) {
+    if (WARNED) return;
+    WARNED = true;
+    try { console.warn('[agentcss] ' + msg); } catch (e) { /* 无控制台的环境 */ }
+  }
 
   function setSanitizer(fn) {
     SANITIZER = (typeof fn === 'function') ? fn : null;
@@ -377,12 +387,27 @@
 
     var body = document.createElement('div');
     body.className = 'drawer__body';
-    if (typeof opt.content === 'string') {
-      /* @html-sink raw-html — `opt.content` 是有意的 HTML 入口，调用方负责净化；
+    /* 🔴 0.27.24（外部审计 P0-2）：正文入口收紧为「安全默认 + 显式逃逸」。
+       ① `opt.text`       —— textContent，用户输入可直接放（安全默认）；
+       ② `opt.unsafeHtml` —— 显式 HTML，走净化钩子（名称自带警告语义）；
+       ③ `opt.content`    —— 🔴 弃用（字段名不表意，调用方极易把用户输入
+          当纯文本传进来 ⇒ DOM XSS）。兼容期：行为不变（字符串按 HTML 渲染、
+          Node 照旧 appendChild），首次开启打一次弃用告警。
+       三者同时出现时的优先级：unsafeHtml > content（兼容） > text，
+       text 与 unsafeHtml 并存会打告警。 */
+    if (typeof opt.unsafeHtml === 'string') {
+      /* @html-sink raw-html — `opt.unsafeHtml` 是显式的 HTML 入口，调用方负责净化；
          登记在 SECURITY.md「HTML 入口（sink）」。`sanitize` / `setSanitizer` 可挂钩。 */
+      if (typeof opt.text === 'string') drawerWarn('{text} 与 {unsafeHtml} 同时出现——按 unsafeHtml 渲染，text 被忽略');
+      body.innerHTML = sanitizeHtml(opt.unsafeHtml, opt.sanitize);
+    }
+    else if (typeof opt.content === 'string') {
+      drawerWarn('Drawer.open({content}) 已弃用：纯文本请改用 {text}，'
+        + '确需 HTML 请显式改用 {unsafeHtml}（净化钩子不变）。本次仍按 HTML 渲染。');
       body.innerHTML = sanitizeHtml(opt.content, opt.sanitize);
     }
     else if (opt.content) body.appendChild(opt.content);
+    else if (typeof opt.text === 'string') body.textContent = opt.text;
 
     d.appendChild(head);
     d.appendChild(body);

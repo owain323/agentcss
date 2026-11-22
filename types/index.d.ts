@@ -759,7 +759,14 @@ export interface DrawerOpenOptions {
   title?: string;
   /** 无标题时的无障碍名（默认「抽屉」） */
   label?: string;
-  /** 有意的 HTML 入口（字符串）—— 调用方负责净化，或接 `sanitize` */
+  /** 🔴 0.27.24 新增：纯文本正文（textContent）——用户输入可直接放，安全默认 */
+  text?: string;
+  /** 🔴 0.27.24 新增：显式 HTML 正文——走 `sanitize` / `setSanitizer` 钩子；
+   *  未挂钩时视为"调用方已净化"。与 text 并存时 unsafeHtml 优先（打告警）。 */
+  unsafeHtml?: string;
+  /** 🔴 0.27.24 弃用：字段名不表意，易把用户输入当纯文本传入（DOM XSS 风险）。
+   *  改用 text（安全）或 unsafeHtml（显式）。兼容期内字符串仍按 HTML 渲染
+   *  并打一次弃用告警，Node 仍 appendChild。 */
   content?: string | Node;
   /** 逐次净化钩子（优先于模块级 `Drawer.setSanitizer`） */
   sanitize?(html: string): string;
