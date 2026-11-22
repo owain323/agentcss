@@ -437,6 +437,53 @@ try {
   expect(iconBad.length === 0,
     '⑥⁵ cmdIcons 参数契约：分组推导 / 未知吵 / 空值吵 / 重复吵 / 查询唯一定位',
     iconBad.join(' / '));
+
+  /* 🔴 ⑥⁷：语义 diff 的四类分型（0.27.24+）。
+     这段此前**零门禁覆盖**（`grep "ai diff" 05-audit/` 为空），两个缺陷
+     因此活到今天：① 根级换序被报成「内容变更 __root」；② 「仅移动」只比
+     某节点的 children 顺序，节点自身换位置永不触发（写了 parentOf() 却
+     没调用，死代码）。直接调导出的纯函数验分型，不复制实现。 */
+  var dDiffA = { nodes: { __root: ['h', 'p'],
+    h: { type: 'h1', text: '标题' }, p: { type: 'para', text: '营收 1000' } } };
+  var dDiffB = { nodes: { __root: ['p', 'h'],
+    h: { type: 'h1', text: '标题' }, p: { type: 'para', text: '营收 1200' } } };
+  var dRes = cliMod.computeDiff(dDiffA, dDiffB);
+  var diffBad = [];
+  if (!(dRes.changed.length === 1 && dRes.changed[0] === 'p')) {
+    diffBad.push('内容变更应只有 p（实得 [' + dRes.changed.join(',') + ']）');
+  }
+  if (!(dRes.moved.length === 1 && dRes.moved[0] === 'h')) {
+    diffBad.push('根级换序的 h 应算仅移动（实得 [' + dRes.moved.join(',') + ']）');
+  }
+  if (dRes.added.concat(dRes.removed, dRes.changed, dRes.moved).indexOf('__root') >= 0) {
+    diffBad.push('__root 是容器不是节点，不许进四类名单');
+  }
+  /* 反向控制：删节点只进 removed，不许把父级也算成移动（一次改动报两条） */
+  var dRes2 = cliMod.computeDiff(dDiffA, { nodes: { __root: ['h'],
+    h: { type: 'h1', text: '标题' } } });
+  if (!(dRes2.removed.length === 1 && dRes2.removed[0] === 'p')) {
+    diffBad.push('删节点应进 removed');
+  }
+  if (dRes2.moved.length !== 0) diffBad.push('删节点不该顺带把父级算成移动');
+  /* 🔴 契约文档格式（根级用 `root` 数组）—— `ai check` 校验的正是这种。
+     旧实现只认 nodes.__root：一份刚被 check 通过的文档，换序 diff 出
+     "0 变化"，moved 对真实文档格式永不触发。这条是分型是否**可达**的判据。 */
+  var dC1 = { schemaVersion: '1.0.0', profile: 'creative', root: ['a', 'b'],
+    nodes: { a: { id: 'a', kind: 'button' }, b: { id: 'b', kind: 'card' } } };
+  var dC2 = { schemaVersion: '1.0.0', profile: 'creative', root: ['b', 'a'],
+    nodes: { a: { id: 'a', kind: 'button' }, b: { id: 'b', kind: 'card' } } };
+  var dRes3 = cliMod.computeDiff(dC1, dC2);
+  if (!(dRes3.moved.length === 2 && dRes3.changed.length === 0)) {
+    diffBad.push('契约文档（root 数组）换序应报 2 处仅移动，实得 moved=' +
+      dRes3.moved.length + ' changed=' + dRes3.changed.length);
+  }
+  /* 形状守卫：{blocks:…} 必须被拒 —— 旧版会静默输出"0 变化" */
+  if (cliMod.isDocShape({ blocks: [] }) !== false || cliMod.isDocShape({ nodes: {} }) !== true) {
+    diffBad.push('形状守卫要拒 {blocks:…}、放 {nodes:{}}');
+  }
+  expect(diffBad.length === 0,
+    '⑥⁷ 语义 diff 分型：根级换序算移动 / 内容变化算变更 / 形状不对不许静默',
+    diffBad.join(' / '));
 })();
 
 // ---------------------------------------------------------------- ⑦ 翻车点：两份文件的口径

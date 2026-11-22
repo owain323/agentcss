@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{margin:0;font-family:sans-serif}
+/* 抽屉收起态：布局位置在视口内（inset-inline-end:0），靠 transform 整体
+   推出视口。这正是 03-patterns/nav 在 ≤48rem 的做法 —— 本夹具用最小结构
+   复刻它，让"画布外不算真溢出"这条规则有真浏览器的反向控制。 */
+.drawer{position:fixed;inset-block:0;inset-inline-end:0;width:260px;
+        background:#222;color:#fff;transform:translateX(100%)}
+</style></head>
+<body><main style="padding:16px"><h1>画布外抽屉</h1>
+<button type="button" aria-expanded="false">菜单</button>
+<p>抽屉收起时整体在视口右侧之外。</p></main>
+<div class="drawer">抽屉内容</div>
+</body></html>

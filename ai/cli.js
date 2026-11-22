@@ -460,37 +460,87 @@ function cmdValidate(args) {
  *    "内容没变，只是挪了位置" 和 "内容被改了" 是两种完全不同的风险，
  *    混在一起报告，人就没法判断要不要紧。
  */
+function isDocShape(o) {
+  return !!o && typeof o === 'object' && !Array.isArray(o) &&
+    !!o.nodes && typeof o.nodes === 'object' && !Array.isArray(o.nodes);
+}
+
+/* 纯函数：两份文档 → 四类差异。抽出来是为了能被门禁**直接调用**，
+   不再只靠人肉跑一遍。旧实现两个缺陷：
+     1) `__root` 被当普通节点比对 ⇒ 根级顺序变化报成「内容变更 __root」；
+        而「仅移动」只比较某节点的 children 顺序，**节点自身换位置**
+        （换父级、或在根级换次序）永远不触发 —— 恰好漏掉 moved 存在的
+        唯一理由。那个本该干这事的 parentOf() 写了却没被调用，是死代码。
+     2) 形状不对时静默输出「0 变化」（由 cmdDiff 的守卫兜住）。 */
+function computeDiff(a, b) {
+  var na = a.nodes, nb = b.nodes;
+  var added = [], removed = [], changed = [], moved = [];
+  var idsA = Object.keys(na), idsB = Object.keys(nb);
+
+  /* 根级顺序有两个来源，必须**都认**：
+       · `a.root`        —— 契约文档（`ai check` 校验的就是这种，见 contract.schema）
+       · `nodes.__root`  —— 节点树（早期 diff 只认这个）
+     只认后者的话：同一份刚被 check 通过的文档，diff 出来「根级换序 = 0 变化」，
+     「仅移动」这一类对**真实文档格式**永远不触发 —— 分型形同不存在。 */
+  var rootA = (na && na.__root) || a.root || [];
+  var rootB = (nb && nb.__root) || b.root || [];
+
+  /* `__root` 只是根级顺序的容器，不是节点：它自己永不进四类名单，
+     它的顺序变化通过「子节点位置变了」体现为 moved。 */
+  function isNode(id) { return id !== '__root'; }
+
+  function posOf(nodes, root, id) {
+    var ri = root.indexOf(id);
+    if (ri >= 0) return 'root#' + ri;
+    var keys = Object.keys(nodes);
+    for (var i = 0; i < keys.length; i++) {
+      var pid = keys[i];
+      if (pid === '__root') continue;
+      var at = ((nodes[pid] && nodes[pid].children) || []).indexOf(id);
+      if (at >= 0) return pid + '#' + at;
+    }
+    return null;
+  }
+
+  /* 同一组、不同序 = 仅移动。成员本身变了交给 added/removed 报，
+     不在这里把父节点也算成移动（否则删一个子节点会报两条）。 */
+  function reordered(x, y) {
+    if (x.length !== y.length) return false;
+    if (JSON.stringify(x.slice().sort()) !== JSON.stringify(y.slice().sort())) return false;
+    return JSON.stringify(x) !== JSON.stringify(y);
+  }
+
+  idsB.forEach(function (id) { if (isNode(id) && !(id in na)) added.push(id); });
+  idsA.forEach(function (id) { if (isNode(id) && !(id in nb)) removed.push(id); });
+  idsA.forEach(function (id) {
+    if (!isNode(id) || !(id in nb)) return;
+    var x = JSON.parse(JSON.stringify(na[id]));
+    var y = JSON.parse(JSON.stringify(nb[id]));
+    var cx = x.children || [], cy = y.children || [];
+    delete x.children; delete y.children;
+    if (JSON.stringify(x) !== JSON.stringify(y)) { changed.push(id); return; }
+    if (reordered(cx, cy) || posOf(na, rootA, id) !== posOf(nb, rootB, id)) moved.push(id);
+  });
+  return { added: added, removed: removed, changed: changed, moved: moved };
+}
+
 function cmdDiff(args) {
   var fa = args[0], fb = args[1];
   if (!fa || !fb) die('用法：ai diff <改动前.json> <改动后.json>');
   var a = readJSON(fa, true), b = readJSON(fb, true);
-  var na = a.nodes || {}, nb = b.nodes || {};
-  var added = [], removed = [], changed = [], moved = [];
 
-  function parentOf(nodes, id) {
-    var found = null;
-    Object.keys(nodes).forEach(function (pid) {
-      var at = (nodes[pid].children || []).indexOf(id);
-      if (at >= 0) found = { parent: pid, index: at };
-    });
-    if (!found) {
-      var at2 = (nodes.__root || []).indexOf(id);
-      if (at2 >= 0) found = { parent: null, index: at2 };
-    }
-    return found;
+  /* 🔴 形状守卫：`{blocks:[…]}` 这类 JSON 不是本命令的文档格式。
+     旧版用 `a.nodes || {}` 兜底 ⇒ 把它当**空文档**，两份一比对输出
+     "新增 0 / 删除 0 / 内容变更 0"、退出码 0。把"我读不懂"报成"没有变化"，
+     是这仓库最反对的那种假绿。宁可拒，也不猜。 */
+  var badFile = !isDocShape(a) ? fa : (!isDocShape(b) ? fb : null);
+  if (badFile) {
+    die('ai diff 只吃 {nodes:{…}} 结构的文档；' + badFile +
+      ' 里没有 nodes 对象 —— 不会把"看不懂"报成"没变化"');
   }
 
-  Object.keys(nb).forEach(function (id) { if (!(id in na)) added.push(id); });
-  Object.keys(na).forEach(function (id) { if (!(id in nb)) removed.push(id); });
-  Object.keys(na).forEach(function (id) {
-    if (!(id in nb)) return;
-    var x = JSON.parse(JSON.stringify(na[id]));
-    var y = JSON.parse(JSON.stringify(nb[id]));
-    var cx = x.children, cy = y.children;
-    delete x.children; delete y.children;
-    if (JSON.stringify(x) !== JSON.stringify(y)) changed.push(id);
-    else if (JSON.stringify(cx || []) !== JSON.stringify(cy || [])) moved.push(id);
-  });
+  var d = computeDiff(a, b);
+  var added = d.added, removed = d.removed, changed = d.changed, moved = d.moved;
 
   var json = isJson();
   var res = { added: added, removed: removed, changed: changed, moved: moved };
@@ -1440,10 +1490,25 @@ function cmdShot(args) {
         + (s.truncatedAt ? ' · 🔴 已截断到 ' + s.png.height + '（原 ' + s.truncatedAt + '）' : '') + '\n');
       if (s.overflowCount) {
         /* 🔴 0.27.18：探针的溢出采集有 40 处上限——达到上限时如实标注，
-           不把 40 当精确值（200 处溢出的页面旧输出只说"40 处"）。 */
-        process.stdout.write('      ⚠️ 这个宽度下横向溢出 ' +
-          (s.overflowCapped ? '40+（已达采集上限）' : s.overflowCount + ' 处')
-          + '（页面宽 ' + s.scrollWidth + ' > 视口 ' + s.viewport + '）：' + s.overflow.join('、') + '\n');
+           不把 40 当精确值（200 处溢出的页面旧输出只说"40 处"）。
+           🔴 0.27.24+：这行原来无论真假都写"页面宽 X > 视口 Y"。
+           抽屉页的 scrollWidth 就等于视口（transform 不撑滚动区），
+           照样印出"390 > 390"—— 一句自己打自己的话。改成按 pageOverflow
+           分两种写法，并把"真溢出 / 设计内"分开报数。 */
+        var hard = 0;
+        (s.overflowItems || []).forEach(function (it) {
+          if (!it.inScroll && !it.offCanvas) hard++;
+        });
+        var soft = s.overflowCount - hard;
+        var tally = s.overflowCapped
+          ? '（前 40 项：真溢出 ' + hard + ' / 设计内 ' + soft + '）'
+          : '（真溢出 ' + hard + ' / 设计内 ' + soft + '）';
+        process.stdout.write('      ' + (hard ? '🔴' : '⚠️') + ' 这个宽度下横向越界 ' +
+          (s.overflowCapped ? '40+（已达采集上限）' : s.overflowCount + ' 处') +
+          tally + (s.pageOverflow
+            ? '；页面已被顶破（scrollWidth ' + s.scrollWidth + ' > 视口 ' + s.viewport + '）'
+            : '；页面本身没有横向滚动（scrollWidth ' + s.scrollWidth + ' = 视口 ' + s.viewport + '）') +
+          '：' + s.overflow.join('、') + '\n');
       }
     });
     if (r.consoleErrors.length) {
@@ -1638,5 +1703,7 @@ if (require.main === module) main();
    · `ENUMS`   —— 判"每个枚举开关的取值都来自数据，不是手抄"
    门禁直接 require 本文件拿真值，**不复制一份清单**（I-7）。 */
 module.exports = { CMDS: CMDS, SCHEMAS: SCHEMAS, ENUMS: ENUMS, EXIT: EXIT, FLAGS: FLAGS,
+                   /* 门禁直接调纯函数验语义 diff 的四类分型，不复制一份实现 */
+                   computeDiff: computeDiff, isDocShape: isDocShape,
                    /* 只给门禁验「输出 undefined 必须当场失败」这条兜底 */
                    _out: out };

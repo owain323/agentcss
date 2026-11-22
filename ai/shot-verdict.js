@@ -11,8 +11,10 @@
  * 判定规则（交接文档 §3.2，逐条可被自检验证）
  * ----------------------------------------------------------------------------
  *   consoleErrors 非空            → fail（js-error：JS 报错不能是 warn）
- *   溢出元素不在滚动祖先内        → fail（true-overflow：真溢出）
- *   溢出元素都在滚动祖先内        → warn（container-scroll：设计内滚动，要让人知道）
+ *   溢出元素在滚动祖先内          → warn（container-scroll：设计内滚动，要让人知道）
+ *   元素整体在视口外、布局位置在内 → warn（off-canvas：抽屉收起态/入场动画，
+ *                                   transform 推出去的，不产生横向滚动）
+ *   其余溢出元素不在滚动祖先内    → fail（true-overflow：真溢出）
  *   无溢出、无报错                → pass
  *   某宽度采集不完整（探针没跑成）→ fail（capture-incomplete：判定不可信，不许假 pass）
  *
@@ -66,6 +68,16 @@ function verdictForWidth(entry) {
         where: 'w' + entry.width + ' ' + items[i].tag,
         detail: '溢出在设计内滚动容器里（表格横向滚动是契约行为），不判失败',
         ref: REF_MAP['container-scroll']
+      });
+    } else if (items[i].offCanvas) {
+      reasons.push({
+        code: 'off-canvas', severity: 'warn',
+        where: 'w' + entry.width + ' ' + items[i].tag,
+        detail: '整体在视口外，但布局位置本在视口内 —— 是 transform 推出去的' +
+          '（抽屉收起态 / 入场动画），不产生横向滚动，不判失败'
+        /* 不挂 ref：翻车点库里没有"画布外"这一条，硬映射到
+           single-scroll-container 会给错药方。ai-layer-gate 只查 REF_MAP
+           里的值是否真实存在，这里刻意不给药方。 */
       });
     } else {
       reasons.push({
@@ -130,14 +142,18 @@ function summarize(verdict, widthCount) {
   var rs = (verdict && verdict.reasons || []);
   var n = rs.length;
   if (s === 'pass') return widthCount + ' 个宽度全部通过：无溢出、无 JS 报错';
-  if (s === 'warn') return '发现 ' + n + ' 处设计内滚动（warn，不判失败）——确认是契约行为即可';
-  var seen = {};
-  var kinds = [];
+  /* warn 也按分型报数：原来一律写"设计内滚动"，抽屉类条目会被描述错，
+     人按"表格横向滚动"去核对，永远对不上。 */
   var ORDER = { 'true-overflow': '真溢出', 'js-error': 'JS 报错',
-    'page-overflow': '页面级溢出', 'capture-incomplete': '采集不完整' };
+    'page-overflow': '页面级溢出', 'capture-incomplete': '采集不完整',
+    'container-scroll': '设计内滚动容器', 'off-canvas': '画布外（抽屉/动画收起态）' };
+  var seen = {}, kinds = [];
   rs.forEach(function (r) {
     if (!seen[r.code]) { seen[r.code] = 1; kinds.push(ORDER[r.code] || r.code); }
   });
+  if (s === 'warn') {
+    return '发现 ' + n + ' 处设计内布局（warn，不判失败）：' + kinds.join(' / ');
+  }
   return '发现 ' + n + ' 处必须处理的问题（fail）：' + kinds.join(' / ');
 }
 
@@ -228,6 +244,31 @@ function selftest() {
   expect('对照F perWidth 档位 [warn, fail] 且聚合 fail',
     JSON.stringify(pw) === JSON.stringify(['warn', 'fail']) && agg.status === 'fail',
     true, '聚合必须真取最差档，不是取第一个');
+
+  /* ⑤ 画布外（抽屉收起态）→ warn：这是 0.27.24 之后补的规则。
+     触发它的真实场景：本库自己的 examples/finance-report 在 390 宽下
+     被旧规则判 fail（40 条里 1 条是 nav__list 的 translateX(100%)），
+     而页面 scrollWidth 就是 390 —— 一条用户看不见的问题被报成"必须处理"。 */
+  var oc = computeShotVerdict([W({ items: [{ tag: 'ul.nav__list', inScroll: false, offCanvas: true }] })], []);
+  expect('⑤ 画布外抽屉 → warn（不是 fail）', oc.status, 'warn',
+    '抽屉收起态是设计，不是顶破布局');
+
+  /* 对照G 画布外条目**永不**产生 true-overflow 分型 */
+  expect('对照G off-canvas 不产生 true-overflow', oc.reasons.some(function (r) {
+    return r.code === 'true-overflow'; }), false, '做反 = 所有带抽屉的页假红');
+
+  /* 对照H 画布外与真溢出并存 ⇒ 仍 fail —— 新规则不许把真问题洗白。
+     这是这条规则唯一危险的失效方向：一旦 offCanvas 判宽了（把半露的
+     元素也算成"整体在视口外"），真溢出就会被降档放行。 */
+  var mix = computeShotVerdict([W({ items: [
+    { tag: 'ul.nav__list', inScroll: false, offCanvas: true },
+    { tag: 'div.wide', inScroll: false, offCanvas: false }] })], []);
+  expect('对照H 画布外 + 真溢出并存 → fail', mix.status, 'fail',
+    '画布外规则不能洗白真溢出');
+
+  /* 对照I warn 文案必须报出"画布外"，不能一律写"设计内滚动" */
+  expect('对照I warn 文案区分画布外', /画布外/.test(summarize(oc, 1)), true,
+    '文案错 = 人按表格滚动去核对，永远对不上');
 
   console.log(bad
     ? '  [FAIL] 自检 ' + bad + ' / ' + total + ' 项不过'

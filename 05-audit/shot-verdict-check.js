@@ -2,11 +2,13 @@
  * shot-verdict-check.js — ai shot verdict 的**集成反向控制**（真浏览器）
  *
  * ============================================================================
- * 四张夹具页（05-audit/fixtures/shot-verdict/）→ 真跑 shoot() → 断言 verdict：
+ * 五张夹具页（05-audit/fixtures/shot-verdict/）→ 真跑 shoot() → 断言 verdict：
  *   clean.html             → pass（无溢出、无报错）
  *   true-overflow.html     → fail + reasons 含 true-overflow
  *   container-scroll.html  → warn + reasons 含 container-scroll（不是 fail——
  *                            这条最容易做反，设计内滚动不许误报）
+ *   off-canvas.html        → warn + reasons 含 off-canvas（抽屉靠 transform
+ *                            整体移出视口；同样不许误报成 fail）
  *   js-error.html          → fail + reasons 含 js-error
  *
  * 🔴 三联（§3.3）：夹具本身就是"注入的缺陷"（随仓库提交，改坏即红）；
@@ -36,6 +38,7 @@ var EXPECT = [
   { file: 'clean.html', status: 'pass', code: null },
   { file: 'true-overflow.html', status: 'fail', code: 'true-overflow' },
   { file: 'container-scroll.html', status: 'warn', code: 'container-scroll' },
+  { file: 'off-canvas.html', status: 'warn', code: 'off-canvas' },
   { file: 'js-error.html', status: 'fail', code: 'js-error' },
 ];
 
@@ -77,6 +80,6 @@ var EXPECT = [
     }
   }
   console.log(bad ? '  ❌ shot-verdict 集成：' + bad + ' 项不满足'
-                  : '  ✅ shot-verdict 集成：四夹具 verdict 全部符合判定语义');
+                  : '  ✅ shot-verdict 集成：五夹具 verdict 全部符合判定语义');
   process.exit(bad ? 1 : 0);
 })();
