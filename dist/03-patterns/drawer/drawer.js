@@ -310,13 +310,14 @@ var body = document.createElement('div');
 body.className = 'drawer__body';
 
 if (typeof opt.unsafeHtml === 'string') {
-
 if (typeof opt.text === 'string') drawerWarn('{text} 与 {unsafeHtml} 同时出现——按 unsafeHtml 渲染，text 被忽略');
+
 body.innerHTML = sanitizeHtml(opt.unsafeHtml, opt.sanitize);
 }
 else if (typeof opt.content === 'string') {
 drawerWarn('Drawer.open({content}) 已弃用：纯文本请改用 {text}，'
 + '确需 HTML 请显式改用 {unsafeHtml}（净化钩子不变）。本次仍按 HTML 渲染。');
+
 body.innerHTML = sanitizeHtml(opt.content, opt.sanitize);
 }
 else if (opt.content) body.appendChild(opt.content);
