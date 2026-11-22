@@ -128,8 +128,10 @@ jobs:
           GH_FETCH_TOKEN: ${{ github.token }}
         run: |
           set -eu
+          # 密码用 `$VAR`（不带花括号）：`${...}` 会被泄漏门禁当成"未替换的模板占位符"，
+          # 而这里确实是 shell 变量展开，不是占位符。
           git config --local credential.helper \
-            '!f() { echo username=x-access-token; echo "password=${GH_FETCH_TOKEN}"; }; f'
+            '!f() { echo username=x-access-token; echo "password=$GH_FETCH_TOKEN"; }; f'
           trap 'git config --local --unset-all credential.helper || true' EXIT
           git fetch --tags --force origin
           git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
