@@ -13,8 +13,8 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1088116,
-    "distGzip": 129673
+    "sourceBytes": 1089747,
+    "distGzip": 129958
   },
   "files": [
     {
@@ -621,15 +621,15 @@
     },
     {
       "source": "03-patterns/drawer/drawer.js",
-      "sourceSha256": "d00273bd1fbd0026cc37e02b672daa3cf27d9cfded625f53885dbd1008d66544",
-      "sourceBytes": 21408,
-      "sourceGzip": 8635,
+      "sourceSha256": "824897fa141d2c33585fb7d09cf714d4f9aa5e6be650ce9bc4084438e107fc70",
+      "sourceBytes": 23039,
+      "sourceGzip": 9275,
       "outputs": [
         {
           "path": "dist/03-patterns/drawer/drawer.js",
           "kind": "stripped",
-          "bytes": 9987,
-          "gzip": 3515
+          "bytes": 10617,
+          "gzip": 3800
         }
       ],
       "note": "JS 不做压缩：手写压缩器有破坏 ES5 语义的风险，收益不抵风险"
