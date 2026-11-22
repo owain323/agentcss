@@ -244,6 +244,71 @@ def files_path_problems(files, root=ROOT):
     return errs, includes, literal, globbed
 
 
+# 站点发布范围（[14]）—— 判据是「外人能拿到什么」，不是「写了哪些 exclude」。
+#   两种实现都认：
+#     ① 白名单 + `--exclude '*'`（0.27.24 起的写法，默认拒绝）
+#     ② 黑名单 `--exclude '<dir>/'`（旧写法，仍然放行，但强度弱一档）
+#   白名单形态下必须核两件事：内部目录**没被放行**、产品面**没漏**。
+SITE_MUST_INCLUDE = ['index.html', '404.html', '01-tokens', '02-primitives',
+                     '03-patterns', '04-recipes', '09-assets', 'ai', 'docs', 'guide']
+SITE_MUST_NOT_INCLUDE = ['10-review', 'internal', '05-audit', 'benchmark',
+                         'type-tests', 'node_modules', '.github', '.githooks']
+
+
+def site_scope_problems(pg):
+    """pages.yml 正文 → [问题]；空列表 = 通过；pg 为 None（没有 pages.yml）= 跳过。"""
+    if pg is None:
+        return []
+    probs = []
+    if "--exclude '*'" in pg:                      # ① 白名单
+        inc = [m.lstrip('/').split('/')[0] for m in
+               re.findall(r"--include '([^']+)'", pg)]
+        inc = [i for i in inc if i]
+        for d in SITE_MUST_NOT_INCLUDE:
+            if d in inc:
+                probs.append('白名单里放行了 %s/ ⇒ 内部产物会被发到公网' % d)
+        for d in SITE_MUST_INCLUDE:
+            if d not in inc:
+                probs.append('白名单漏了 %s ⇒ 产品面会缺页（站点主路径之一）' % d)
+        if '*.tgz' in inc or any(i.endswith('.tgz') for i in inc):
+            probs.append('白名单放行了 *.tgz ⇒ 本地旧包会被发到站点上')
+        return probs
+    # ② 黑名单（旧写法）
+    for d in ['10-review/', 'internal/', '05-audit/', 'benchmark/', 'type-tests/']:
+        if ("--exclude '%s'" % d) not in pg:
+            probs.append('rsync 没有排除 %s ⇒ 内部产物会被发到公网' % d)
+    if not probs and "--exclude '*.tgz'" not in pg:
+        probs.append('rsync 没有排除 *.tgz ⇒ 本地旧包会被发到站点上')
+    return probs
+
+
+def _site_scope_selftest():
+    """[14] 的反向控制：白名单放行内部目录 / 漏产品目录 / 黑名单漏项，都必须红。"""
+    ok_white = ("rsync -a --include '/index.html' --include '/404.html' "
+                "--include '/01-tokens/' --include '/01-tokens/**' "
+                "--include '/02-primitives/' --include '/03-patterns/' --include '/04-recipes/' "
+                "--include '/09-assets/' --include '/ai/' --include '/docs/' --include '/guide/' "
+                "--exclude '*' ./ _site/")
+    ok_black = ("rsync -a --exclude '10-review/' --exclude 'internal/' --exclude '05-audit/' "
+                "--exclude 'benchmark/' --exclude 'type-tests/' --exclude '*.tgz' ./ _site/")
+    cases = [
+        ('白名单：只放产品面', ok_white, 0),
+        ('白名单：放行了 10-review', ok_white.replace("--include '/ai/'", "--include '/ai/' --include '/10-review/'"), 1),
+        ('白名单：漏了 guide', ok_white.replace("--include '/guide/' ", ''), 1),
+        ('黑名单：旧写法仍然放行', ok_black, 0),
+        ('黑名单：漏排 05-audit', ok_black.replace("--exclude '05-audit/' ", ''), 1),
+        ('没有 pages.yml', None, 0),
+    ]
+    bad = 0
+    for label, text, want in cases:
+        got = len(site_scope_problems(text))
+        ok = (got == 0) if want == 0 else (got > 0)
+        print('  %s %-46s' % ('OK ' if ok else '🔴 ', label))
+        if not ok:
+            bad += 1
+    return bad
+
+
 def main():
     UNVERIFIED = []   # 🔴 0.27.21（WO-17）：「视野已空」走这里，退出码 3
     print('  === 发布契约门禁 ===')
@@ -632,23 +697,16 @@ def main():
     #   事故（2026-11-05）：10-review/ 一直被 rsync 进 _site，
     #   目录请求是 404（没有索引），但**具体文件全部 200** ——
     #   440 张评审截图 / 无障碍树 / 真机探针挂在公网，且每次部署多传 72 MB。
+    #   0.27.24 后 pages.yml 改成**白名单 + --exclude '*'**（默认拒绝），
+    #   判据必须认两种写法，否则"实现变强了、判据反而红"。
     print('  [14] 站点发布范围（只发产品面）')
-    pg = read_text('.github/workflows/pages.yml')
-    if pg is None:
-        print('      （没有 pages.yml —— 跳过）')
-    else:
-        must_exclude = ['10-review/', 'internal/', '05-audit/',
-                        'benchmark/', 'type-tests/']
-        miss = [d for d in must_exclude if ("--exclude '%s'" % d) not in pg]
-        if miss:
-            for d in miss:
-                print('      X rsync 没有排除 %s ⇒ 内部产物会被发到公网' % d)
-            bad += len(miss)
-        elif "--exclude '*.tgz'" not in pg:
-            print("      X rsync 没有排除 *.tgz ⇒ 本地旧包会被发到站点上")
-            bad += 1
-        else:
-            print('      OK 评审留档 / 门禁 / 基准 / 类型测试 / 旧包都不上站')
+    _pg = read_text('.github/workflows/pages.yml')
+    probs = site_scope_problems(_pg)
+    if _pg is not None and not probs:
+        print('      OK 评审留档 / 门禁 / 基准 / 类型测试 / 旧包都不上站')
+    for p in probs:
+        print('      X ' + p)
+        bad += 1
     print('')
 
     if bad:
@@ -1190,6 +1248,7 @@ def _selftest():
 
     bad += _tag_anchor_selftest()
     bad += _publish_entry_selftest()
+    bad += _site_scope_selftest()
 
     # release-run.sh 的状态机自检由本门禁代跑：避免为它再加一条注册
     # （"每条风险都配一道新门禁"正是要避免的那种治理）。

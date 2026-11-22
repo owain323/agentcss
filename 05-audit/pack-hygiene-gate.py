@@ -29,6 +29,15 @@ pack-hygiene-gate.py — 站在**装了包的人**那一边看：文档链接 + 
   ③ 每个 markdown 相对链接的目标必须在包内清单里
   ④ http(s) / mailto / # / data / tel 与含占位符的示例路径 ⇒ 跳过
   ⑤ 包内不得出现反向控制 / 备份 / 临时文件（`.bak` / `.tmp` / `.pyc` …）
+  ⑥ 包内不得出现**内部决策 / 会议材料**（语义层隐私判据，见下）
+
+🔴 ⑥ 的由来（0.27.24 隐私复核）：`docs/ROADMAP-DECISIONS.md` 是三角色评审后的
+   内部裁决记录（含"真实用户 = 作者本人 + 便宜模型"这类对外不该出现的判断），
+   它从 0.27.19 起随 `docs/` 目录进了 npm 包，连发 5 个版本。
+   `leak-scan.py` 的词表抓不到它 —— 词表管**身份与路径**（用户名 / 域名 /
+   内部目录 / 台账编号），不管**语义**。所以这里必须是**具名清单**，不是加宽正则：
+   正则加宽会把"内部"这类正常词（组件内部、浮层内部）全部误报。
+   清单只增不删；新增内部文档时同步登记这里。
 
 🔴 ⑤ 的由来（同一次再探）：第一次 `npm pack --dry-run` 抓到包里有
    `02-primitives/combobox/combobox.js.__reverse.bak` —— 某个反向控制当时
@@ -112,6 +121,11 @@ TRANSIENT_SUFFIX = ('.bak', '.tmp', '.orig', '.rej', '.old', '.pyc', '.log', '~'
 #   由 package.json 的 `!**/__parity_probe.js` 排除；这里验证排除没被撤掉。
 TRANSIENT_NAMES = ('.DS_Store', 'Thumbs.db', '__parity_probe.js')
 
+# ⑥ 内部决策 / 会议材料。**具名清单**，不用正则 —— 理由见文件头 ⑥：
+#   词表管身份与路径，管不了语义；而"内部"这种词加进正则会把
+#   "组件内部""浮层内部"全部误报。只增不删，新增内部文档时同步登记。
+INTERNAL_DOC_NAMES = ('ROADMAP-DECISIONS.md',)
+
 
 def contentErrs(files, suffixes=TRANSIENT_SUFFIX, names=TRANSIENT_NAMES):
     """纯函数：喂合成清单就能验它有没有牙（见 selftest ⑤）。"""
@@ -120,6 +134,15 @@ def contentErrs(files, suffixes=TRANSIENT_SUFFIX, names=TRANSIENT_NAMES):
         base = p.rsplit('/', 1)[-1]
         if base in names or (suffixes and base.endswith(suffixes)):
             errs.append('包内出现临时/备份文件：%s' % p)
+    return errs
+
+
+def internalDocErrs(files, names=INTERNAL_DOC_NAMES):
+    """纯函数：喂合成清单就能验它有没有牙（见 selftest ⑥ 与元反向）。"""
+    errs = []
+    for p in sorted(files):
+        if p.rsplit('/', 1)[-1] in names:
+            errs.append('包内出现内部决策/会议材料：%s' % p)
     return errs
 
 
@@ -151,13 +174,13 @@ def main():
         if os.path.isfile(full):
             docs[p] = io.open(full, encoding='utf-8', errors='replace').read()
     print('  真实包：%d 个文件 · 其中 %d 份 .md' % (len(files), len(docs)))
-    errs = linkErrs(files, docs) + contentErrs(files)
+    errs = linkErrs(files, docs) + contentErrs(files) + internalDocErrs(files)
     if errs:
         for e in errs:
             print('  [FAIL] ' + e)
         print('  [FAIL] %d 处不满足' % len(errs))
         return 1
-    print('  [OK] 包内文档的相对链接全部落在包里，且没有临时/备份文件')
+    print('  [OK] 包内文档的相对链接全部落在包里，没有临时/备份文件，也没有内部决策材料')
     return 0
 
 
@@ -220,6 +243,17 @@ def selftest():
            '包内混入 dist 临时探针 ⇒ 红并点名')
     report(contentErrs(probe, names=()) == [],
            '元反向：名字表清空 ⇒ 同一探针不再红')
+
+    # ---- ⑥ 内部决策材料 ----
+    report(internalDocErrs(files) == [], '包内无内部决策材料 ⇒ 绿')
+    leaky = files | {'docs/ROADMAP-DECISIONS.md'}
+    e_leak = internalDocErrs(leaky)
+    report(any('ROADMAP-DECISIONS' in e for e in e_leak),
+           '包内混入内部裁决记录 ⇒ 红并点名', '; '.join(e_leak))
+    report(internalDocErrs(leaky, names=()) == [],
+           '元反向：清单清空 ⇒ 同一份内部文档不再红')
+    report(internalDocErrs(files | {'docs/PRINT.md'}) == [],
+           '良性对照：正常文档同目录 ⇒ 不误报')
 
     real, errs = pack_files()
     if errs:

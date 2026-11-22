@@ -117,8 +117,32 @@ jobs:
       #   真正的 annotated tag 对象没被抓下来 ⇒ release 门禁的
       #   「tag 必须 annotated」会误判成"你打的是轻量 tag"（2026-10-29 实测）。
       #   `--force` 是必须的：本地那个轻量 ref 不是快进关系，不加它不覆盖。
-      - name: 补齐 tag 对象
-        run: git fetch --tags --force origin
+      # 🔴 0.27.24：这两条 fetch **以前必然 128**（persist-credentials: false 之后
+      #   远端是 https 且没有凭据，`could not read Username`）⇒ 发版从 0.27.20 起
+      #   根本走不到 npm publish，v0.27.21/22/23 三次 tag 全红在这里。
+      #   修法：只在这一个 step 内装一个读 env 的 credential helper，抓完立刻卸掉。
+      #   凭据**不进命令行**（cmdline 里的 base64 不会被 GHA 打码），也不落
+      #   .git/config 之外的地方；后面每个 step 都不带 GITHUB_TOKEN（工程官 S4）。
+      - name: 补齐 tag 与远端分支引用（仅此步临时带凭据）
+        env:
+          GH_FETCH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          # 密码用 `$VAR`（不带花括号）：`${...}` 会被泄漏门禁当成"未替换的模板占位符"，
+          # 而这里确实是 shell 变量展开，不是占位符。
+          git config --local credential.helper \
+            '!f() { echo username=x-access-token; echo "password=$GH_FETCH_TOKEN"; }; f'
+          trap 'git config --local --unset-all credential.helper || true' EXIT
+          git fetch --tags --force origin
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+          git config --local --unset-all credential.helper || true
+          trap - EXIT
+          # 证伪：凭据已卸掉 —— 再 fetch 一次应当**失败**，否则说明它还留在配置里
+          if git config --local --get-all credential.helper >/dev/null 2>&1; then
+            echo "::error::credential.helper 还在 .git/config 里 ⇒ 后续 step 会带着凭据跑"
+            exit 1
+          fi
+          echo "tag 对象：$(git cat-file -t "$GITHUB_REF_NAME")"
 
       # 🔴 tag 触发时 `actions/checkout` 只抓这一个 tag，**不建**
       #   `refs/remotes/origin/*`。而 release-gate 的「tag 指向的提交必须被
@@ -126,8 +150,8 @@ jobs:
       #   ⇒ 发布前显式抓一次分支引用。仓库只有 2 MB，代价可以忽略。
       #   ⚠️ 这不是为了让判据变绿，是为了让它**看得见**：fetched 之后
       #      「给游离提交打 tag」依然会被挡住。
-      - name: 补齐远端分支引用（tag 锚点判据需要）
-        run: git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+      #   （上面那个 step 已经连 tag 和分支一起抓了 —— 合成一步是因为两条都
+      #     需要同一份临时凭据，分成两步等于装/卸两次。)
 
       - name: 校验 tag 与 package.json 版本一致
         run: |
@@ -221,9 +245,24 @@ jobs:
             *) echo "::error::.npmrc 里有 _authToken（值不回显）—— OIDC 用不上"; exit 1 ;;
           esac
 
-      - name: 发布到 npm（OIDC / provenance，无长期令牌）
+      - name: 发布到 npm（OIDC；私有仓库按 npm 已知限制降级为无 attestation）
         if: steps.probe.outputs.npm != 'present'
-        run: npm publish --provenance --access public
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          # 🔴 2026-11-22（仓库转私有）：npm 官方明确「Provenance generation is
+          #   not supported for private repositories」。带 --provenance 硬发，
+          #   registry 会**静默不生成** attestation，而最后的回执判「三者齐备」
+          #   必然红；重跑又会被 probe 以 `provenance=absent` 拒绝 ⇒ 发一次、
+          #   红一次、再也发不了。⇒ 私有期间如实降级并**打印出来**，
+          #   公开期间仍走签名路径（判据自动切换，见 release-run.sh repo_private）。
+          if [ "$(gh api "repos/$GITHUB_REPOSITORY" --jq .private)" = "true" ]; then
+            echo "::warning::仓库为私有 ⇒ 本次发布不带 npm provenance（npm 已知限制），包本身仍是 OIDC 身份发布"
+            npm publish --access public
+          else
+            npm publish --provenance --access public
+          fi
 
       - name: 建 GitHub Release（正文取自 CHANGELOG 对应一节）
         if: steps.probe.outputs.release != 'present'

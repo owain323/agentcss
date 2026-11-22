@@ -396,14 +396,16 @@
        三者同时出现时的优先级：unsafeHtml > content（兼容） > text，
        text 与 unsafeHtml 并存会打告警。 */
     if (typeof opt.unsafeHtml === 'string') {
+      if (typeof opt.text === 'string') drawerWarn('{text} 与 {unsafeHtml} 同时出现——按 unsafeHtml 渲染，text 被忽略');
       /* @html-sink raw-html — `opt.unsafeHtml` 是显式的 HTML 入口，调用方负责净化；
          登记在 SECURITY.md「HTML 入口（sink）」。`sanitize` / `setSanitizer` 可挂钩。 */
-      if (typeof opt.text === 'string') drawerWarn('{text} 与 {unsafeHtml} 同时出现——按 unsafeHtml 渲染，text 被忽略');
       body.innerHTML = sanitizeHtml(opt.unsafeHtml, opt.sanitize);
     }
     else if (typeof opt.content === 'string') {
       drawerWarn('Drawer.open({content}) 已弃用：纯文本请改用 {text}，'
         + '确需 HTML 请显式改用 {unsafeHtml}（净化钩子不变）。本次仍按 HTML 渲染。');
+      /* @html-sink raw-html — `opt.content` 兼容期的 HTML 入口（已弃用），
+         走同一个净化钩子；登记在 SECURITY.md「HTML 入口（sink）」。 */
       body.innerHTML = sanitizeHtml(opt.content, opt.sanitize);
     }
     else if (opt.content) body.appendChild(opt.content);

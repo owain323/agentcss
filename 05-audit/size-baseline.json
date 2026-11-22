@@ -5,7 +5,7 @@
       "raw": 4315
     },
     "01-tokens/behavior/dismissable.js": {
-      "gzip": 3384,
+      "gzip": 3383,
       "raw": 7614
     },
     "01-tokens/behavior/emit.js": {
@@ -21,31 +21,31 @@
       "raw": 2222
     },
     "01-tokens/behavior/roving.js": {
-      "gzip": 3217,
+      "gzip": 3220,
       "raw": 7637
     },
     "01-tokens/behavior/typeahead.js": {
-      "gzip": 2559,
+      "gzip": 2560,
       "raw": 5878
     },
     "01-tokens/focus-ring.css": {
-      "gzip": 2109,
+      "gzip": 2108,
       "raw": 5633
     },
     "01-tokens/market.css": {
-      "gzip": 1827,
+      "gzip": 1826,
       "raw": 3662
     },
     "01-tokens/page.css": {
-      "gzip": 8453,
+      "gzip": 8498,
       "raw": 20227
     },
     "01-tokens/polyfill.js": {
-      "gzip": 2099,
+      "gzip": 2098,
       "raw": 4970
     },
     "01-tokens/scrollbar.css": {
-      "gzip": 2606,
+      "gzip": 2609,
       "raw": 7445
     },
     "01-tokens/theme-toggle.js": {
@@ -53,47 +53,47 @@
       "raw": 4647
     },
     "01-tokens/tokens.core.css": {
-      "gzip": 19547,
+      "gzip": 19687,
       "raw": 52210
     },
     "01-tokens/tokens.css": {
-      "gzip": 25456,
+      "gzip": 25651,
       "raw": 66548
     },
     "01-tokens/typography.css": {
-      "gzip": 3384,
-      "raw": 7113
+      "gzip": 3834,
+      "raw": 7893
     },
     "02-primitives/badge/badge.css": {
-      "gzip": 2813,
+      "gzip": 2816,
       "raw": 6287
     },
     "02-primitives/button/button.css": {
-      "gzip": 6517,
+      "gzip": 6547,
       "raw": 16050
     },
     "02-primitives/card/card.css": {
-      "gzip": 4193,
+      "gzip": 4199,
       "raw": 10621
     },
     "02-primitives/choice/choice.css": {
-      "gzip": 6416,
+      "gzip": 6435,
       "raw": 17988
     },
     "02-primitives/combobox/combobox.css": {
-      "gzip": 2895,
+      "gzip": 2893,
       "raw": 7168
     },
     "02-primitives/combobox/combobox.js": {
-      "gzip": 9502,
+      "gzip": 9544,
       "raw": 26326
     },
     "02-primitives/date-range/date-range.css": {
-      "gzip": 2254,
+      "gzip": 2253,
       "raw": 6201
     },
     "02-primitives/date-range/date-range.js": {
-      "gzip": 5705,
+      "gzip": 5717,
       "raw": 14867
     },
     "02-primitives/delta/delta.css": {
@@ -101,11 +101,11 @@
       "raw": 5627
     },
     "02-primitives/input/input.css": {
-      "gzip": 4040,
+      "gzip": 4047,
       "raw": 11054
     },
     "02-primitives/metric/metric.css": {
-      "gzip": 3278,
+      "gzip": 3275,
       "raw": 6988
     },
     "02-primitives/popover/popover.css": {
@@ -113,11 +113,11 @@
       "raw": 8018
     },
     "02-primitives/popover/popover.js": {
-      "gzip": 5558,
+      "gzip": 5571,
       "raw": 13882
     },
     "02-primitives/progress/progress.css": {
-      "gzip": 4375,
+      "gzip": 4382,
       "raw": 11338
     },
     "02-primitives/select/select.css": {
@@ -125,7 +125,7 @@
       "raw": 5827
     },
     "02-primitives/select/select.js": {
-      "gzip": 11324,
+      "gzip": 11375,
       "raw": 31191
     },
     "02-primitives/separator/separator.css": {
@@ -137,111 +137,111 @@
       "raw": 4403
     },
     "02-primitives/switch/switch.css": {
-      "gzip": 9035,
+      "gzip": 9076,
       "raw": 22394
     },
     "02-primitives/timeline/timeline.css": {
-      "gzip": 3323,
+      "gzip": 3324,
       "raw": 7272
     },
     "02-primitives/upload/upload.css": {
-      "gzip": 7773,
+      "gzip": 7801,
       "raw": 21009
     },
     "02-primitives/upload/upload.js": {
-      "gzip": 12041,
+      "gzip": 12109,
       "raw": 34539
     },
     "03-patterns/accordion/accordion.css": {
-      "gzip": 7130,
+      "gzip": 7171,
       "raw": 18445
     },
     "03-patterns/accordion/accordion.js": {
-      "gzip": 7648,
+      "gzip": 7664,
       "raw": 18415
     },
     "03-patterns/content/content.css": {
-      "gzip": 5107,
+      "gzip": 5126,
       "raw": 12462
     },
     "03-patterns/drawer/drawer.css": {
-      "gzip": 2759,
+      "gzip": 2758,
       "raw": 6078
     },
     "03-patterns/drawer/drawer.js": {
-      "gzip": 8635,
-      "raw": 21408
+      "gzip": 9336,
+      "raw": 23220
     },
     "03-patterns/dropdown/dropdown.css": {
       "gzip": 1929,
       "raw": 4044
     },
     "03-patterns/dropdown/dropdown.js": {
-      "gzip": 9076,
+      "gzip": 9113,
       "raw": 24256
     },
     "03-patterns/form-validation/form-validation.css": {
-      "gzip": 5038,
+      "gzip": 5043,
       "raw": 12218
     },
     "03-patterns/form-validation/form-validation.js": {
-      "gzip": 4512,
+      "gzip": 4519,
       "raw": 11734
     },
     "03-patterns/list/flip.js": {
-      "gzip": 3382,
+      "gzip": 3385,
       "raw": 7915
     },
     "03-patterns/list/list.css": {
-      "gzip": 2441,
+      "gzip": 2443,
       "raw": 6212
     },
     "03-patterns/nav/nav.css": {
-      "gzip": 5044,
+      "gzip": 5065,
       "raw": 13644
     },
     "03-patterns/nav/nav.js": {
-      "gzip": 7552,
+      "gzip": 7580,
       "raw": 19912
     },
     "03-patterns/nav/toc.js": {
-      "gzip": 2275,
+      "gzip": 2274,
       "raw": 4652
     },
     "03-patterns/overlay/overlay.css": {
-      "gzip": 5632,
+      "gzip": 5656,
       "raw": 13515
     },
     "03-patterns/overlay/overlay.js": {
-      "gzip": 12650,
+      "gzip": 12710,
       "raw": 34137
     },
     "03-patterns/pagination/pagination.css": {
-      "gzip": 3648,
+      "gzip": 3645,
       "raw": 8250
     },
     "03-patterns/pagination/pagination.js": {
-      "gzip": 7773,
+      "gzip": 7805,
       "raw": 19492
     },
     "03-patterns/reveal/reveal.css": {
-      "gzip": 2084,
+      "gzip": 2082,
       "raw": 4652
     },
     "03-patterns/reveal/reveal.js": {
-      "gzip": 3478,
+      "gzip": 3472,
       "raw": 8499
     },
     "03-patterns/states/states.css": {
-      "gzip": 4513,
+      "gzip": 4523,
       "raw": 11285
     },
     "03-patterns/tabs/tabs.css": {
-      "gzip": 2799,
+      "gzip": 2800,
       "raw": 6238
     },
     "03-patterns/tabs/tabs.js": {
-      "gzip": 4882,
+      "gzip": 4901,
       "raw": 12324
     },
     "03-patterns/tooltip/tooltip.css": {
@@ -249,27 +249,27 @@
       "raw": 4277
     },
     "03-patterns/tooltip/tooltip.js": {
-      "gzip": 10784,
+      "gzip": 10837,
       "raw": 27654
     },
     "03-patterns/tree/tree.css": {
-      "gzip": 2031,
+      "gzip": 2030,
       "raw": 4305
     },
     "03-patterns/tree/tree.js": {
-      "gzip": 8251,
+      "gzip": 8288,
       "raw": 22141
     },
     "04-recipes/analysis-report/analysis-report.css": {
-      "gzip": 3382,
+      "gzip": 3387,
       "raw": 8640
     },
     "04-recipes/app-shell/app-shell.css": {
-      "gzip": 9895,
+      "gzip": 9962,
       "raw": 25487
     },
     "04-recipes/app-shell/shell-nav.js": {
-      "gzip": 6015,
+      "gzip": 6032,
       "raw": 13840
     },
     "04-recipes/detail-page/detail-page.css": {
@@ -277,15 +277,15 @@
       "raw": 5810
     },
     "04-recipes/report/report.css": {
-      "gzip": 7790,
+      "gzip": 7810,
       "raw": 19138
     },
     "04-recipes/table/table.css": {
-      "gzip": 7334,
+      "gzip": 7361,
       "raw": 18560
     },
     "04-recipes/tierA-tokens.css": {
-      "gzip": 2137,
+      "gzip": 2135,
       "raw": 5495
     },
     "09-assets/bar/bar.css": {
@@ -293,15 +293,15 @@
       "raw": 6709
     },
     "09-assets/bar/bar.js": {
-      "gzip": 6910,
+      "gzip": 6926,
       "raw": 16227
     },
     "09-assets/echarts-adapter/echarts-adapter.js": {
-      "gzip": 5574,
+      "gzip": 5593,
       "raw": 13874
     },
     "09-assets/icons-anim/icons-anim.css": {
-      "gzip": 2437,
+      "gzip": 2436,
       "raw": 5821
     },
     "09-assets/model-viewer/model-viewer.css": {
@@ -309,27 +309,27 @@
       "raw": 4070
     },
     "09-assets/model-viewer/model-viewer.js": {
-      "gzip": 8441,
+      "gzip": 8486,
       "raw": 21019
     },
     "09-assets/scientific-plot/scientific-plot.css": {
-      "gzip": 2515,
+      "gzip": 2514,
       "raw": 6215
     },
     "09-assets/scientific-plot/scientific-plot.js": {
-      "gzip": 9716,
+      "gzip": 9758,
       "raw": 26817
     },
     "09-assets/sparkline/sparkline.css": {
-      "gzip": 3574,
+      "gzip": 3575,
       "raw": 7422
     },
     "09-assets/sparkline/sparkline.js": {
-      "gzip": 10051,
+      "gzip": 10095,
       "raw": 24082
     }
   },
   "tolerance_percent": 5.0,
-  "total_gzip": 432607,
-  "total_raw": 1087336
+  "total_gzip": 435163,
+  "total_raw": 1089928
 }

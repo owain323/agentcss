@@ -53,7 +53,7 @@
 | 文字提示 | `03-patterns/tooltip/tooltip.css` | 98 | **必需 584** (`tooltip.js`) | 图标按钮或缩写需要一句话解释就要 |
 | 分页 | `03-patterns/pagination/pagination.css` | 197 | **必需 432** (`pagination.js`) | 数据多到要翻页就要 |
 | 树形 | `03-patterns/tree/tree.css` | 127 | **必需 548** (`tree.js`) | 层级数据（文件 / 组织 / 分类）要展开就要 |
-| 侧边抽屉 | `03-patterns/drawer/drawer.css` | 145 | **必需 520** (`drawer.js`) | 要从侧边滑出面板就要 |
+| 侧边抽屉 | `03-patterns/drawer/drawer.css` | 145 | **必需 547** (`drawer.js`) | 要从侧边滑出面板就要 |
 | 弹窗 / 吐司 | `03-patterns/overlay/overlay.css` | 343 | **必需 759** (`overlay.js`) | 需要弹层（吐司 / 模态）就要 |
 | 状态（空 / 加载 / 错 / 成功） | `03-patterns/states/states.css` | 269 | — | **凡是会异步取数就要** |
 | 表单校验 | `03-patterns/form-validation/form-validation.css` | 274 | **必需 295** (`form-validation.js`) | 提交前要校验就要 |

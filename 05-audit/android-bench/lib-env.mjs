@@ -42,8 +42,8 @@ if (!ANDROID_BENCH_ROOT) {
   process.exit(2);
 }
 
-/* playwright 从本仓库 node_modules 引入：用 import.meta.url 锚定仓库根，
-   任何机器/clone 路径都成立（原来写死本机用户目录下的绝对路径 ⇒ 泄漏身份且别人必崩）。 */
+/* playwright 从**本仓库**的 node_modules 引入：脚本在 05-audit/android-bench/ 下，
+   仓库根是上两级 ⇒ 换机器、换目录都不用改这一行。 */
 const require = createRequire(new URL('../../package.json', import.meta.url));
 const { chromium } = require('playwright');
 

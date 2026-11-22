@@ -153,6 +153,23 @@ provenance_state() {
   return 0
 }
 
+# 仓库可见性：true / false / unknown。
+#   用途只有一个 —— 区分「拿不到 attestation」的两种原因：
+#   私有仓库（能力缺失，如实降级）与冒名（有 attestation 但指向别处，永远拒绝）。
+#   `REPO_PRIVATE` 可注入，供 --selftest 在没有 gh 的环境里验分支（E-selftest）。
+repo_private() {
+  local v
+  if [ -n "${REPO_PRIVATE:-}" ]; then
+    printf '%s\n' "$REPO_PRIVATE"
+    return 0
+  fi
+  v="$(gh api "repos/${GITHUB_REPOSITORY:-owain323/agentcss}" --jq .private 2>/dev/null || true)"
+  case "$v" in
+    true|false) printf '%s\n' "$v" ;;
+    *) printf 'unknown\n' ;;
+  esac
+}
+
 # 矩阵回执：该提交上**最新**的 gate.yml workflow_dispatch run 是否全绿。
 #   输出 success / <conclusion> / in_progress / absent / unreadable。
 #   ⚠️ 只认 workflow_dispatch：push 事件会跳过 browsers job（三引擎矩阵
@@ -228,15 +245,25 @@ do_probe() {
   if [ "$n" = "present" ]; then
     p="$(provenance_state)"; rc=$?
     if [ "$rc" != "0" ]; then
-      printf 'npm=%s\nrelease=%s\nprovenance=%s\n' "$n" "$r" "$p"
-      exit 1
+      # 🔴 2026-11-22（仓库转私有）：私有仓库拿不到 attestation 是 npm 的
+      #   官方已知限制（"Provenance generation is not supported for private
+      #   repositories"），**不是身份不符**。两者必须分开判：
+      #   · mismatch（有 attestation 但 gitCommit 指向别处）= 冒名，永远拒绝；
+      #   · absent 且仓库私有 = 能力缺失，如实降级并写明，否则私有期间每次
+      #     重跑都卡在这里，人就会开始绕过整条流水线。
+      if [ "$p" = "absent" ] && [ "$(repo_private)" = "true" ]; then
+        log "  provenance: 仓库为私有 ⇒ npm 不生成 attestation（官方已知限制），按「无签名」继续"
+      else
+        printf 'npm=%s\nrelease=%s\nprovenance=%s\n' "$n" "$r" "$p"
+        exit 1
+      fi
     fi
   fi
   printf 'npm=%s\nrelease=%s\nprovenance=%s\n' "$n" "$r" "$p"
 }
 
 do_verify() {
-  local n r p rc c i=0 step="${WAIT_STEP:-10}" tries="${WAIT_TRIES:-42}"
+  local n r p rc c i=0 step="${WAIT_STEP:-10}" tries="${WAIT_TRIES:-42}" private_no_prov=0
   # 🔴 先等 registry 索引（2026-11 加 · v0.24.2 现场打出来的）
   #   npm publish 返回 0 之后，**版本端点还要几十秒才可见**。
   #   回执在 publish 之后立刻跑，于是拿到 npm=absent ⇒ 报"发布未完成"。
@@ -263,6 +290,12 @@ do_verify() {
       # 等下去不会变；unreadable 是读不到，等下去也不会变。这两种立刻收手。
       [ "$p" = "mismatch" ] && break
       [ "$p" = "unreadable" ] && break
+      # 🔴 私有仓库：absent 是**能力缺失**不是身份不符，等下去也不会变。
+      #    立刻收手并记账，由下面统一打印降级说明（见 repo_private 注释）。
+      if [ "$p" = "absent" ] && [ "$(repo_private)" = "true" ]; then
+        private_no_prov=1
+        break
+      fi
     fi
     # 只有"两个都成立"才停：版本可见 ≠ 已发布完成（E396）
     [ "$n" = "present" ] && [ "$p" = "ok" ] && break
@@ -295,7 +328,14 @@ do_verify() {
   # 只写"成功"两个字，事后无法判断它验的是不是同一个东西。
   printf 'tag=%s  version=%s  commit=%s  npm=%s  provenance=%s  release=%s\n' \
     "$TAG" "$VER" "$c" "$n" "$p" "$r"
-  if [ "$n" != "present" ] || [ "$r" != "present" ] || [ "$p" != "ok" ]; then
+  if [ "$private_no_prov" = "1" ]; then
+    log "  ⚠️ 仓库为私有 ⇒ 本次发布**没有** npm attestation（npm 官方已知限制："
+    log "     'Provenance generation is not supported for private repositories'）。"
+    log "     npm 与 Release 两者成立；provenance 按「缺失」如实记录，不冒充 ok。"
+    log "     仓库恢复公开后，本判据自动回到严格模式（三者必须同时成立）。"
+  fi
+  if [ "$n" != "present" ] || [ "$r" != "present" ] \
+     || { [ "$p" != "ok" ] && [ "$private_no_prov" != "1" ]; }; then
     log "  ⇒ 发布未完成或身份不符（npm/provenance/release 三者必须同时成立）"
     exit 1
   fi
@@ -461,6 +501,15 @@ PY
   out="$(probe_stub present absent 404 '')"; rc=$?
   chk '已发布但无 attestation ⇒ 拒绝' 1 "$rc" "$out" 'provenance=absent'
 
+  # 🔴 2026-11-22（仓库转私有）：absent 的**两种**成因必须分开判。
+  #   私有仓库 + 无 attestation = 能力缺失（npm 官方限制）⇒ 放行；
+  #   私有仓库 + attestation 指向别处 = 冒名 ⇒ 仍然拒绝（下面第二条）。
+  out="$(REPO_PRIVATE=true probe_stub present absent 404 '')"; rc=$?
+  chk '私有仓库 + 无 attestation ⇒ 放行（如实降级）' 0 "$rc" "$out" 'provenance=absent'
+
+  out="$(REPO_PRIVATE=true probe_stub present absent 200 "$body_bad")"; rc=$?
+  chk '私有仓库 + attestation 指向别处 ⇒ 仍拒绝（降级不豁免冒名）' 1 "$rc" "$out" 'provenance=mismatch'
+
   out="$(probe_stub unreachable absent 200 '')"; rc=$?
   chk 'registry 不可达 ⇒ 不判成 absent' 2 "$rc" "$out" ''
 
@@ -469,6 +518,14 @@ PY
 
   out="$(verify_stub present present 200 "$body_ok")"; rc=$?
   chk '回执：三者齐备 ⇒ 0 且带提交号' 0 "$rc" "$out" 'commit='
+
+  # 私有仓库：回执按「npm + Release 成立、provenance 如实缺记」放行，
+  #   但必须**打印降级说明**——不打印就等于静默把"没签名"当成"签好了"。
+  out="$(REPO_PRIVATE=true verify_stub present present 404 '')"; rc=$?
+  chk '回执：私有仓库无 attestation ⇒ 0 且写明已知限制' 0 "$rc" "$out" '已知限制'
+
+  out="$(REPO_PRIVATE=true verify_stub present present 200 "$body_bad")"; rc=$?
+  chk '回执：私有仓库 + 指向别处 ⇒ 仍拒绝' 1 "$rc" "$out" 'mismatch'
 
   # 🔴 v0.24.2 现场：publish 成功，回执立刻查 → npm=absent → 报"未完成"。
   #   这里造一个"第一次说没有、第二次说有"的 registry，断言回执会等。

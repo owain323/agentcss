@@ -42,6 +42,9 @@ WHITELIST = {
     'HighlightText',
     # 平台 API 名（android-bench 测试脚本触达的浏览器/CDP 接口），非内部代号
     'AbortSignal', 'CompositionEvent', 'InputEvent', 'ImeCommitText', 'WebSocket', 'UnicodeEncodeError', 'RootWebArea',
+    # 网络策略的出口分类名（ai/network-policy.js 的判定结果枚举），
+    # 字面量是 S3/OSS 的 403 响应码语义，非内部代号
+    'AccessDenied',
     # 同上的**类型名**（types/index.d.ts 的 interface，CHANGELOG 引用它），
     # 0.27.11 出现在变更日志里 ⇒ 补登记
     'FormValidationApi',

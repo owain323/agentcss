@@ -18,6 +18,63 @@
 
 ## [Unreleased]
 
+## [0.27.24] - 2026-11-22
+
+> 安全补丁版：堵住两条**实测可复现**的攻击面（外部审计 P0-1 / P0-2），
+> 并把一份内部评审记录移出 npm 包。无新增组件、无接口删除。
+
+### Security — 修复
+
+- 🔴 **`ai pdf` / `ai shot` 的 SSRF 绕过（P0-1）**。旧实现只对**初始 URL**
+  做 DNS 固定：页面内的重定向、iframe、子资源域名不受约束；且
+  `responseViolation()` 对「公网域名解析到 `127.0.0.1`」默认放行（当年为兼容
+  本地代理）。构造一个 A 记录指向 `127.0.0.1` 的公网域名（如
+  `rebind.evil.com`），即可把本机回环服务的响应渲染进最终 PDF。现在：
+
+  - 默认**拒绝**任何公网域名连到 `127.0.0.0/8` / `::1`；本地代理场景必须显式
+    加 `--allow-loopback-proxy`（默认关闭）。
+  - 用 CDP `Fetch.enable(requestStage: "Request")` 在**请求发出前**拦主文档、
+    重定向、iframe 与子资源，逐域名解析并校验**全部** A/AAAA 记录。
+  - `isPrivateHost()` 补齐 IPv6 过渡段：IPv4-compatible `::7f00:1`、
+    NAT64 `64:ff9b::/96`、6to4 `2002::/16`、Teredo `2001::/32`。
+  - `ai shot` 接入与 `ai pdf` 同一套 `--network-policy=off|strict`。
+
+  **升级注意**：用 `--network-policy=strict` 且**确实依赖本机代理**的流程，
+  需要补 `--allow-loopback-proxy` 才继续可用。这是有意的——默认安全，
+  豁免要写出来。
+
+- 🔴 **`Drawer.open()` 的默认 XSS 面（P0-2）**。`opt.content` 字段名不表意，
+  调用方极易把用户输入直接传进来，且默认按 HTML 解析。现在：
+
+  | 入参 | 行为 | 用在哪 |
+  |---|---|---|
+  | `opt.text` | `textContent` 写入 —— **安全默认** | 用户输入、任何不可信字符串 |
+  | `opt.unsafeHtml` | 走 HTML 解析（名称自带警告语义） | 富文本，需接净化钩子 |
+  | `opt.content` | 兼容保留，**每次会话告警一次**，已标弃用 | 存量代码 |
+
+  优先级 `unsafeHtml` > `content` > `text`；`text` 与 `unsafeHtml` 并存会告警。
+  要净化，仍用 `opt.sanitize` / `Drawer.setSanitizer(fn)`（保持不变）。
+
+### Changed — 包面与发布链路
+
+- **`docs/ROADMAP-DECISIONS.md` 不再随 npm 包分发**。它是内部评审的裁决记录
+  （含面向内部的判断，不是给使用者的文档），此前随 `docs/` 目录进了包。
+  给使用者的技术文档（架构 / 无障碍 / 打印 / AI 契约 / 稳定性 / 本地化）
+  一份没动。`pack-hygiene-gate` 新增第 ⑥ 条判据，用**具名清单**守住这类
+  材料不再进包，并配反向控制与元反向（清空清单后同一份文件不再红）。
+
+- **发布链路适配「仓库私有」**：npm 官方明确「私有仓库不生成 provenance」。
+  旧流水线把回执判成「npm + provenance + Release 三者必须同时成立」，在仓库
+  转私有后会**每次必红**、重跑还会被 probe 拒绝 —— 那不是质量，是把人逼去
+  绕过流水线。现在按仓库可见性**自动切换**：
+  - 公开：仍然 `--provenance` 签名发布，回执三者齐全（一行没松）；
+  - 私有：如实降级为「无 attestation」，回执**打印**这条已知限制，
+    并把 `provenance=absent` 写进回执 —— 不冒充 `ok`。
+  - 两种情况都**不豁免** `mismatch`（有 attestation 但 `gitCommit` 指向别的
+    提交 = 冒名，永远拒绝）。反向测试 14 → 18 条。
+
+---
+
 ## [0.27.23] - 2026-11-22
 
 > 三域推 A 的收口版：跨引擎红片收敛到全部挂证据的待诊断项 + **两个真产品
