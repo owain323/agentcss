@@ -86,6 +86,11 @@ ROOT_ALLOWED_FILES = {
     #   ⇒ `npm publish` 会得到 403，且错误信息看起来像权限问题。
     #   文件里没有任何 token（凭据走 `npm login`，存用户主目录），leak-scan 也过。
     '.npmrc',
+    # `.nvmrc`（2026-11-23 加）：Node 大版本锚点，一处写死本机与 CI 的口径。
+    #   背景：CI 的发布/baseline 通道跑 22，组件层跑 20，本机 nvm 默认哪个都可能是
+    #   —— 版本差异造出来的红片最容易被误读成"代码坏了"。
+    #   它只是开发锚点，不进 npm 包（`files` 白名单里没有它）。
+    '.nvmrc',
     'API.md', 'CHANGELOG.md', 'CODE_OF_CONDUCT.md', 'CONTRIBUTING.md',
     'LICENSE', 'README.md', 'README.zh-CN.md', 'SECURITY.md',
     'START-HERE.md', 'SUPPORT.md',

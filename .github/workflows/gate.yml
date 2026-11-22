@@ -49,6 +49,14 @@ on:
     - cron: '17 3 * * *'
   workflow_dispatch:
 
+# 🔴 供应链：所有 `uses:` 一律钉到**提交 SHA**，行尾注真实版本号（2026-11-23）
+# ---------------------------------------------------------------------------
+#   浮动 tag（`@v4`）不是版本锁定，是**信任委托**：action 的发布者随时能把那个
+#   tag 挪到新提交，我们的 CI 下次就跑上了没审过的代码。release.yml 的这一步之后
+#   就是 `npm publish`（持有 NPM_TOKEN）⇒ 等于把令牌的执行权交给第三方的最新提交。
+#   11 月这轮凭证事故的教训是"能少一层委托就少一层"，不是"记得别写错"。
+#   升级方式：查该 release 的真实 commit SHA → 改 SHA → 行尾版本号同步改。
+#   ⚠️ 不要写 `@v4`；也不要 `@main`。
 permissions:
   contents: read     # 🔴 0.27.20：CI 只需要读仓库——125 道门禁不持有写权限（工程官 S4）
 
@@ -74,7 +82,7 @@ jobs:
       #    contents:write；被派发的 record-baseline.yml 自己持有 contents:write。
       actions: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # 🔴 0.27.21：release-gate 的 tag 锚点判据要完整 tag 对象——
           #    浅克隆下「v0.27.21 没有被取下来 ⇒ 无法判断 tag 是否存在」
@@ -82,7 +90,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
       - name: 装 CI 字体（与 release.yml 同一个脚本）
@@ -133,7 +141,7 @@ jobs:
       #    record-baseline；不持有 contents:write。
       actions: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # 🔴 fetch-depth: 0 + fetch-tags —— release 门禁要核 "版本有没有 tag 锚点"。
           #    默认 depth=1 时 tag 指向的是祖先提交，**根本不会被抓下来**，
@@ -142,7 +150,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
 
@@ -270,7 +278,7 @@ jobs:
       #   （本机看不到那台机器的渲染结果）。
       - name: 失败时上传视觉证据
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: visual-evidence-${{ github.run_id }}
           path: |
@@ -289,7 +297,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # 🔴 fetch-depth: 0 + fetch-tags —— release 门禁要核 "版本有没有 tag 锚点"。
           #    默认 depth=1 时 tag 指向的是祖先提交，**根本不会被抓下来**，
@@ -298,7 +306,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
 
@@ -345,7 +353,7 @@ jobs:
           - name: firefox
             engine: firefox
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # 🔴 fetch-depth: 0 + fetch-tags —— release 门禁要核 "版本有没有 tag 锚点"。
           #    默认 depth=1 时 tag 指向的是祖先提交，**根本不会被抓下来**，
@@ -354,7 +362,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
 
@@ -424,7 +432,7 @@ jobs:
 
       - name: 上传失败截图
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: shots-${{ matrix.engine }}
           path: 10-review/shots/

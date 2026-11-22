@@ -18,6 +18,23 @@
 
 ## [Unreleased]
 
+### Changed — 工程卫生（不影响包内容与 API）
+
+- **CI 里 23 处 `uses:` 全部钉到提交 SHA**（行尾注真实版本号）。浮动 tag
+  （`@v4`）不是版本锁定，是信任委托：发布者随时能把 tag 挪到新提交，而
+  `release.yml` 的下一步就是持有 NPM_TOKEN 的 `npm publish`。钉 SHA 之后，
+  换 action 版本必须显式改一个提交号，改不动就是没换。
+- **`pages` 工作流按仓库可见性如实跳过**。仓库转私有后 GitHub Pages 不可用
+  （私有仓库开 Pages 需要付费计划），`configure-pages` 因此每次 push 必红
+  （实测 run 45051077201：`Get Pages site failed … 404`）。现在私有期间这个
+  job 是「跳过」而不是「失败」——红了没人看的 CI 比没有 CI 更糟；仓库转回
+  公开当天自动恢复，不用改代码。
+- **`npm publish` 增一道来源判据**：`prepublishOnly` 先跑
+  `publish-tag-guard.py`，HEAD 上没有与 `package.json` 同号的 **annotated**
+  tag 就拒绝发布。手工发布仍然可能（token 在谁手里就是谁的），但"发出去了却
+  在仓库里查无此提交"这条路在仓库内被堵住。
+- 新增 `.nvmrc`（22），把本机与发布通道的 Node 大版本对齐。
+
 ## [0.27.24] - 2026-11-22
 
 > 安全补丁版：堵住两条**实测可复现**的攻击面（外部审计 P0-1 / P0-2），

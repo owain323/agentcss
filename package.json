@@ -121,7 +121,7 @@
     "benchmark": "node benchmark/run.js",
     "test:types": "python3 05-audit/tsc-gate.py",
     "publish:check": "bash 05-audit/check-all.sh --fast && bash 05-audit/pack-smoke.sh",
-    "prepublishOnly": "npm run publish:check"
+    "prepublishOnly": "python3 05-audit/publish-tag-guard.py && npm run publish:check"
   },
   "devDependencies": {
     "axe-core": "^4.10.0",

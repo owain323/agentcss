@@ -60,6 +60,8 @@ on:
         type: string
         default: ''
 
+# `uses:` 一律钉提交 SHA + 行尾版本号 —— 理由见 gate.yml 头部的「供应链」段。
+# 本文件尤其重要：它持有 NPM_TOKEN，浮动 tag 被挪走＝令牌被挪走。
 permissions:
   contents: write     # 建 GitHub Release
   id-token: write     # ✅ provenance 必需：OIDC 令牌由这里签
@@ -85,7 +87,7 @@ jobs:
     #   ⇒ 宁可放宽，也不要卡在最后一步。
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false   # 🔴 0.27.20：发布进程不携带 GitHub_TOKEN（工程官 S4）
           # 🔴 fetch-depth: 0 + fetch-tags 是**必须的**：
@@ -94,7 +96,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
           # 🔴 故意不传 registry-url：见文件头 ①。传了会写空 _authToken。
@@ -309,7 +311,7 @@ jobs:
       #   diff 图和当前截图都在这里，下载下来就能判断是"真回归"还是"环境变了"。
       - name: 失败时上传视觉证据（当前截图 + diff 图）
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: visual-evidence-${{ github.run_id }}
           path: |
@@ -335,10 +337,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
       - name: 装 CI 字体（与判基线时同一套）
@@ -348,7 +350,7 @@ jobs:
         run: |
           set -eu
           python3 05-audit/shot-baseline.py --record
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: baseline-${{ runner.os }}
           # 🔴 只传**本平台**那三套。
@@ -386,7 +388,7 @@ jobs:
       contents: read
       id-token: write     # OIDC 必需
     steps:
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
       - name: 升级 npm（trusted publishing 需要 >= 11.5.1）

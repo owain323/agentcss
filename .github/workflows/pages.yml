@@ -1,5 +1,7 @@
 name: pages
 
+# `uses:` 一律钉提交 SHA + 行尾版本号 —— 理由见 gate.yml 头部的「供应链」段。
+
 on:
   push:
     branches: [master]
@@ -16,10 +18,17 @@ concurrency:
 
 jobs:
   build:
+    # 🔴 2026-11-23：仓库转私有后**没有 Pages 站点**（私有仓库的 Pages 需要付费
+    #   计划），而 configure-pages 在站点不存在时必红 —— 实测 2026-11-22 之后
+    #   每次 push 都红（run 45051077201：`Get Pages site failed … 404`）。
+    #   一个每次必红的 job 会被训练成"忽略它"，那正是本仓库最反对的东西。
+    #   ⇒ 按可见性**如实跳过**：私有期间站点确实不存在，工作流不该假装在发布。
+    #     仓库转回公开的当天自动恢复，不用改代码。
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # 文档站与根索引页是**生成物**（真值 = ai/components.json + 各组件 README），
       # 产物本身入库。这里只核一件事：入库的产物是不是现算的。
       # 不一致就失败 —— 改了 README 忘了重跑，不该原样发到线上。
@@ -64,8 +73,8 @@ jobs:
             ./ _site/
           touch _site/.nojekyll
           du -sh _site
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: _site
 
@@ -78,4 +87,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
