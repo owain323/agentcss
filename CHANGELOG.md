@@ -55,13 +55,23 @@
   优先级 `unsafeHtml` > `content` > `text`；`text` 与 `unsafeHtml` 并存会告警。
   要净化，仍用 `opt.sanitize` / `Drawer.setSanitizer(fn)`（保持不变）。
 
-### Changed — 包面
+### Changed — 包面与发布链路
 
 - **`docs/ROADMAP-DECISIONS.md` 不再随 npm 包分发**。它是内部评审的裁决记录
   （含面向内部的判断，不是给使用者的文档），此前随 `docs/` 目录进了包。
   给使用者的技术文档（架构 / 无障碍 / 打印 / AI 契约 / 稳定性 / 本地化）
   一份没动。`pack-hygiene-gate` 新增第 ⑥ 条判据，用**具名清单**守住这类
   材料不再进包，并配反向控制与元反向（清空清单后同一份文件不再红）。
+
+- **发布链路适配「仓库私有」**：npm 官方明确「私有仓库不生成 provenance」。
+  旧流水线把回执判成「npm + provenance + Release 三者必须同时成立」，在仓库
+  转私有后会**每次必红**、重跑还会被 probe 拒绝 —— 那不是质量，是把人逼去
+  绕过流水线。现在按仓库可见性**自动切换**：
+  - 公开：仍然 `--provenance` 签名发布，回执三者齐全（一行没松）；
+  - 私有：如实降级为「无 attestation」，回执**打印**这条已知限制，
+    并把 `provenance=absent` 写进回执 —— 不冒充 `ok`。
+  - 两种情况都**不豁免** `mismatch`（有 attestation 但 `gitCommit` 指向别的
+    提交 = 冒名，永远拒绝）。反向测试 14 → 18 条。
 
 ---
 

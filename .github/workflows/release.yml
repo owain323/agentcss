@@ -221,9 +221,24 @@ jobs:
             *) echo "::error::.npmrc 里有 _authToken（值不回显）—— OIDC 用不上"; exit 1 ;;
           esac
 
-      - name: 发布到 npm（OIDC / provenance，无长期令牌）
+      - name: 发布到 npm（OIDC；私有仓库按 npm 已知限制降级为无 attestation）
         if: steps.probe.outputs.npm != 'present'
-        run: npm publish --provenance --access public
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          # 🔴 2026-11-22（仓库转私有）：npm 官方明确「Provenance generation is
+          #   not supported for private repositories」。带 --provenance 硬发，
+          #   registry 会**静默不生成** attestation，而最后的回执判「三者齐备」
+          #   必然红；重跑又会被 probe 以 `provenance=absent` 拒绝 ⇒ 发一次、
+          #   红一次、再也发不了。⇒ 私有期间如实降级并**打印出来**，
+          #   公开期间仍走签名路径（判据自动切换，见 release-run.sh repo_private）。
+          if [ "$(gh api "repos/$GITHUB_REPOSITORY" --jq .private)" = "true" ]; then
+            echo "::warning::仓库为私有 ⇒ 本次发布不带 npm provenance（npm 已知限制），包本身仍是 OIDC 身份发布"
+            npm publish --access public
+          else
+            npm publish --provenance --access public
+          fi
 
       - name: 建 GitHub Release（正文取自 CHANGELOG 对应一节）
         if: steps.probe.outputs.release != 'present'
