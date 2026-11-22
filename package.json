@@ -106,6 +106,7 @@
     "gate:pre-commit": "bash 05-audit/check-all.sh --pre-commit",
     "gate:fast": "bash 05-audit/check-all.sh --fast",
     "gate:timing": "bash 05-audit/check-all.sh --timing",
+    "prepare": "git config core.hooksPath .githooks",
     "ci:observe": "python3 05-audit/nightly-observe.py",
     "ci:print-cost": "node 05-audit/print-pagination-cost.js",
     "ci:print-audit": "node 05-audit/print-content-audit.js --all",
