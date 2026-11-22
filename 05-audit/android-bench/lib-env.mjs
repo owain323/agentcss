@@ -42,10 +42,9 @@ if (!ANDROID_BENCH_ROOT) {
   process.exit(2);
 }
 
-/* playwright 从被测仓库的 node_modules 引入（写死仓库 package.json，避免解析到别处） */
-const require = createRequire(
-  'C:/Users/czj17751/.zcode/workspace/draft-de03321d-1117-49f6-878c-567330e02793/agentcss-fix/package.json'
-);
+/* playwright 从**本仓库**的 node_modules 引入：脚本在 05-audit/android-bench/ 下，
+   仓库根是上两级 ⇒ 换机器、换目录都不用改这一行。 */
+const require = createRequire(new URL('../../package.json', import.meta.url));
 const { chromium } = require('playwright');
 
 export { chromium };

@@ -8,7 +8,9 @@ if (!ANDROID_BENCH_ROOT) {
   console.error('[android-bench] 请设 ANDROID_BENCH 环境变量指向台子根目录。');
   process.exit(2);
 }
-const require = createRequire('C:/Users/czj17751/.zcode/workspace/draft-de03321d-1117-49f6-878c-567330e02793/agentcss-fix/package.json');
+/* 从**本仓库**的 package.json 解析 playwright：脚本在 05-audit/android-bench/ 下，
+   仓库根是上两级 ⇒ 换机器、换目录都不用改这一行。 */
+const require = createRequire(new URL('../../package.json', import.meta.url));
 const { chromium } = require('playwright');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const results = [];
