@@ -8,7 +8,7 @@ ai-surface-budget-gate.py — AI 契约面的**字节预算**门禁
   CSS 有 172KB 天花板，AI 契约面却**没有上限**：
   llms.txt + llms-full.txt + ai/components.json + ai/START-HERE.md
   是一个 agent 要吞的全部机器面 —— 加组件时它悄悄涨，挤的是
-  便宜模型的可用上下文。涨到 200KB 的那天，没人会发现。
+  上下文预算有限的模型。涨到 200KB 的那天，没人会发现。
   ⇒ 数字放 ai-surface-budget.json（**被约束的人手里不握数字**，
      与 BUDGET.md 的治理结构一致），本门禁只读它。
 

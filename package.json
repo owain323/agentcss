@@ -70,7 +70,6 @@
     "!09-assets/model-viewer/vendor",
     "!09-assets/model-viewer/models",
     "docs/",
-    "!docs/ROADMAP-DECISIONS.md",
     "!docs/CI-COMPONENT-TRIAGE.md",
     "!docs/ERRORS-INDEX.md",
     "README.md",

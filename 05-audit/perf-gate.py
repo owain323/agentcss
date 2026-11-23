@@ -240,7 +240,7 @@ def main():
     MAX_INLINE = B['maxInlineStyleBytes']
 
     # ---------- 体积 ----------
-    # ⚠️ relpath 在 Windows 上跨盘符会抛 ValueError（E: 仓库 / C: 临时目录）——
+    # ⚠️ relpath 在 Windows 上跨盘符会抛 ValueError（仓库与临时目录不同盘符时）——
     #    自检用的临时账本正好在这个位置，所以这里必须兜住。
     try:
         ledger = os.path.relpath(BUDGET_PATH, ROOT).replace('\\', '/')

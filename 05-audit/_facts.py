@@ -358,7 +358,6 @@ CLAIMS = [
     ('components.total', 'docs/ARCHITECTURE.md',  _num(r'个组件'),                      'ARCHITECTURE 规模'),
     ('components.total', 'docs/ACCESSIBILITY.md', _num(r'个组件'),                      'ACCESSIBILITY 采样页'),
     ('components.total', 'docs/GUIDANCE.md',      _num(r'个组件'),                      'GUIDANCE 维护成本'),
-    ('components.total', 'docs/ROADMAP-DECISIONS.md', _num(r'个组件'),                  'ROADMAP 裁决卡'),
     ('components.total', 'guide/accessibility.html', _num(r'个组件'),                    'guide 无障碍总览表'),
 ]
 

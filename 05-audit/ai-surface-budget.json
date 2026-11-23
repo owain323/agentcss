@@ -7,7 +7,7 @@
     "ai/components.json",
     "ai/START-HERE.md"
   ],
-  "$whyCap": "AI 契约面是便宜模型的**上下文成本**：这四个文件是 agent 的**发现层**（llms.txt 会指挥按需读 pitfalls/tokens/behaviors 等 JSON——那些不在此账内，属按需查询的深文件）。组件从 40 涨到 60 时，components.json 跟着涨 —— 没有上限判据，等于让「加组件」和「挤占模型上下文」变成同一个无感动作。100 KiB（约 25k token）给 40→60 个组件留了余量，超了就必须走一次带理由的账。",
+  "$whyCap": "AI 契约面是**上下文成本**：这四个文件是 agent 的**发现层**（llms.txt 会指挥按需读 pitfalls/tokens/behaviors 等 JSON——那些不在此账内，属按需查询的深文件）。组件从 40 涨到 60 时，components.json 跟着涨 —— 没有上限判据，等于让「加组件」和「挤占模型上下文」变成同一个无感动作。100 KiB（约 25k token）给 40→60 个组件留了余量，超了就必须走一次带理由的账。",
   "bumpLog": [
     { "from": null, "to": 102400, "in": "0.27.11", "reason": "首设。实测 91362 字节（4 个文件），余量约 11%。" }
   ]

@@ -1402,7 +1402,7 @@ run "md-inline-rev" $PY 05-audit/md-inline-gate.py --selftest
 # 🔴 md-links（2026-10-29 加 · 起因是"文档指着四份不存在的文件"）
 #   `README.zh-CN.md` / `docs/INVARIANT.md` / `ai/START-HERE.md` 一共 9 处指向
 #   `docs/GUIDANCE.md`、`docs/BENCHMARK.md`、`docs/ROADMAP.md`、`docs/RELEASING.md`
-#   —— 那四份在 0.11.4 被**故意**移进内部目录（含账号二次因子、到期日），
+#   —— 那四份在 0.11.4 被**故意**移出公开面（不再对外分发），
 #   于是公开面留下一排悬空指针。既有判据都在看别的东西：
 #   pack-closure 判包内 HTML 引用、docs-site 判生成后的页面链接，
 #   **md 里的路径一直没人管**。

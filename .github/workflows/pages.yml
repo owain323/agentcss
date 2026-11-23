@@ -53,7 +53,10 @@ jobs:
           #   · 被挡在外面的：README/AGENTS/package.json/.npmrc/CHANGELOG/
           #     05-audit/benchmark/type-tests/10-review/ 以及**任何未来新增的根文件**
           # ------------------------------------------------------------------
+          # 只供维护者的材料：排除规则必须写在所有 include 之前（rsync 首条匹配生效）。
+          # 这份记录已移出公开树，留此规则防回流。
           rsync -a \
+            --exclude '/docs/ROADMAP-DECISIONS.md' \
             --include '/index.html' \
             --include '/404.html' \
             --include '/SUPPORT.md' \

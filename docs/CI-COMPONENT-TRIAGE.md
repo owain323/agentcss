@@ -77,7 +77,7 @@
 | clicktest（hover 抬起） | chromium（CI） | 可诊断性（根因未定，带证据再修） | run 44936823108：`中心命中=A.card__link`——鼠标确实点在卡片本尊上，transform 仍为无 ⇒ 剩两嫌疑：① `(hover)/(pointer)` 媒体查询在 CI headless 不成立（抬起规则被 `@media (hover: hover) and (pointer: fine)` 门控）② `prefers-reduced-motion: reduce`（card.css 在其下对 :hover 显式 transform:none） | card 用例加**三探针**（matchMedia hover/pointer/reduced-motion）+ **鼠标轨迹**（mousemove 落点是否在卡矩形内）——判据一字未动，下一轮 nightly 一次裁决 |
 | switch-geom | webkit（CI Linux） | 可诊断性（根因未定） | run 44936823108：OFF 测得 ON 几何（左20 右2），垂直对称正常；Windows webkit 不复现；`--dur-fast`=120ms < 250ms 等待 ⇒ 过渡"慢"说不成立，剩「transition 冻结 / 状态未生效」两嫌疑 | 加四探针：`checked` 回读 / computed `transform`（卡在 translateX 还是 none）/ `getAnimations` playState（stuck=永远 running）/ reduced-motion；失败时 **+1s 复测**区分「过渡未结算」与「状态没变」 |
 | 矩阵 job（新发现） | firefox/webkit（chromium 同） | 观测条件（workflow 未兑现第三态立法） | firefox「执行 129 道全部通过 + 22 道未判定」→ 聚合退出 3 → workflow 步骤按失败上色 ⇒ **矩阵 job 按构造恒红**——四项全修绿它也红（chromium 上 print-adv 的 Linux 第三态同理，未判定 2 道） | gate.yml 组件层步骤上浮 exit 3：绿 + step summary 显式写「已执行判据全部通过；未判定 ≠ 通过」（逐道 SKIP 理由仍在日志）；退出码 1/2/4 照旧红。改的是 workflow 对退出码的解释，判据与门禁本体零改动 |
-| 静态三连（新发现） | —— | 流程事故 | 一份工作笔记被 `git add -A` 卷进根目录推上远端：repo-hygiene 报未登记条目 / leak 报内部编号 / release 报它不在 npm files 白名单。push 前的门禁当时被 cancel，没人看见，隔一轮才现形 | 删除该文件。两条教训：**`git add -A` 必须有边界**；**被 cancel 的门禁等于没跑**（不产生红，也不产生绿） |
+| 静态三连 | —— | 流程改进 | 根目录新增未登记文件会同时触发三道静态判据：条目登记 / 编号命名空间 / 包白名单 | 约定：**`git add -A` 必须有边界**；**被 cancel 的门禁等于没跑**（不产生红，也不产生绿） |
 | zoom-reflow（overlay @200%） | webkit | 偶发 | run 44918395385 红（布局指标 1817ms 未稳定），run 44936823108 未复现 | 观察项不修；再复现两次以上再立案 |
 
 ## 七、观测时机与环境缺指针

@@ -307,9 +307,10 @@ a { color: red }        /* 命中文档里每一个 <a>，无论它属于谁 */
 
 ### I-13 `npm install file:` 不做打包，会连未发布目录一起软链进来
 
-- 实证：一度以为 `npm pack` 泄漏内部文档。实测证伪——真实 `npm pack` + 安装是干净的。
+- 实证：`npm install file:` 会把未发布目录一并软链进来，看起来像"打包泄漏"；
+  换成真实 tarball 后差异消失。
 - 教训：**用真实 tarball 安装验证，不要用 `file:` 的假象下结论。**
-- 门禁：`pack-smoke.sh`。
+- 门禁：`pack-smoke.sh` + `pack-hygiene-gate`（包内容具名清单）。
 
 ### I-14 同一语义的样式若在每个使用点各写一份，"改一处"在物理上不成立
 

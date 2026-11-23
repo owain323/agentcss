@@ -70,7 +70,7 @@ PDF 里一个字都不多。`tabs` 只需要第 ① 条（它没有 `!important`
 ### `.print-only` —— 只在纸上出现
 
 ```html
-<div class="print-only">内部资料 · 请勿外传</div>
+<div class="print-only">打印版页眉 · 仅纸上可见</div>
 ```
 
 屏幕上 `display: none`，打印时显示。用于打印版专用标题、页眉、落款、水印文字。

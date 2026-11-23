@@ -243,7 +243,6 @@ def _mk_root(tmp, n=3):
                               'npx agentcss ai components --json   # 列出全部 %d 个组件\n' % (n, n))
     w('docs/ACCESSIBILITY.md', '# 无障碍\n\n采样页覆盖 %d 个组件。\n' % n)
     w('docs/GUIDANCE.md', '# 指南\n\n维护成本按 %d 个组件计。\n' % n)
-    w('docs/ROADMAP-DECISIONS.md', '# 裁决\n\n冻结卡覆盖 %d 个组件。\n' % n)
     w('guide/accessibility.html', '<p>总览表：%d 个组件 demo。</p>\n' % n)
     return tmp
 

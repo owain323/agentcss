@@ -7,7 +7,7 @@
  *      WebView 不行）。默认由系统解析处理 VIEW intent 的应用；若模拟器默认
  *      浏览器不是 Chrome，设环境变量 AGENTCSS_ANDROID_BROWSER_PKG=<包名>
  *      （例如 com.android.chrome）后重跑。
- *   3. 宿主机 8000 端口已跑 agentcss 的 http-serve.py（根目录 = agentcss-fix
+ *   3. 宿主机 8000 端口已跑 agentcss 的 http-serve.py（根目录 = 被测
  *      仓库根）。本库会执行 `adb reverse tcp:8000 tcp:8000`，模拟器内 Chrome
  *      用 http://localhost:8000/... 访问页面。
  *   4. `adb forward tcp:9222 localabstract:chrome_devtools_remote` + 轮询

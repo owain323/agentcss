@@ -40,8 +40,9 @@ pack-hygiene-gate.py — 站在**装了包的人**那一边看：文档链接 + 
    清单只增不删；新增内部文档时同步登记这里。
 
 ⚠️ 判据是「包内不得出现清单里的**文件名**」，不是「清单里的文件不许存在」。
-   它们仍可留在源码仓里（`error-ref-gate` 依赖 `docs/ERRORS-INDEX.md` 存在），
-   只是不能随包发给使用者。两者的边界是**分发面**，不是仓库面。
+   `docs/ERRORS-INDEX.md` 仍留在源码仓（`error-ref-gate` 依赖它存在），只是
+   不能随包发给使用者；`docs/ROADMAP-DECISIONS.md` 已整体移出公开树。
+   两者的边界是**分发面**，不是仓库面。
 
 🔴 ⑤ 的由来（同一次再探）：第一次 `npm pack --dry-run` 抓到包里有
    `02-primitives/combobox/combobox.js.__reverse.bak` —— 某个反向控制当时
