@@ -18,13 +18,13 @@
 
 | 档 | 组件 | tokens（必付） | CSS | JS | **合计** | 源码版合计 | 差 |
 |---|---|---:|---:|---:|---:|---:|---:|
-| primitive | `badge` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 27.8 KB | −24.2 KB |
+| primitive | `badge` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 27.7 KB | −24.2 KB |
 | primitive | `button` | 3.1 KB | 1.0 KB | — | **4.1 KB** | 31.4 KB | −27.3 KB |
 | primitive | `card` | 3.1 KB | 0.9 KB | — | **4.0 KB** | 29.1 KB | −25.1 KB |
-| primitive | `choice` | 3.1 KB | 1.1 KB | — | **4.2 KB** | 31.3 KB | −27.1 KB |
-| primitive | `combobox` | 3.1 KB | 1.0 KB | 7.5 KB | **11.5 KB** | 37.2 KB | −25.6 KB |
+| primitive | `choice` | 3.1 KB | 1.1 KB | — | **4.2 KB** | 31.3 KB | −27.0 KB |
+| primitive | `combobox` | 3.1 KB | 1.0 KB | 7.5 KB | **11.5 KB** | 37.1 KB | −25.6 KB |
 | primitive | `date-range` | 3.1 KB | 0.8 KB | 2.9 KB | **6.8 KB** | 32.8 KB | −26.0 KB |
-| primitive | `delta` | 3.1 KB | 0.3 KB | — | **3.4 KB** | 27.8 KB | −24.4 KB |
+| primitive | `delta` | 3.1 KB | 0.3 KB | — | **3.4 KB** | 27.7 KB | −24.4 KB |
 | primitive | `input` | 3.1 KB | 1.1 KB | — | **4.1 KB** | 29.0 KB | −24.8 KB |
 | primitive | `metric` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 28.2 KB | −24.6 KB |
 | primitive | `popover` | 3.1 KB | 0.8 KB | 2.3 KB | **6.2 KB** | 33.0 KB | −26.8 KB |
@@ -33,19 +33,19 @@
 | primitive | `separator` | 3.1 KB | 0.2 KB | — | **3.3 KB** | 26.3 KB | −22.9 KB |
 | primitive | `skeleton` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 26.9 KB | −23.3 KB |
 | primitive | `switch` | 3.1 KB | 0.9 KB | — | **3.9 KB** | 33.9 KB | −29.9 KB |
-| primitive | `timeline` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 28.3 KB | −24.7 KB |
-| primitive | `upload` | 3.1 KB | 1.4 KB | 4.8 KB | **9.3 KB** | 44.5 KB | −35.2 KB |
+| primitive | `timeline` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 28.2 KB | −24.6 KB |
+| primitive | `upload` | 3.1 KB | 1.4 KB | 4.8 KB | **9.3 KB** | 44.4 KB | −35.2 KB |
 | pattern | `accordion` | 3.1 KB | 1.3 KB | 1.8 KB | **6.2 KB** | 39.5 KB | −33.3 KB |
 | pattern | `content` | 3.1 KB | 1.0 KB | — | **4.1 KB** | 30.0 KB | −25.9 KB |
 | pattern | `drawer` | 3.1 KB | 0.8 KB | 3.7 KB | **7.6 KB** | 36.8 KB | −29.2 KB |
-| pattern | `dropdown` | 3.1 KB | 0.8 KB | 3.7 KB | **7.5 KB** | 35.8 KB | −28.3 KB |
+| pattern | `dropdown` | 3.1 KB | 0.8 KB | 3.7 KB | **7.5 KB** | 35.8 KB | −28.2 KB |
 | pattern | `form-validation` | 3.1 KB | 0.8 KB | 2.3 KB | **6.1 KB** | 34.3 KB | −28.2 KB |
 | pattern | `list` | 3.1 KB | 0.6 KB | — | **3.7 KB** | 27.4 KB | −23.7 KB |
-| pattern | `nav` | 3.1 KB | 1.3 KB | 2.8 KB | **7.1 KB** | 37.4 KB | −30.2 KB |
+| pattern | `nav` | 3.1 KB | 1.3 KB | 2.8 KB | **7.1 KB** | 37.3 KB | −30.2 KB |
 | pattern | `overlay` | 3.1 KB | 1.2 KB | 4.0 KB | **8.3 KB** | 42.9 KB | −34.6 KB |
 | pattern | `pagination` | 3.1 KB | 0.8 KB | 2.8 KB | **6.6 KB** | 36.2 KB | −29.6 KB |
 | pattern | `reveal` | 3.1 KB | 0.3 KB | 1.3 KB | **4.7 KB** | 30.4 KB | −25.7 KB |
-| pattern | `states` | 3.1 KB | 0.9 KB | — | **4.0 KB** | 29.4 KB | −25.5 KB |
+| pattern | `states` | 3.1 KB | 0.9 KB | — | **4.0 KB** | 29.4 KB | −25.4 KB |
 | pattern | `tabs` | 3.1 KB | 0.7 KB | 2.1 KB | **5.9 KB** | 32.5 KB | −26.7 KB |
 | pattern | `tooltip` | 3.1 KB | 0.5 KB | 3.2 KB | **6.8 KB** | 37.7 KB | −30.9 KB |
 | pattern | `tree` | 3.1 KB | 0.6 KB | 3.3 KB | **7.1 KB** | 35.1 KB | −28.0 KB |

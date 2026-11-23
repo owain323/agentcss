@@ -473,7 +473,7 @@ const CASES = {
               （抬起规则被 @media (hover: hover) and (pointer: fine) 门控）
            ② prefers-reduced-motion: reduce（card.css 在其下对 :hover 显式
               transform: none）
-         三探针 + 鼠标轨迹一轮裁决：matchMedia 三个值 + mousemove 落点
+         三探针 + 鼠标轨迹一轮判定：matchMedia 三个值 + mousemove 落点
          （p.hover 是否真把指针送进了卡片矩形）。 */
       await p.evaluate(() => {
         window.__mouse = { n: 0, x: -1, y: -1 };

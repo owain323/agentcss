@@ -62,7 +62,7 @@ http://localhost:8000/examples/finance-report/
 
 第 5 个是我自己的：第一版交付时这三张表**加不上**（利润表差 79.4 亿、
 资产负债表少一行、五年表研发费用差 6 倍），而所有门禁都是绿的。
-台账记在 `ERRORS.md` E60，判据补成了 `finance-example-ties.py`。
+现在这条缺口由 `finance-example-ties.py` 守着：三张表的合计与分项必须自洽。
 
 ## 这一页当初"绕过"库的两处，现在都在库里了
 

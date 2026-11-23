@@ -13,7 +13,7 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1089587,
+    "sourceBytes": 1089539,
     "distGzip": 130004
   },
   "files": [
@@ -209,9 +209,9 @@
     },
     {
       "source": "01-tokens/tokens.core.css",
-      "sourceSha256": "cc6c5e1e217a5a311355c1515873b42289ddcffb6c5f389a592337148f8788df",
-      "sourceBytes": 52139,
-      "sourceGzip": 19640,
+      "sourceSha256": "491e6ce8c4628d6afbedbb777a3614f60a96b35a0e6181a816083d406b33b71b",
+      "sourceBytes": 52115,
+      "sourceGzip": 19631,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.core.css",
@@ -223,9 +223,9 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "28e322ae891d84586e6743fb05567cd63b979cf7359b778b516576994a0a3300",
-      "sourceBytes": 66477,
-      "sourceGzip": 25608,
+      "sourceSha256": "63e6ad08bf039993b90d993d1ea9bddd452b50cb5421d4d9d9d9896a0b0faf43",
+      "sourceBytes": 66453,
+      "sourceGzip": 25599,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",
@@ -1098,9 +1098,9 @@
     },
     {
       "source": "09-assets/icons-anim/icons-anim.css",
-      "sourceSha256": "1b32ae42fdb946528a2794706f3a63ed8cadb99f1f0e5c883221a4f41a0fff22",
+      "sourceSha256": "fa66c68394c218aac3e8236946cfda834d31b33df683025341ecb9bffbe54d5c",
       "sourceBytes": 5821,
-      "sourceGzip": 2436,
+      "sourceGzip": 2433,
       "outputs": [
         {
           "path": "dist/09-assets/icons-anim/icons-anim.css",

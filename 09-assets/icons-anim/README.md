@@ -1,6 +1,6 @@
 # icons-anim · 图标动效（CSS 路线）
 
-给 `09-assets/icons/` 的静态图标加**纯 CSS** 动效。0.27.18 的裁决兑现：
+给 `09-assets/icons/` 的静态图标加**纯 CSS** 动效。0.27.18 的决定落地：
 SMIL 批次（WorkBuddy icon-forge 产出）不进本库——SMIL 时间线不受
 `prefers-reduced-motion` 控制、也不受库内 `0.01ms` 全局灭活管；
 CSS 动画三个自动成立：media query 生效、motion.py 有管辖权、可被门禁审计。

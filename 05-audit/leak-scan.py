@@ -75,6 +75,8 @@ PATTERNS = [
     ('缺陷编号', terms.internal_id_pat()),
     ('自有域名', terms.self_identity_pat()),
     ('内部流程', terms.process_pat()),
+    # 维护者事务：他记在哪个本子上、谁批的（台账 / 裁决 / 内部排期…）
+    ('维护者事务', terms.maintainer_trace_pat()),
     # ── 指向某台具体机器的形状（不写死任何一台机器的值）──────────────
     ('主机名', terms.hostname_pat()),
     ('邮箱', terms.email_pat()),
@@ -241,6 +243,19 @@ def _selftest():
     chk('正：Unreleased 段被扫', 'E999' in got, True)
     chk('正：更高版本段被扫', 'E997' in got, True)
     chk('反：已发布段被豁免', 'E998' in got, False)
+
+    # ---- 维护者事务：判**流程名词**，不判「内部」这个词 ------------------
+    # 这条判据最容易犯的错是**写宽**：第一版把裸「台账」放进词表，
+    # `examples/finance-report` 与第三方许可清单当场假红 ——
+    # 台账在财务/审计语境里是正常业务词。⇒ 下面必须有一条业务义反例站着，
+    # 一旦有人再把裸词加回去，这条反例立刻变红。
+    mt = terms.maintainer_trace_pat()
+    chk('正：内部' + '台账', bool(mt.search('记在内部' + '台账里')), True)
+    chk('正：内部排' + '期', bool(mt.search('按内部排' + '期执行')), True)
+    chk('正：裁' + '决（裸词）', bool(mt.search('由评审' + '裁' + '决')), True)
+    chk('反：组件内部' + 'padding', bool(mt.search('组件内部' + 'padding')), False)
+    chk('反：元素内部' + '的间距', bool(mt.search('元素内部' + '的间距')), False)
+    chk('反：业务义的' + '台账', bool(mt.search('资产' + '台账')), False)
 
     # ---- companions：**声明过的**配套仓库放行，没声明的照旧红 ----
     # 为什么这对反例必须存在：README 想链到兄弟仓（只做适配、不含组件的插件包），

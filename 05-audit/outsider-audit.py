@@ -203,6 +203,11 @@ PATTERNS = [
     #      · 「Tier A」是 `05-audit/` 门禁自己的档位术语，且 05-audit 已在下文豁免
     #    ⇒ 统一走 `terms.process_pat()`（与 leak-scan 同一份判据，只写一份）。
     ('内部流程', terms.process_pat()),
+    # 维护者事务：他记在哪个本子上、谁批的（台账 / 裁决 / 内部排期…）。
+    # 与 leak-scan 共用 `terms.maintainer_trace_pat()`（同一份判据，只写一份）。
+    # ⚠️ 判据落在**流程名词**上，不判「内部」这个词本身 ——
+    #    组件内部 / 元素内部 / 函数内部是本库最常用的技术表述，见 terms.py 的说明。
+    ('维护者事务', terms.maintainer_trace_pat()),
     # 过程痕迹：第三方来源 / 评审轨迹 / 账号与凭据细节。
     # 与 leak-scan 共用 `terms.process_trace_pat()`（同一份判据，只写一份）。
     ('过程痕迹', terms.process_trace_pat()),

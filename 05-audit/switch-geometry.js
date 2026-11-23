@@ -42,7 +42,7 @@ const { launch } = require(REPO + '/05-audit/browser.js');
       const t=tr.getBoundingClientRect(), h=th.getBoundingClientRect();
       const cs=getComputedStyle(th);
       /* 🔴 0.27.24（可诊断性，判据不变）：webkit-linux 上 OFF 测得 ON 几何
-         （run 44925795198：左20 右2），Windows webkit 不复现 ⇒ 四探针一轮裁决：
+         （run 44925795198：左20 右2），Windows webkit 不复现 ⇒ 四探针一轮判定：
            checked —— set 是否真的写进去了
            transform —— 卡在 translateX（transition 冻结/未结算）还是 none
            getAnimations —— transition 的 playState（stuck = 永远 running）

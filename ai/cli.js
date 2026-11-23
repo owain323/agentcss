@@ -761,7 +761,7 @@ function cmdIcons(args) {
   process.stdout.write('\n  用法：<img src="…/icons/svg/<name>.svg" width="24" height="24" alt="…">\n');
 }
 
-/* 🔴 icon-check：图标交付自检（0.27.19 · 软件工坊裁决的缩水版）。
+/* 🔴 icon-check：图标交付自检（0.27.19 · 精简版）。
    职责边界：icon-gate.py 是唯一真源（规格 + 锁值三方 + 溯源复核），
    本命令只是它的 **CLI 包装**——同一套判据不许有第二份实现（E31 教训），
    加一条 `ai icons` 冒烟（清单里查得到的图标才叫交付完成）。
