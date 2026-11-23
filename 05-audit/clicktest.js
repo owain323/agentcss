@@ -55,7 +55,26 @@ const CASES = {
         const before = await p.evaluate((idx) =>
           document.querySelectorAll('.choice__input')[idx].checked, i);
         await p.mouse.click(info.x, info.y);
+        /* 🔴 webkit 的 background-color 过渡比 chromium 慢：140ms 时可能还在
+           起始帧，量到「白底白勾」就会误判成真对比缺陷（run 45129517040 的
+           webkit 连续两次报 1.00:1，而它自己的 +1s 复测底色已是
+           rgb(27,77,143) —— 最终态是对的）。
+           ⇒ 先把 140ms 留足，再轮询到背景色连续两次采样相同为止（上限 600ms）。
+           超时也照量：真同色不会被"多等一会儿"掩盖。 */
         await new Promise((r) => setTimeout(r, 140));
+        {
+          let prev = null;
+          for (let k = 0; k < 12; k++) {
+            const cur = await p.evaluate((idx) => {
+              const el = document.querySelectorAll('.choice__input')[idx];
+              const mk = el.parentNode.querySelector('.choice__mark');
+              return getComputedStyle(mk).backgroundColor;
+            }, i);
+            if (cur === prev) break;
+            prev = cur;
+            await new Promise((r) => setTimeout(r, 50));
+          }
+        }
         const after = await p.evaluate((idx) =>
           document.querySelectorAll('.choice__input')[idx].checked, i);
         /* 视觉层证据。🔴 这里必须查**渲染后的颜色对比**：
