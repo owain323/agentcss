@@ -399,7 +399,7 @@ SCAN_EXCLUDE = ('node_modules', '.git', '05-audit', '10-review',
                 'deliverables', '.wo-baseline', '.github',
                 '04-recipes', '03-patterns', '02-primitives', '01-tokens',
                 'adapters', 'esm', 'dist', 'ai', 'vendor',
-                # 🔴 0.27.21：internal/ 是「只进本地、不进仓库」的工作文档
+                # 🔴 0.27.21：本地留档目录是「只进本地、不进仓库」的工作文档
                 #   （.gitignore 同款语义）——git 视野里没有，磁盘视野也必须没有，
                 #   否则门禁会对着一堆永远不会发布的本地文件报数字漂移。
                 'internal')

@@ -53,29 +53,17 @@ ROOT = os.path.dirname(HERE)
 BASE = 'http://127.0.0.1:8000'
 PORT = 8000
 
-CHROME_CANDIDATES = [
-    r'C:\Program Files\Google\Chrome\Application\chrome.exe',
-    r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
-    r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
-    r'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
-]
-
 # ------------------------------------------------------------------ 自检脚本
 PROBES = '<script>' + open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '_probe.js'), encoding='utf-8').read() + '</script>'
 
 
 def find_chrome():
-    # 🔴 0.27.21：发现逻辑与 browser.js 同源——
-    #    原来只有 Windows 注册表路径，CI Linux 上永远 None ⇒ 自检把
-    #    「本该跑的环境验证」误判成环境类假红。顺序：CHROME_PATH →
-    #    既有候选 → browser.js 的发现（Playwright 缓存 + 系统候选，E31
-    #    同一判定只写一遍，复用而不重抄）→ PATH 上的常规可执行名。
+    # 发现逻辑**只有一份**：browser.js 的 CHROME（Playwright 缓存 + 系统候选
+    #  + 任意盘符探测）。本文件不另抄一份候选表 —— 抄一份就多一处盘符字面量，
+    #    也会和主入口悄悄分叉。顺序：CHROME_PATH → browser.js → PATH 可执行名。
     env = os.environ.get('CHROME_PATH')
     if env and os.path.isfile(env):
         return env
-    for p in CHROME_CANDIDATES:
-        if os.path.isfile(p):
-            return p
     try:
         r = subprocess.run(['node', '-e',
             'console.log(require("./browser.js").CHROME || "")'],

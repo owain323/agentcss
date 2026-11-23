@@ -157,11 +157,42 @@ function playwrightExecutable() {
   } catch (e) { return null; }
 }
 
+/**
+ * Windows 浏览器安装根目录 —— **不写死盘符**。
+ * `Program Files` 可以在任意盘上；写死一处盘符既漏找，也把开发机布局带进源码。
+ * 环境变量优先，被清空（服务账户 / 精简 shell）时枚举 A–Z 兜底。
+ */
+function winInstallRoots() {
+  const roots = [];
+  const pf = process.env.ProgramFiles;
+  const pf86 = process.env['ProgramFiles(x86)'];
+  const local = process.env.LOCALAPPDATA;
+  if (pf) roots.push(pf);
+  if (pf86) roots.push(pf86);
+  if (local) roots.push(local);
+  if (!roots.length) {
+    for (let c = 65; c <= 90; c++) {
+      const d = String.fromCharCode(c) + ':/';
+      roots.push(d + 'Program Files', d + 'Program Files (x86)');
+    }
+  }
+  return roots;
+}
+
+function winBrowserCandidates() {
+  const out = [];
+  if (process.platform !== 'win32') return out;
+  for (const r of winInstallRoots()) {
+    out.push(path.join(r, 'Google/Chrome/Application/chrome.exe'),
+             path.join(r, 'Microsoft/Edge/Application/msedge.exe'));
+  }
+  return out;
+}
+
 const CANDIDATES = [
   process.env.CHROME_PATH,
   process.env.CHROME_BIN,
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+  ...winBrowserCandidates(),
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/usr/bin/google-chrome',
   '/usr/bin/chromium',
@@ -467,7 +498,7 @@ async function withPage(vp, fn) {
    浏览器发现这段逻辑原来的问题恰恰是"只在恰好装了浏览器的那台机器上能验" ——
    导出之后，`chrome-discovery-gate.js` 能用假目录树在任意机器上验它。 */
 module.exports = { launch, newPage, withPage, CHROME, engineOf,
-  findPlaywrightChrome, PW_ROOTS,
+  findPlaywrightChrome, winBrowserCandidates, PW_ROOTS,
   requireChromium: requireChromium,
   ENGINES: ['chromium', 'webkit', 'firefox'] };
 

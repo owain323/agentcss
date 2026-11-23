@@ -30,13 +30,11 @@ from _common import scannable_files  # noqa: E402
 #   3. **必须排除合法路径**（下面每条都有说明），否则全是假红
 # ============================================================================
 
-# ⭐ 合法前缀白名单（软件安装位置，任何人机器上都一样 ⇒ 不暴露身份）
-#   用**字符串匹配**而不是正则负向前瞻 —— 负向前瞻只看紧邻字符，
-#   `C:/Program Files/...` 会被 `Program` 部分命中。
-_OK_PREFIX = (
-    'C:/Program', 'C:/Users', 'C:/Windows',
-    'D:/Program', 'E:/Program',
-)
+# ⭐ 合法路径的判定在 `terms.is_install_path`（单一来源）：
+#   只有**软件安装位置**（`<盘符>:/Program Files`、`<盘符>:/Windows`）算
+#   「任何人机器上都一样」。
+#   ⚠️ 旧版在这里写死过 `<盘符>:/Users` —— 任何机主名都以它开头，
+#   一条白名单把用户目录整个放过了。判据见 terms.py 的说明。
 
 # ⭐ package.json 的 repository / homepage / bugs 字段里，
 #   仓库域名是**仓库身份**（npm 页面要靠它定位源码），不算协作痕迹。
@@ -55,7 +53,7 @@ PATTERNS = [
     ('盘符路径2', re.compile(
         r'(?<![:/A-Za-z0-9])[A-Za-z]:' +
         re.escape(chr(92) * 2) + r'[A-Za-z0-9_.-]+')),
-    # 用户目录：只有 C:/Users/<某人> 才泄漏
+    # 用户目录：只有 <盘符>:/Users/<某人> 才泄漏
     ('用户目录', re.compile(r'[A-Za-z]:/Users/|' +
                             '[A-Za-z]:' + re.escape(chr(92) * 2) + 'Users')),
     # posix 盘符（/d/ /e/ 等）：只查**真实盘符**
@@ -77,6 +75,10 @@ PATTERNS = [
     ('缺陷编号', terms.internal_id_pat()),
     ('自有域名', terms.self_identity_pat()),
     ('内部流程', terms.process_pat()),
+    # ── 指向某台具体机器的形状（不写死任何一台机器的值）──────────────
+    ('主机名', terms.hostname_pat()),
+    ('邮箱', terms.email_pat()),
+    ('UNC 共享', terms.unc_pat()),
     # 回环与通配地址不是泄漏（本地测试的正常写法）
     ('私网 IP', re.compile(
         r'\b(?:10\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}\b')),
@@ -333,8 +335,8 @@ def main():
             # ⭐ 过滤合法前缀（软件安装位置）——
             #    正则没法可靠表达「排除含空格的目录名」，只能在匹配后判断。
             if name.startswith('盘符'):
-                found = [m for m in found
-                         if not m.startswith(_OK_PREFIX)]
+                # 只有软件安装位置放过；`<盘符>:/Users/<任何人>/` 一律算身份
+                found = [m for m in found if not terms.is_install_path(m)]
             if name == '自有域名':
                 # ⭐ repository / homepage / bugs 里的账号名是**仓库身份**
                 #    （npm 页面靠它定位源码），不算泄漏。

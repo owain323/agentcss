@@ -106,7 +106,7 @@
   /* 🔴 色值是**脚本反解**出来的（WCAG 1.4.11 要求 thumb 对 track ≥3:1），
      不是"看着差不多"挑的：
        #7a808a 对 #ffffff 3.98:1 · 对 #f6f7f8 3.71:1  ✅
-     ⚠️ 第一版我随手挑的 #B4BAC4 只有 1.82:1 ⇒ 门禁直接判不合格。 */
+     ⚠️ 第一版随手挑的 #B4BAC4 只有 1.82:1 ⇒ 门禁直接判不合格。 */
   --scrollbar-thumb:     var(--raw-scrollbar-thumb);   /* 中性**冷**灰（非品牌色，且保持蓝调）*/
   --scrollbar-thumb-hov: var(--raw-scrollbar-thumb-hov);   /* hover 更深一档 · 4.06:1 */
   --scrollbar-radius:    5px;       /* = size/2 ⇒ 胶囊形 */

@@ -153,10 +153,10 @@ PATTERNS = [
     #    ⇒ 分成两个 alternation，各自只匹配正斜杠或"反斜杠+反斜杠"。
     #
     # 🔴🔴 2026-10-10：这两条判据整体加上「排除自证样本」。
-    #    起因：`engine-gate.js` 里的 `C:\\Users\\someone\\AppData\\...` 与
+    #    起因：`engine-gate.js` 里的 `Q:\\Users\\someone\\AppData\\...` 与
     #    `/home/alice/.cache/ms-playwright` 是**故意写的假路径** ——
     #    它们是「引擎探测失败时要解析的报错样本」，本机用户名根本不在里面。
-    #    同理 `gate-selfcheck-fixtures.py` 里的 `C:/Users/probe-user/x`
+    #    同理 `gate-selfcheck-fixtures.py` 里的 `Q:/Users/probe-user/x`
     #    是**判别力夹具**（用来证明"这道门禁抓得到用户名路径"）。
     #    把这四类当成泄漏，等于要求"门禁不许有测试样本" ⇒ 自相矛盾。
     #    ⇒ 判据保留，但对**这些占位形态**放行：
@@ -168,8 +168,8 @@ PATTERNS = [
                             r'Users' + re.escape(chr(92) * 2) + r'(?!someone)')),
     # 🔴 判据：**别人机器上的具体目录**（某个盘符下的目录），排除两种形态：
     #   ① 本仓库自己的开发路径 —— 原写死了具体盘符目录，等于门禁自身携带痕迹（E26）
-    #   ② **判别力夹具**里的**占位**路径（`C:/Users/probe-user/`、
-    #      `C:\Users\<用户名>\`）—— 这些是门禁**用来证明自己能抓到真路径**的样本，
+    #   ② **判别力夹具**里的**占位**路径（`Q:/Users/probe-user/`、
+    #      `<盘符>:\Users\<用户名>\`）—— 这些是门禁**用来证明自己能抓到真路径**的样本，
     #      把它们判成泄漏 = 要求"门禁不许有测试样本"，自相矛盾。
     #   ⚠️ 排除的是**词形**（占位名 / 尖括号），不是文件 ——
     #      同一个文件里写真用户名仍然照抓。
@@ -210,9 +210,13 @@ PATTERNS = [
     #    （每个 Linux 用户都有 /tmp，每台机器都有 $HOME）。
     #    ⇒ 只有**具体用户名**与**具体盘符目录**才算泄漏。
     #    ⚠️ 同上：`/home/alice/` 是引擎报错样本里的占位名，不是真用户名。
-    ('本地路径痕迹', re.compile(
-        r'[A-Za-z]:/Users/(?!someone|probe-user|<)|'   # C:/Users/<某人>
-        r'/home/(?!alice/|user/)[A-Za-z0-9_.-]+/|'     # /home/<某人>/
+    # ── 指向某台具体机器的形状（与 leak-scan 同一份判据）────
+    ('主机名', terms.hostname_pat()),
+    ('邮箱', terms.email_pat()),
+    ('UNC 共享', terms.unc_pat()),
+    ('本机路径痕迹', re.compile(
+        r'[A-Za-z]:/Users/(?!someone|probe-user|<)|'   # <盘符>:/Users/<某人>
+        r'/home/(?!alice/|user/|End/)[A-Za-z0-9_.-]+/|'  # /home/<某人>/（End 是键名）
         r'/Users/(?!someone/|probe-user/)[A-Za-z0-9_.-]+/|'  # macOS
         r'[Dd]:/[A-Za-z0-9_.-]+/',                     # 其他盘符下的具体目录
         re.I)),

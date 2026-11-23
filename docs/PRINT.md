@@ -559,7 +559,7 @@ npx agentcss pdf report.html --out report.pdf --ready-selector="#report-ready" -
 管道调用 `Page.printToPDF`，不打包 Puppeteer。找不到浏览器明确报错（退出码 3）：
 
 ```bash
-npx agentcss pdf report.html --out report.pdf --chrome="C:/Program Files/Google/Chrome/Application/chrome.exe"
+npx agentcss pdf report.html --out report.pdf --chrome="<浏览器可执行文件的完整路径>"
 # 或环境变量 AGENTCSS_CHROME / CHROME_PATH
 ```
 

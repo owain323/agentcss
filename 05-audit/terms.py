@@ -529,11 +529,83 @@ def hits_outside_repo_field(text, pat):
 USER_RE = _PRIVATE_PATS.get('user') or r'(?!)'
 
 
-# 本机绝对路径（工具目录版身份判据用）。软件安装位置不算身份 —— 每台机器都一样。
+# ============================================================================
+# 本机路径与身份 —— **按形状判，不按字面量判**
+# ----------------------------------------------------------------------------
+# 旧的写法有两处结构性缺陷，都不是「忘了加一条」，而是判据本身错了：
+#
+#   ① 白名单里写着 `<盘符>:/Users` —— 任何盘符下、任何用户名的用户目录
+#      都**以它开头** ⇒ 一条白名单把所有机主名一起放过了。
+#      用户目录名就是身份本身，不存在「哪台机器上都一样」的用户目录。
+#   ② 真实用户名只能从 `internal/private-terms.txt` 读，而那份文件不入库
+#      ⇒ 干净克隆 / CI 上判据退化成永不匹配，看起来和「扫过且干净」一模一样。
+#
+# 现在的分界按**语义**划：
+#   软件安装位置（`<盘符>:/Program Files`、`<盘符>:/Windows`）= 任何人一致 ⇒ 不算身份
+#   用户目录 / 具体盘符目录 / 主机名 / 邮箱 / UNC 共享 = 指向某台机器或某个人 ⇒ 算
+# ============================================================================
+
+
+def is_install_path(frag):
+    """`<盘符>:/Program Files/…` 与 `<盘符>:/Windows/…` 是软件安装位置。
+
+    ⚠️ **Users 永远不算** —— 用户目录名就是机主身份。
+    ⚠️ 盘符不限于 C：程序装在哪个盘都有可能，判据不该依赖具体字母。
+    """
+    if len(frag) < 3 or frag[1] != ':':
+        return False
+    rest = frag[2:].lstrip('/\\')
+    return rest.startswith('Program') or rest.startswith('Windows')
+
+
 _IDENT_PATH = re.compile(
     r'(?<![A-Za-z0-9_])[A-Z]:[/\\](?!Users[/\\](?:probe-user|someone|<))'
     r'[A-Za-z0-9_.-]+[/\\]', re.I)
-_IDENT_OK_PREFIX = ('C:/Program', 'C:/Users', 'C:/Windows', 'D:/Program', 'E:/Program')
+
+# Windows 默认计算机名形状：`<厂商标识>-<7 位以上大写字母数字>`。
+# 这是**形状**判据 —— 不写死任何一台机器的名字。
+_HOSTNAME = re.compile(r'(?<![A-Za-z0-9-])(?:LAPTOP|DESKTOP|WIN)-[A-Z0-9]{7,}(?![A-Za-z0-9])')
+
+# 邮箱：判据只认**像真实地址**的形状 ——
+#   · `users.noreply.github.com` 是 GitHub 给匿名提交分配的非身份地址；
+#   · RFC 2606 的保留域（`example.com/org/net`、`*.invalid`、`*.test`）是文档占位；
+#   · 域名标签至少两个字符 ⇒ 表单校验里的 `a@b.com` 这类格式样本不误报。
+#
+# ⚠️ 保留域只能**匹配后**过滤：正则的负向前瞻是单点判断，
+#    而 `(?:label\.)+` 会贪婪吃掉 `example.`，前瞻再看 `com` 已经晚了。
+_EMAIL_RAW = re.compile(r'(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{2,}@'
+                        r'(?!users\.noreply\.github\.com|localhost)'
+                        r'(?:[A-Za-z0-9-]{2,}\.)+[A-Za-z]{2,}')
+
+_EMAIL_RESERVED = ('example.com', 'example.org', 'example.net',
+                   '.invalid', '.test', '.example')
+
+
+class _EmailPat(object):
+    """与 `re.Pattern.findall` 同接口 —— PATTERNS 表里直接用。"""
+
+    def findall(self, text):
+        return [m for m in _EMAIL_RAW.findall(text)
+                if not m.lower().endswith(_EMAIL_RESERVED)]
+
+
+_EMAIL = _EmailPat()
+
+# UNC 共享：两个反斜杠 + 主机 + 反斜杠 + 共享名 ——
+# 内网主机名/地址与共享名同时出现，是「这台机器能访问到什么」的直接证据。
+_UNC = re.compile(r'\\{2}(?![?.])[A-Za-z0-9_.-]+\\[A-Za-z0-9_$]')
+
+# 供 leak-scan / outsider-audit 取用（与 process_pat / self_identity_pat 同风格）。
+def hostname_pat():
+    return _HOSTNAME
+
+
+def email_pat():
+    return _EMAIL
+
+
+def unc_pat():
+    return _UNC
 
 
 def identity_pat():
@@ -568,10 +640,20 @@ def identity_hits(text):
     if m:
         out['用户名'] = m
 
-    m = [x for x in _IDENT_PATH.findall(text) if not x.startswith(_IDENT_OK_PREFIX)]
+    m = [x for x in _IDENT_PATH.findall(text) if not is_install_path(x)]
     if m:
-        out['仓库绝对路径'] = m
+        out['本机绝对路径'] = m
+
+    for label, pat in (('主机名', _HOSTNAME), ('邮箱', _EMAIL), ('UNC 共享', _UNC)):
+        m = pat.findall(text)
+        if m:
+            out[label] = m
     return out
+
+
+def private_term_count():
+    """私有词表加载了几条（0 = 代号类判据本次未覆盖）。"""
+    return len(_PRIVATE_WORDS) + len(_PRIVATE_PATS)
 
 
 def private_status():

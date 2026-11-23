@@ -26,11 +26,11 @@
 | primitive | `date-range` | 3.1 KB | 0.8 KB | 2.9 KB | **6.8 KB** | 32.8 KB | −26.0 KB |
 | primitive | `delta` | 3.1 KB | 0.3 KB | — | **3.4 KB** | 27.8 KB | −24.4 KB |
 | primitive | `input` | 3.1 KB | 1.1 KB | — | **4.1 KB** | 29.0 KB | −24.8 KB |
-| primitive | `metric` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 28.2 KB | −24.7 KB |
+| primitive | `metric` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 28.2 KB | −24.6 KB |
 | primitive | `popover` | 3.1 KB | 0.8 KB | 2.3 KB | **6.2 KB** | 33.0 KB | −26.8 KB |
 | primitive | `progress` | 3.1 KB | 0.8 KB | — | **3.9 KB** | 29.3 KB | −25.4 KB |
 | primitive | `select` | 3.1 KB | 0.9 KB | 9.1 KB | **13.0 KB** | 38.7 KB | −25.6 KB |
-| primitive | `separator` | 3.1 KB | 0.2 KB | — | **3.3 KB** | 26.3 KB | −23.0 KB |
+| primitive | `separator` | 3.1 KB | 0.2 KB | — | **3.3 KB** | 26.3 KB | −22.9 KB |
 | primitive | `skeleton` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 26.9 KB | −23.3 KB |
 | primitive | `switch` | 3.1 KB | 0.9 KB | — | **3.9 KB** | 33.9 KB | −29.9 KB |
 | primitive | `timeline` | 3.1 KB | 0.5 KB | — | **3.6 KB** | 28.3 KB | −24.7 KB |

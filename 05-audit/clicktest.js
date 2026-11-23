@@ -19,12 +19,13 @@
 
 const path = require('path');
 // puppeteer-core 由 browser.js 统一持有（含关缓存）
-const { launch } = require('./browser');
+const { launch, winBrowserCandidates } = require('./browser');
 
+/* 候选路径由 browser.js 统一给出（环境变量 + 任意盘符探测），
+   本文件不写死任何盘符 —— 写死既漏找，也把开发机布局带进源码。 */
 const CHROME_CANDIDATES = [
   (process.env.CHROME_PATH || process.env.CHROME_BIN || undefined),
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  ...winBrowserCandidates(),
 ];
 const BASE = 'http://127.0.0.1:8000';
 

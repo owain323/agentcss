@@ -50,7 +50,7 @@ var ENGINES = ['chromium', 'webkit', 'firefox'];
  * 🔴 为什么必须有这个函数（2026-10-09 远端复跑实测）
  * ---------------------------------------------------------------
  *   引擎装不上时，Playwright 的报错里带着**本机绝对路径**
- *   （`C:\Users\<用户名>\AppData\Local\ms-playwright\...`）。
+ *   （`<盘符>:\Users\<用户名>\AppData\Local\ms-playwright\...`）。
  *   这份证据是要**落盘**的 ⇒ 一等公民级别的泄漏。
  *
  *   ⚠️ 它在本地**发现不了**：本机浏览器都装齐了，`unavailable` 是空的。
@@ -62,7 +62,7 @@ function scrub(s) {
   var out = String(s == null ? '' : s);
   var home = os.homedir();
   if (home) out = out.split(home).join('<HOME>');
-  out = out.replace(/[A-Za-z]:[\\/][^\s"'|]*/g, '<PATH>');       /* C:\... */
+  out = out.replace(/[A-Za-z]:[\\/][^\s"'|]*/g, '<PATH>');       /* <盘符>:\... */
   out = out.replace(/\/(?:Users|home|root)\/[^\s"'|]*/g, '<PATH>'); /* /home/... */
   return out;
 }
@@ -219,10 +219,10 @@ async function selftest() {
     okKnown && browser.engineOf({ engine: 'Chrome' }) === 'chromium');
 
   /* ⑤ 落盘证据必须脱敏 —— 反面就是"干净克隆上生成的文件里带本机路径" */
-  var leaky = "Executable doesn't exist at C:\\Users\\someone\\AppData\\Local" +
+  var leaky = "Executable doesn't exist at Q:\\Users\\someone\\AppData\\Local" +
     "\\ms-playwright\\firefox-1543\\firefox.exe";
   expect('Windows 盘符路径 + 用户名 ⇒ 必须脱敏',
-    scrub(leaky).indexOf('someone') < 0 && scrub(leaky).indexOf('C:\\Users') < 0,
+    scrub(leaky).indexOf('someone') < 0 && scrub(leaky).indexOf('Q:\\Users') < 0,
     scrub(leaky));
   var leaky2 = 'Executable doesn\'t exist at /home/alice/.cache/ms-playwright/firefox';
   expect('POSIX 家目录路径 ⇒ 必须脱敏',

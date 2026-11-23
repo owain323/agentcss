@@ -30,6 +30,9 @@ from _common import scannable_files  # noqa: E402
 # 技术词白名单 —— ⚠️ 新增必须写清理由
 # ============================================================================
 WHITELIST = {
+    # Node 在 Windows 上声明的标准环境变量名（`process.env.ProgramFiles`），
+    # 用它拼浏览器安装路径，这样源码里不必写死任何盘符。
+    'ProgramFiles',
     # unit.test.mjs 的无 DOM 测试夹具（模拟 element 接口的假类名），非内部代号
     'FakeElement',
     # form-validation.js 的公开全局名（契约/探针/类型三处登记），非内部代号

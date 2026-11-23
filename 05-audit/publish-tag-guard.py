@@ -108,6 +108,34 @@ def head_tags():
     return tags
 
 
+def private_terms_gate(count=None):
+    """发布前最后一道身份闸：私有词表必须真的加载了。
+
+    🔴 为什么这道闸必须在**发布**路径上，而不是只在扫描器里打印一行
+    ------------------------------------------------------------------------
+      `leak-scan` 的「真实代号 / 用户名正则」来自 `internal/private-terms.txt`，
+      而那份文件不入库。干净克隆 / CI 上读不到时，判据退化成永不匹配 ——
+      输出和「扫过且干净」长得一模一样。
+
+      形状判据（盘符 / 用户目录 / 主机名 / 邮箱 / UNC）不依赖词表，永远在岗；
+      但「某个代号算不算禁词」只有词表知道。发布是**离开本机**的那一步，
+      此刻词表缺席 = 有一类判据没跑过 = 不许发。
+
+    ⇒ 缺了就红，并给出补法。本地开发 / CI 的普通扫描不受影响。
+    """
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import terms
+    except Exception as e:                                    # noqa: BLE001
+        return ['无法加载 terms.py（%s）—— 身份判据整体不可用' % e]
+    n = terms.private_term_count() if count is None else count
+    if n == 0:
+        return ['私有词表未加载（0 条）⇒ 真实代号 / 用户名判据本次**没有覆盖**。'
+                '补：把 internal/private-terms.txt 放回，或设 FL_PRIVATE_TERMS。'
+                '（形状判据不受影响，但代号类判据缺位时不许发布）']
+    return []
+
+
 def judge(version, vfile, cl_top, tags):
     """纯函数：→ (问题列表, 通过时的证据行)。
 
@@ -152,6 +180,7 @@ def run():
     cl_top = read_changelog_top()
     tags = head_tags()
     probs, evidence = judge(version, vfile, cl_top, tags)
+    probs = private_terms_gate() + probs
 
     print('  === publish-tag-guard ===')
     print('      package.json = %s' % version)
@@ -194,7 +223,22 @@ def selftest():
             '' if ok else '  ← %s' % (probs[0] if probs else '')))
         if not ok:
             bad += 1
-    print('  %s  %d/%d' % ('[FAIL]' if bad else '[PASS]', len(cases) - bad, len(cases)))
+    # ⑦ 身份闸的反向控制：**必须**能因为词表缺席而红。
+    #    没有这一条，删掉 private_terms_gate 也不会有人发现（自检仍然全绿）。
+    for n, want, label in ((0, 1, '词表缺席 ⇒ 拒绝发布'),
+                           (5, 0, '词表已加载 ⇒ 放行')):
+        probs = private_terms_gate(count=n)
+        got = 1 if probs else 0
+        ok = got == want
+        print('    %s %-22s 期望 %s 实际 %s%s' % (
+            '✓' if ok else '✗', label,
+            'FAIL' if want else 'PASS', 'FAIL' if got else 'PASS',
+            '' if ok else '  ← %s' % (probs[0] if probs else '未拦')))
+        if not ok:
+            bad += 1
+    total = len(cases) + 2
+
+    print('  %s  %d/%d' % ('[FAIL]' if bad else '[PASS]', total - bad, total))
     return 1 if bad else 0
 
 

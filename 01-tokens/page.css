@@ -302,7 +302,7 @@
      实测代价：本库 4 个页面在 320px / 834px / RTL 阿拉伯语膨胀后溢出 81–155px，
      `zoom-reflow` `rtl-render` `responsive` 三道门禁同时红。
      ——这条正是 `04-recipes/analysis-report` 那一页在教别人的东西，
-       我写这个收编的时候照着旧三页抄了 `1fr`，把要讲的坑又踩了一遍。 */
+       写这个收编的时候照着旧三页抄了 `1fr`，把要讲的坑又踩了一遍。 */
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--sp-4);
   /* 不写 align-items: start —— 两栏等高（stretch）边框才对得齐；

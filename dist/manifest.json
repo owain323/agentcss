@@ -13,7 +13,7 @@
   ],
   "totals": {
     "sourceFiles": 82,
-    "sourceBytes": 1089599,
+    "sourceBytes": 1089587,
     "distGzip": 130004
   },
   "files": [
@@ -108,9 +108,9 @@
     },
     {
       "source": "01-tokens/behavior/typeahead.js",
-      "sourceSha256": "f51a4f7da38e13e7158eed52bc4a100a5df8720700925193ca03cf4221803415",
+      "sourceSha256": "3012f5f4116dfcd81cc2b7b23e332dd142f1be287c0a267d1d878ed630bf9cad",
       "sourceBytes": 5878,
-      "sourceGzip": 2560,
+      "sourceGzip": 2561,
       "outputs": [
         {
           "path": "dist/01-tokens/behavior/typeahead.js",
@@ -137,9 +137,9 @@
     },
     {
       "source": "01-tokens/market.css",
-      "sourceSha256": "d936e4d19d16bbc667b887a9a7d484be7537244c1449b0f169f21ecd94a048f5",
-      "sourceBytes": 3662,
-      "sourceGzip": 1826,
+      "sourceSha256": "192fa2a960434842ea275f94fbd557da932f232716dffcf8bb770381f8a7027e",
+      "sourceBytes": 3659,
+      "sourceGzip": 1823,
       "outputs": [
         {
           "path": "dist/01-tokens/market.css",
@@ -151,9 +151,9 @@
     },
     {
       "source": "01-tokens/page.css",
-      "sourceSha256": "55897bc0291741515898fabf6868262b54406c84a8190b739e4e8026c9a6bb38",
-      "sourceBytes": 20227,
-      "sourceGzip": 8498,
+      "sourceSha256": "54a790db539a5b94b93d1c117e694fee620546e7f81e6017fdd0cb1088936024",
+      "sourceBytes": 20224,
+      "sourceGzip": 8496,
       "outputs": [
         {
           "path": "dist/01-tokens/page.css",
@@ -209,9 +209,9 @@
     },
     {
       "source": "01-tokens/tokens.core.css",
-      "sourceSha256": "90487171178bc27aefb1e3fcc7bf32471fad0a29c6ee57e061ef07d0a33f1a76",
-      "sourceBytes": 52142,
-      "sourceGzip": 19644,
+      "sourceSha256": "cc6c5e1e217a5a311355c1515873b42289ddcffb6c5f389a592337148f8788df",
+      "sourceBytes": 52139,
+      "sourceGzip": 19640,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.core.css",
@@ -223,9 +223,9 @@
     },
     {
       "source": "01-tokens/tokens.css",
-      "sourceSha256": "cb8b43b6abe2e99b194fed0284408405f51889aa1038eff8b254b1fe40e1d29e",
-      "sourceBytes": 66480,
-      "sourceGzip": 25611,
+      "sourceSha256": "28e322ae891d84586e6743fb05567cd63b979cf7359b778b516576994a0a3300",
+      "sourceBytes": 66477,
+      "sourceGzip": 25608,
       "outputs": [
         {
           "path": "dist/01-tokens/tokens.css",

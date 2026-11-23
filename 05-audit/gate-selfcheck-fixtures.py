@@ -39,7 +39,7 @@ import terms  # noqa: E402
 # ============================================================================
 CASES = [
     ('leak-scan.py', 'README.md',
-     '\nprobe C:/Users/probe-user/x\n', '用户名与绝对路径'),
+     '\nprobe Q:/Users/probe-user/x\n', '用户名与绝对路径'),
     # ⚠️ 注入词必须**从 terms.py 取** —— 写死一个词，词表改了它就测不到真东西
     ('leak-scan.py', 'types/index.d.ts',
      '\n/** %s */\n' % terms.HARD_BAN[0], '类型定义里的内部代号'),

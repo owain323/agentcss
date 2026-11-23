@@ -106,19 +106,40 @@ function scanForExe(dir, depth) {
   return null;
 }
 
+/**
+ * Windows 上浏览器的可能安装根目录。
+ * ⚠️ **不写死盘符**：`Program Files` 可以在任何盘上（系统盘换了字母、
+ *    公司机器把程序装 D 盘都很常见）。写死一处盘符既会漏找，也等于把
+ *    开发机的目录布局带进分发物。
+ *    顺序：环境变量声明的根 → 被清空时按 A–Z 枚举盘符兜底。
+ */
+function winInstallRoots() {
+  const roots = [];
+  const pf = process.env.ProgramFiles;
+  const pf86 = process.env['ProgramFiles(x86)'];
+  const local = process.env.LOCALAPPDATA;
+  if (pf) roots.push(pf);
+  if (pf86) roots.push(pf86);
+  if (local) roots.push(local);
+  if (!roots.length) {
+    for (let c = 65; c <= 90; c++) {
+      const d = String.fromCharCode(c) + ':/';
+      roots.push(d + 'Program Files', d + 'Program Files (x86)');
+    }
+  }
+  return roots;
+}
+
 function chromeCandidates() {
   const out = [];
   if (process.env.AGENTCSS_CHROME) out.push(process.env.AGENTCSS_CHROME);
   if (process.env.CHROME_PATH) out.push(process.env.CHROME_PATH);
   if (process.env.CHROME_BIN) out.push(process.env.CHROME_BIN);
   if (process.platform === 'win32') {
-    const local = process.env.LOCALAPPDATA;
-    out.push(
-      'C:/Program Files/Google/Chrome/Application/chrome.exe',
-      'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-      local && path.join(local, 'Google/Chrome/Application/chrome.exe'),
-      'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-      'C:/Program Files/Microsoft/Edge/Application/msedge.exe');
+    for (const r of winInstallRoots()) {
+      out.push(path.join(r, 'Google/Chrome/Application/chrome.exe'),
+               path.join(r, 'Microsoft/Edge/Application/msedge.exe'));
+    }
   } else if (process.platform === 'darwin') {
     out.push(
       '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -178,7 +199,7 @@ function resolveChrome(explicit, opts) {
   }
   return {
     error: '找不到 Chrome / Chromium / Edge。\n'
-      + '  用法：--chrome="C:/Program Files/Google/Chrome/Application/chrome.exe"\n'
+      + '  用法：--chrome="<浏览器可执行文件的完整路径>"\n'
       + '  或设环境变量 AGENTCSS_CHROME / CHROME_PATH。\n'
       + '  本工具不打包浏览器：为了 5% 的导出需求让 95% 的人多装 300 MB，不值。',
   };
