@@ -194,6 +194,24 @@ jobs:
       #    的 fast 层含 api-contract（运行时 ↔ 类型），它要真浏览器。
       #    此前依赖 runner 镜像预装 Chrome，镜像换到不带 Chrome 的版本后
       #    整条发布流在这里假红（0.27.21 首推实测卡死在发布前门禁）。
+      # 🔴 私有词表必须在**发布**这一步也在场：
+      #    `publish-tag-guard.py` 的身份闸要求词表已加载（0 条即拒绝发布），
+      #    而 `npm publish` 会重跑 prepublishOnly —— 这里不落文件，闸就会红。
+      #    与 gate.yml 的「载入私有词表」同一套写法，内容不回显。
+      - name: 载入私有词表（发布前身份闸需要它）
+        env:
+          FL_TERMS: ${{ secrets.FL_PRIVATE_TERMS }}
+        run: |
+          set -eu
+          if [ -z "${FL_TERMS:-}" ]; then
+            echo "::error title=拒绝发布::FL_PRIVATE_TERMS 未配置 —— 真实代号/用户名判据本次不覆盖，发布链的身份闸不允许在这种状态下出包"
+            exit 1
+          fi
+          mkdir -p internal
+          echo "$FL_TERMS" > internal/private-terms.txt
+          n=$(grep -vcE '^[[:space:]]*(#|$)' internal/private-terms.txt || true)
+          echo "私有词表已载入：${n} 条（内容不回显）"
+
       - name: 安装 Chromium（api-contract 与 dist 语义比对都需要）
         run: npx playwright install --with-deps chromium
 
