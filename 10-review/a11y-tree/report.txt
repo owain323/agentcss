@@ -132,7 +132,7 @@ RootWebArea "report · 报告版式系统 v1 · agentcss"
           cell "96.0%"
           cell "26.4%"
       Figcaption "敏感性测算的关键假设与结果（示例）"
-    paragraph "数据来源：公司公开披露的季度产能口径（示例），测算过程见内部模型 mod-sensitivity-041 。"
+    paragraph "数据来源：公司公开披露的季度产能口径（示例），测算过程见模型 mod-sensitivity-041 。"
     paragraph "本页面的数字均为 演示用构造值 ，用于说明版式，不代表任何真实公司或标的。"
     paragraph "风险披露： 本报告为示例文本，不构成投资建议。测算结果对良率与采购价假设高度敏感， 假设的任何变动都可能使结论不成立。读"
     heading "4 · 🔴 本轮明确不做（不是"还没做"，是"这一版不管"）" [level=2]
