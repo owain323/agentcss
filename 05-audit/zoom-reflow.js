@@ -234,7 +234,16 @@ const occludedProbe = () => {
  *
  * 两帧预热是保留的（覆盖同步布局提交），之后连续 need 帧指纹一致才算稳定。
  */
-const STABLE = { need: 3, timeout: 1500, maxEls: 600 };
+/* 🔴 2026-11-23：`timeout` 1500 → 4000。
+   判据（`need: 3` 连续帧指纹一致）**一个字没动** —— 放宽的只是"等多久"，
+   不是"算不算稳定"：真不稳定的页面照样红，只是不再因为 runner 慢就红。
+   证据：run 45145956549 / 45147776618 的 webkit 连续两轮在
+   `overlay @200%` 报「1628ms / 1715ms 内未稳定（1 帧仍变化）」，
+   而同一页 20 分钟前（run 45144343029）是绿的，且 overlay 页的 CSS
+   本次没有任何改动 ⇒ 这是窗口长度问题，不是布局问题。
+   本机 webkit 同一份代码 50 页全过、最长稳定等待 286ms ——
+   CI runner 比本机慢一个量级，1.5s 的窗口在那里只够十几帧。 */
+const STABLE = { need: 3, timeout: 4000, maxEls: 600 };
 
 /* 在页面里执行：返回 {ok, frames, ms} 或 {ok:false, ...}。 */
 function watchLayout({ need, timeout, maxEls }) {   /* 🔴 0.27.21：单对象参数，firefox/webkit 兼容 */
