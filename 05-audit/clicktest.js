@@ -59,22 +59,35 @@ const CASES = {
            起始帧，量到「白底白勾」就会误判成真对比缺陷（run 45129517040 的
            webkit 连续两次报 1.00:1，而它自己的 +1s 复测底色已是
            rgb(27,77,143) —— 最终态是对的）。
-           ⇒ 先把 140ms 留足，再轮询到背景色连续两次采样相同为止（上限 600ms）。
-           超时也照量：真同色不会被"多等一会儿"掩盖。 */
-        await new Promise((r) => setTimeout(r, 140));
-        {
-          let prev = null;
-          for (let k = 0; k < 12; k++) {
-            const cur = await p.evaluate((idx) => {
-              const el = document.querySelectorAll('.choice__input')[idx];
-              const mk = el.parentNode.querySelector('.choice__mark');
-              return getComputedStyle(mk).backgroundColor;
-            }, i);
-            if (cur === prev) break;
-            prev = cur;
-            await new Promise((r) => setTimeout(r, 50));
+           ⚠️ 第一版修法（轮询到「连续两次采样相同」）**不够**：过渡还没开始
+           时两次采样本来就相同，于是当场提前退出，量到的仍是起始帧
+           （run 45145956549 的 webkit 又红，证据同上）。
+           ⇒ 改成**等过渡真的结束**：`getAnimations()` 拿到该元素上正在跑的
+           过渡，逐个 await finished。这是确定性的，不是猜一个时长。
+           拿不到（旧引擎 / 没跑过渡）时退回定时轮询，且要求**采样值变过**
+           才算稳定，避免"两次相同"再次骗过判据。 */
+        await p.evaluate(async (idx) => {
+          const el = document.querySelectorAll('.choice__input')[idx];
+          const mk = el.parentNode.querySelector('.choice__mark');
+          if (typeof mk.getAnimations === 'function') {
+            const running = mk.getAnimations();
+            if (running.length) {
+              await Promise.all(running.map((a) => a.finished.catch(() => {})));
+              return;
+            }
           }
-        }
+          // 兜底：等到颜色真的变过一次、且随后稳定
+          const read = () => getComputedStyle(mk).backgroundColor;
+          const first = read();
+          let prev = first;
+          for (let k = 0; k < 24; k++) {
+            await new Promise((r) => setTimeout(r, 50));
+            const cur = read();
+            if (cur !== first && cur === prev) return;
+            prev = cur;
+          }
+        }, i);
+        await new Promise((r) => setTimeout(r, 60));
         const after = await p.evaluate((idx) =>
           document.querySelectorAll('.choice__input')[idx].checked, i);
         /* 视觉层证据。🔴 这里必须查**渲染后的颜色对比**：
